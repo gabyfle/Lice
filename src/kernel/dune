@@ -1,0 +1,7 @@
+(library
+ (public_name lice))
+
+(ocamllex lexer)
+(menhir
+ (modules parser)
+ (flags --explain --dump))
