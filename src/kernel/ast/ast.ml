@@ -21,11 +21,34 @@
 (*****************************************************************************)
 
 module Type = struct
+  type variable = string
 
-end
+  type binary_operator =
+    | Plus
+    | Minus
+    | Divide
+    | Multiply
+    | And
+    | Or
 
-module type ID = sig
-  type t
-  val to_string: t -> string
-  val of_string: string -> t
+  type expr =
+    | Variable of variable
+    | FunctionCall of string * expr
+    | BinOp of binary_operator * expr * expr
+    | Branch of expr * expr * expr option (* if (expr) then expr else [Some(expr) or None] *)
+    | Return of expr
+  
+  and pattern =
+    | Number of float
+    | Bool of bool
+    | WildCard
+    | Tuple of pattern list
+
+  type statement =
+    | Assign of variable * expr
+    | Expression of expr
+    | FunctionDefinition of variable * variable list * statement list
+    | MatchStatement of expr * (pattern * statement list) list
+
+  type program = statement list
 end
