@@ -20,5 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module Token = Token
-module Lexer = Lexer
+val parse_code: string -> Ast.Types.program

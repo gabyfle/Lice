@@ -20,53 +20,11 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-%{
-  open Ast.Types  (* Include the AST module *)
+let parse_code code =
+  let lexbuf = Lexing.from_string code in
+  try
+    Parser.lprog Lexer.token lexbuf  (* Use the entry point of your parser, e.g., lprog *)
+  with
+  | Parsing.Parse_error ->
+    failwith "Syntax error"
 
-  (* exception Syntax_Error of string *)
-%}
-
-%token <string> IDENT
-%token <int> INT
-%token <float> FLOAT
-%token COMMA
-%token SEMICOLON
-%token LPAREN
-%token RPAREN
-%token LBRACE
-%token RBRACE
-%token LET
-%token ASSIGN
-%token EQUAL
-%token PLUS
-%token MINUS
-%token ASTERISK
-%token SLASH
-%token MOD
-%token ILLEGAL
-%token EOF
-%token EOL
-
-%type <statement> statement
-%type <expr> expr
-%start <program> lprog
-
-%%
-
-let lprog :=
-  | EOF; { [] }
-  | s = statement; SEMICOLON; EOL; { [ s ] }
-  | s = statement; SEMICOLON; EOL; sl = lprog; { s :: sl }
-
-let terminal ==
-  | i = INT; { Number (float_of_int i) }
-  | i = FLOAT; { Number i }
-  | i = IDENT; { Variable i }
-
-let statement ==
-  | LET; p = IDENT; EQUAL; e = expr; SEMICOLON;
-    { Assign ($startpos, p, e)}
-  | p = terminal; { Expression ($startpos, p) }
-
-let expr :=
-  | terminal 

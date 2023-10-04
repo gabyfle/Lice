@@ -1,0 +1,4 @@
+(executable
+ (name lice)
+ (public_name lice)
+ (libraries kernel))

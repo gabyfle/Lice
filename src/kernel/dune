@@ -1,5 +1,7 @@
 (library
- (public_name lice))
+ (name kernel)
+ (libraries ast)
+ (wrapped false))
 
 (ocamllex lexer)
 (menhir

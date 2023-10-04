@@ -20,35 +20,48 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module Type = struct
-  type variable = string
+type location = Lexing.position
 
-  type binary_operator =
-    | Plus
-    | Minus
-    | Divide
-    | Multiply
-    | And
-    | Or
+type variable = string
 
-  type expr =
-    | Variable of variable
-    | FunctionCall of string * expr
-    | BinOp of binary_operator * expr * expr
-    | Branch of expr * expr * expr option (* if (expr) then expr else [Some(expr) or None] *)
-    | Return of expr
-  
-  and pattern =
-    | Number of float
-    | Bool of bool
-    | WildCard
-    | Tuple of pattern list
+type binary_operator =
+  | Plus
+  | Minus
+  | Divide
+  | Multiply
+  | And
+  | Or
 
-  type statement =
-    | Assign of variable * expr
-    | Expression of expr
-    | FunctionDefinition of variable * variable list * statement list
-    | MatchStatement of expr * (pattern * statement list) list
+type expr =
+  | Number of float
+  | Variable of variable
+  | BinOp of binary_operator * expr * expr
 
-  type program = statement list
+type statement =
+  | Assign of location * variable * expr
+  | Expression of location * expr
+
+type program = statement list
+
+module type IDENT = sig
+  type t
+  val to_string: t -> string
+  val of_string: string -> t
+
+  val (=): t -> t -> bool
 end
+
+module Variable: IDENT = struct
+  type t = string
+
+  let to_string a = a
+  let of_string a = a
+
+  let (=) a b = a = b
+end
+
+
+let stmt_to_string = function
+  | Assign(_, _, _) -> Printf.printf "Assign"
+  | Expression(_, _) -> Printf.printf "Expression"
+

@@ -20,53 +20,38 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-%{
-  open Ast.Types  (* Include the AST module *)
+type location = Lexing.position
 
-  (* exception Syntax_Error of string *)
-%}
+type variable = string
 
-%token <string> IDENT
-%token <int> INT
-%token <float> FLOAT
-%token COMMA
-%token SEMICOLON
-%token LPAREN
-%token RPAREN
-%token LBRACE
-%token RBRACE
-%token LET
-%token ASSIGN
-%token EQUAL
-%token PLUS
-%token MINUS
-%token ASTERISK
-%token SLASH
-%token MOD
-%token ILLEGAL
-%token EOF
-%token EOL
+type binary_operator =
+  | Plus
+  | Minus
+  | Divide
+  | Multiply
+  | And
+  | Or
 
-%type <statement> statement
-%type <expr> expr
-%start <program> lprog
+type expr =
+  | Number of float
+  | Variable of variable
+  | BinOp of binary_operator * expr * expr
 
-%%
+type statement =
+  | Assign of location * variable * expr
+  | Expression of location * expr
 
-let lprog :=
-  | EOF; { [] }
-  | s = statement; SEMICOLON; EOL; { [ s ] }
-  | s = statement; SEMICOLON; EOL; sl = lprog; { s :: sl }
+and program = statement list
 
-let terminal ==
-  | i = INT; { Number (float_of_int i) }
-  | i = FLOAT; { Number i }
-  | i = IDENT; { Variable i }
+module type IDENT = sig
+    type t
+    val to_string: t -> string
+    val of_string: string -> t
+  
+    val (=): t -> t -> bool
+end
 
-let statement ==
-  | LET; p = IDENT; EQUAL; e = expr; SEMICOLON;
-    { Assign ($startpos, p, e)}
-  | p = terminal; { Expression ($startpos, p) }
+module Variable: IDENT
 
-let expr :=
-  | terminal 
+
+val stmt_to_string: statement -> unit

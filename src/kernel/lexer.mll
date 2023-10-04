@@ -25,18 +25,7 @@
     let keyword_table = Hashtbl.create 20
     let _ =
     List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
-                [ "open", OPEN;
-                "let", LET;
-                "func", FUNCTION;
-                "match", MATCH;
-                "with", WITH;
-                "|", BAR;
-                "->", ARROW;
-                "if", IF;
-                "then", THEN;
-                "else", ELSE;
-                "end", END;
-                "return", RETURN ]
+                ["let", LET;]
 }
 
 rule token = parse
