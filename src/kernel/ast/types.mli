@@ -53,5 +53,4 @@ end
 
 module Variable: IDENT
 
-
-val stmt_to_string: statement -> unit
+val expr_to_string: expr -> string

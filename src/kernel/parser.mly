@@ -55,8 +55,8 @@
 
 let lprog :=
   | EOF; { [] }
-  | s = statement; SEMICOLON; EOL; { [ s ] }
-  | s = statement; SEMICOLON; EOL; sl = lprog; { s :: sl }
+  | s = statement; SEMICOLON; EOF; { [ s ] }
+  | s = statement; SEMICOLON; EOL*; sl = lprog; { s :: sl }
 
 let terminal ==
   | i = INT; { Number (float_of_int i) }
@@ -64,9 +64,15 @@ let terminal ==
   | i = IDENT; { Variable i }
 
 let statement ==
-  | LET; p = IDENT; EQUAL; e = expr; SEMICOLON;
+  | LET; p = IDENT; ASSIGN; e = expr;
     { Assign ($startpos, p, e)}
   | p = terminal; { Expression ($startpos, p) }
 
 let expr :=
+  | p = terminal; PLUS; q = terminal;
+    { BinOp (Plus, p, q) }
+  | p = terminal; MINUS; q = terminal;
+    { BinOp (Minus, p, q) }
+  | p = terminal; ASTERISK; q = terminal;
+    { BinOp (Multiply, p, q) }
   | terminal 

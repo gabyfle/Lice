@@ -1,6 +1,6 @@
 (library
  (name kernel)
- (libraries ast)
+ (libraries ast utils)
  (wrapped false))
 
 (ocamllex lexer)
