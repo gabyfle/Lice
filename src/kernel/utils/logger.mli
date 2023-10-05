@@ -20,16 +20,25 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type log_level = Debug | Warning | Error | Info
+module type LOGGER = sig
+  type log_level
 
-class logger :
-  object
-    method get_level : unit -> log_level list
-    method set_level : log_level list -> unit
-    method add_level : log_level -> unit
+  val get_level : unit -> log_level list
 
-    method debug : string -> unit
-    method warning : string -> unit
-    method error : string -> unit
-    method info : string -> unit
-  end
+  val set_level : string list -> unit
+
+  val add_level : string -> unit
+
+  val log_message :
+    string -> log_level -> ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val debug : ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val warning : ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val error : ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val info : ('a, Format.formatter, unit, unit) format4 -> 'a
+end
+
+module Logger : LOGGER

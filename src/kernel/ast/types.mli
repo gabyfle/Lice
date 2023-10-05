@@ -24,13 +24,7 @@ type location = Lexing.position
 
 type variable = string
 
-type binary_operator =
-  | Plus
-  | Minus
-  | Divide
-  | Multiply
-  | And
-  | Or
+type binary_operator = Plus | Minus | Divide | Multiply | And | Or
 
 type expr =
   | Number of float
@@ -44,13 +38,15 @@ type statement =
 and program = statement list
 
 module type IDENT = sig
-    type t
-    val to_string: t -> string
-    val of_string: string -> t
-  
-    val (=): t -> t -> bool
+  type t
+
+  val to_string : t -> string
+
+  val of_string : string -> t
+
+  val ( = ) : t -> t -> bool
 end
 
-module Variable: IDENT
+module Variable : IDENT
 
-val expr_to_string: expr -> string
+val expr_to_string : expr -> string

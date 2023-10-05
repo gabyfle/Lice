@@ -24,62 +24,100 @@ module Colors = struct
   open ANSITerminal
 
   let str_to_color = function
-    | "red" -> Red
-    | "green" -> Green
-    | "yellow" -> Yellow
-    | "blue" -> Blue
-    | _ -> Default
+    | "red" ->
+        Red
+    | "green" ->
+        Green
+    | "yellow" ->
+        Yellow
+    | "blue" ->
+        Blue
+    | _ ->
+        Default
 
-  let print_colored color fmt =
+  let print_colored color message =
     let color = str_to_color color in
-    Printf.ksprintf (fun message ->
-        print_string [Foreground color] message
-      ) fmt
+    print_string [Foreground color] message
 end
 
-type log_level = Debug | Warning | Error | Info
+module LogLevels = struct
+  type log_level = Debug | Info | Warning | Error
 
-(*
-    This is our logger class that handles logging inside the whole
-    project. It can handle basic logging with different levels and
-    writing output to files. *)
-class logger =
-  object(self)
-    val mutable levels = []
+  let to_string = function
+    | Debug ->
+        "Debug"
+    | Info ->
+        "Info"
+    | Warning ->
+        "Warning"
+    | Error ->
+        "Error"
 
-    method get_level () = levels
+  let to_type = function
+    | "Debug" ->
+        Debug
+    | "Info" ->
+        Info
+    | "Warning" ->
+        Warning
+    | "Error" ->
+        Error
+    | _ ->
+        Info
+end
 
-    method set_level (lvls: log_level list) = levels <- lvls
+module type LOGGER = sig
+  type log_level
 
-    method add_level (lvl: log_level) =
-      if (List.mem lvl levels) then
-        ()
-      else
-        levels <- lvl :: levels
+  val get_level : unit -> log_level list
 
-    method private has_level (lvl: log_level) = List.mem lvl levels
+  val set_level : string list -> unit
 
-    method debug (message: string) =
-      if (self#has_level Debug) then
-        Colors.print_colored "blue" "[Debug] %s \n" message
-      else
-        ()
+  val add_level : string -> unit
 
-    method warning (message: string) =
-      if (self#has_level Warning) then
-        Colors.print_colored "yellow" "[Warning] %s \n" message
-      else
-        ()
+  val log_message :
+    string -> log_level -> ('a, Format.formatter, unit, unit) format4 -> 'a
 
-    method error (message: string) =
-      if (self#has_level Error) then
-        Colors.print_colored "red" "[Error] %s \n" message
-      else
-        ()
+  val debug : ('a, Format.formatter, unit, unit) format4 -> 'a
 
-    method info (message: string) =
-      if (self#has_level Info) then
-        Colors.print_colored "blue" "[Info] %s \n" message
-      else
-        ()
-  end
+  val warning : ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val error : ('a, Format.formatter, unit, unit) format4 -> 'a
+
+  val info : ('a, Format.formatter, unit, unit) format4 -> 'a
+end
+
+module Logger : LOGGER = struct
+  include LogLevels
+
+  let levels = ref []
+
+  let get_level () = !levels
+
+  let set_level (lvls : string list) =
+    let log_levels = List.map to_type lvls in
+    levels := log_levels
+
+  let add_level (lvl : string) =
+    let log_level = to_type lvl in
+    if not (List.mem log_level !levels) then levels := log_level :: !levels
+
+  let has_level (lvl : log_level) = List.mem lvl !levels
+
+  let log_message (color : string) (level : log_level)
+      (format : ('a, Format.formatter, unit, unit) format4) : 'a =
+    Format.kasprintf
+      (fun msg ->
+        let lvl_name = to_string level in
+        let str = Format.sprintf "[%s] %s \n" lvl_name msg in
+        if has_level level then Colors.print_colored color str )
+      format
+
+  let debug fmt = log_message "blue" Debug fmt
+
+  let warning fmt = log_message "yellow" Warning fmt
+
+  let error fmt = log_message "red" Error fmt
+
+  let info fmt = log_message "info" Info fmt
+end

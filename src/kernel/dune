@@ -4,6 +4,7 @@
  (wrapped false))
 
 (ocamllex lexer)
+
 (menhir
  (modules parser)
  (flags --explain --dump))

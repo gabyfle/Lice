@@ -24,13 +24,7 @@ type location = Lexing.position
 
 type variable = string
 
-type binary_operator =
-  | Plus
-  | Minus
-  | Divide
-  | Multiply
-  | And
-  | Or
+type binary_operator = Plus | Minus | Divide | Multiply | And | Or
 
 type expr =
   | Number of float
@@ -45,22 +39,28 @@ type program = statement list
 
 module type IDENT = sig
   type t
-  val to_string: t -> string
-  val of_string: string -> t
 
-  val (=): t -> t -> bool
+  val to_string : t -> string
+
+  val of_string : string -> t
+
+  val ( = ) : t -> t -> bool
 end
 
-module Variable: IDENT = struct
+module Variable : IDENT = struct
   type t = string
 
   let to_string a = a
+
   let of_string a = a
 
-  let (=) a b = a = b
+  let ( = ) a b = a = b
 end
 
 let rec expr_to_string = function
-  | Number(f) -> "Number(" ^ (string_of_float f) ^")"
-  | Variable(v) -> "Variable(" ^ v ^ ")"
-  | BinOp(_, a, b) -> "BinOp(" ^ (expr_to_string a) ^ " op " ^ (expr_to_string b) ^ ")"
+  | Number f ->
+      "Number(" ^ string_of_float f ^ ")"
+  | Variable v ->
+      "Variable(" ^ v ^ ")"
+  | BinOp (_, a, b) ->
+      "BinOp(" ^ expr_to_string a ^ " op " ^ expr_to_string b ^ ")"
