@@ -20,4 +20,66 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+module Colors = struct
+  open ANSITerminal
 
+  let str_to_color = function
+    | "red" -> Red
+    | "green" -> Green
+    | "yellow" -> Yellow
+    | "blue" -> Blue
+    | _ -> Default
+
+  let print_colored color fmt =
+    let color = str_to_color color in
+    Printf.ksprintf (fun message ->
+        print_string [Foreground color] message
+      ) fmt
+end
+
+type log_level = Debug | Warning | Error | Info
+
+(*
+    This is our logger class that handles logging inside the whole
+    project. It can handle basic logging with different levels and
+    writing output to files. *)
+class logger =
+  object(self)
+    val mutable levels = []
+
+    method get_level () = levels
+
+    method set_level (lvls: log_level list) = levels <- lvls
+
+    method add_level (lvl: log_level) =
+      if (List.mem lvl levels) then
+        ()
+      else
+        levels <- lvl :: levels
+
+    method private has_level (lvl: log_level) = List.mem lvl levels
+
+    method debug (message: string) =
+      if (self#has_level Debug) then
+        Colors.print_colored "blue" "[Debug] %s \n" message
+      else
+        ()
+
+    method warning (message: string) =
+      if (self#has_level Warning) then
+        Colors.print_colored "yellow" "[Warning] %s \n" message
+      else
+        ()
+
+    method error (message: string) =
+      if (self#has_level Error) then
+        Colors.print_colored "red" "[Error] %s \n" message
+      else
+        ()
+
+    method info (message: string) =
+      if (self#has_level Info) then
+        Colors.print_colored "blue" "[Info] %s \n" message
+      else
+        ()
+  end

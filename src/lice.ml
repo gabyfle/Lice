@@ -20,9 +20,25 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Ast.Types
 open Kernel
+open Utils.Logger
 
 let () =
-  let code = "let x = 25;" in
-  let _ = parse_code code in
-  ()
+  let code = "let x = h; 
+  
+  let f = x + 12;
+
+  
+  let f = a * 12;" in
+  let log = new logger in
+  log#add_level Debug;
+  let ast = parse_code code in
+  let rec aux = function
+    | [] -> ()
+    | h :: t ->
+      match h with
+      | Assign(_, v, expr) -> log#debug v; log#debug (expr_to_string expr); aux t
+      | Expression(_, expr) -> log#debug (expr_to_string expr); aux t
+  in 
+  aux ast
