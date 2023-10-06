@@ -24,16 +24,17 @@ type location = Lexing.position
 
 type variable = string
 
-type binary_operator = Plus | Minus | Divide | Multiply | And | Or
+type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
 type expr =
   | Number of float
   | Variable of variable
   | BinOp of binary_operator * expr * expr
+  | Assign of variable * expr
 
-type statement =
-  | Assign of location * variable * expr
+and statement =
   | Expression of location * expr
+  | Block of location * statement list
 
 and program = statement list
 

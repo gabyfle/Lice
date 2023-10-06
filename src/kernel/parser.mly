@@ -37,7 +37,6 @@
 %token RBRACE
 %token LET
 %token ASSIGN
-%token EQUAL
 %token PLUS
 %token MINUS
 %token ASTERISK
@@ -51,28 +50,47 @@
 %type <expr> expr
 %start <program> lprog
 
+%left PLUS MINUS
+%left ASTERISK SLASH MOD
+
 %%
+
+%inline binop:
+| PLUS { Plus }
+| MINUS { Minus }
+| ASTERISK { Multiply }
+| SLASH { Divide }
+| MOD { Mod }
 
 let lprog :=
   | EOF; { [] }
-  | s = statement; SEMICOLON; EOF; { [ s ] }
-  | s = statement; SEMICOLON; EOL*; sl = lprog; { s :: sl }
+  | s = statement; EOF; { [ s ] }
+  | s = statement; EOL*;  sl = lprog; { s :: sl }
 
 let terminal ==
   | i = INT; { Number (float_of_int i) }
   | i = FLOAT; { Number i }
   | i = IDENT; { Variable i }
 
+let block ==
+  | LBRACE; stmts = list(statement); RBRACE;
+  { Block($startpos, stmts) }
+
+let assign ==
+    | LET; p = IDENT; ASSIGN; e = expr;
+    { Assign (p, e)}
+
+let parenthesis ==
+  | LPAREN; p = expr; RPAREN;
+    { p }
+
 let statement ==
-  | LET; p = IDENT; ASSIGN; e = expr;
-    { Assign ($startpos, p, e)}
-  | p = terminal; { Expression ($startpos, p) }
+  | p = expr; SEMICOLON; { Expression ($startpos, p) }
+  | b = block; { b }
 
 let expr :=
-  | p = terminal; PLUS; q = terminal;
-    { BinOp (Plus, p, q) }
-  | p = terminal; MINUS; q = terminal;
-    { BinOp (Minus, p, q) }
-  | p = terminal; ASTERISK; q = terminal;
-    { BinOp (Multiply, p, q) }
-  | terminal 
+  | a = assign; { a }
+  | a = expr; op = binop; b = expr;
+    { BinOp(op, a, b) }
+  | p = parenthesis; { p }
+  | t = terminal; { t }

@@ -25,19 +25,23 @@ open Kernel
 open Utils.Logger
 
 let () =
-  let code = "let x = h; \n  \n  let f = x + 12;\n\n  \n  let f = a * 12;" in
-  Logger.set_level ["Debug"; "Info"] ;
+  let code =
+    "let x = h; let f = (p + 1) - 2; let v = 25; (f - 12); { let x = (p - 1) + 2; }"
+  in
+  Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
   let rec aux = function
     | [] ->
         ()
-    | h :: t -> (
+    | h :: t ->
       match h with
-      | Assign (_, v, expr) ->
-          Logger.debug "Variable(%s) = Expression(%s)" v (expr_to_string expr) ;
-          aux t
       | Expression (_, expr) ->
           Logger.debug "Expression(%s)" (expr_to_string expr) ;
-          aux t )
+          aux t
+      | Block (_, l) ->
+        Logger.debug "New block created";
+        aux l;
+        Logger.debug "End of block";
+        aux t;
   in
   aux ast
