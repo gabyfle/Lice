@@ -26,22 +26,27 @@ open Utils.Logger
 
 let () =
   let code =
-    "let x = h; let f = (p + 1) - 2; let v = 25; (f - 12); { let x = (p - 1) + 2; }"
+    "let a = b; { a = b - 5; } function main(a, b, c, d, e, f, g) { let x = r; let r = g; let f = e; return f; } main(a, b, c, d);"
   in
   Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
   let rec aux = function
     | [] ->
         ()
-    | h :: t ->
+    | h :: t -> (
       match h with
       | Expression (_, expr) ->
           Logger.debug "Expression(%s)" (expr_to_string expr) ;
           aux t
       | Block (_, l) ->
-        Logger.debug "New block created";
-        aux l;
-        Logger.debug "End of block";
-        aux t;
+          Logger.debug "New block created" ;
+          aux l ;
+          Logger.debug "End of block" ;
+          aux t
+      | FuncDef (_, v, _, stmt) ->
+          Logger.debug "FunctionDeclaration: \n Name: %s \n" v ;
+          aux [stmt] ;
+          Logger.debug "End of %s" v ;
+          aux t )
   in
   aux ast

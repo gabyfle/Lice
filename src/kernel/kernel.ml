@@ -23,6 +23,7 @@
 let parse_code code =
   let lexbuf = Lexing.from_string code in
   try
+    
     Parser.lprog Lexer.token
       lexbuf (* Use the entry point of your parser, e.g., lprog *)
   with Parsing.Parse_error -> failwith "Syntax error"

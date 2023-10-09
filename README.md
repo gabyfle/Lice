@@ -2,11 +2,32 @@
 Lice language interpreter
 
 
+## Roadmap
+    - Parser
+      - Variable definitions (done)
+      - Binary operators (done)
+      - Blocks of code (done)
+      - Recursive functions and returns
+      - Pattern matching
+      - OCaml-like lists
+
+## Idea of what a program could looks like
+
+```
+open Stdio
+
+function main() = {
+    let n = 20;
+    for ()
+}
+
+```
+
 ```
 open Math
 
 -- Syracuse recursive function
-func syracuse (n) = {
+function syracuse (n) = {
     if (n == 4 || n == 3 || n == 1) then return; end
     else
         print(n);
@@ -17,7 +38,7 @@ func syracuse (n) = {
     end
 }
 
-func main() = {
+function main() = {
     let n = Math.random(1, 400);
     syracuse(n);
     return 0;

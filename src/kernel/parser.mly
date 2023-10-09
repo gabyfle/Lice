@@ -37,6 +37,8 @@
 %token RBRACE
 %token LET
 %token ASSIGN
+%token FUNCTION
+%token RETURN
 %token PLUS
 %token MINUS
 %token ASTERISK
@@ -50,6 +52,7 @@
 %type <expr> expr
 %start <program> lprog
 
+%right ASSIGN
 %left PLUS MINUS
 %left ASTERISK SLASH MOD
 
@@ -79,18 +82,38 @@ let block ==
 let assign ==
     | LET; p = IDENT; ASSIGN; e = expr;
     { Assign (p, e)}
+    | p = IDENT; ASSIGN; e = expr;
+    { Assign(p, e) }
 
 let parenthesis ==
   | LPAREN; p = expr; RPAREN;
     { p }
 
+let binary_operator ==
+  | a = expr; op = binop; b = expr;
+    { BinOp(op, a, b) }
+
+let func_def ==
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, IDENT); RPAREN; b = block;
+    { FuncDef($startpos, p, args, b) }
+
+let func_call ==
+  | p = IDENT; LPAREN; args=separated_list(COMMA, IDENT); RPAREN;
+    { FuncCall(p, args) }
+
+let return_call ==
+  | RETURN; r = expr;
+    { Return(r) }
+
 let statement ==
   | p = expr; SEMICOLON; { Expression ($startpos, p) }
   | b = block; { b }
+  | f = func_def; { f }
 
 let expr :=
   | a = assign; { a }
-  | a = expr; op = binop; b = expr;
-    { BinOp(op, a, b) }
   | p = parenthesis; { p }
+  | b = binary_operator; { b }
+  | f = func_call; { f }
+  | r = return_call; { r }
   | t = terminal; { t }

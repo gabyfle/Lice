@@ -22,19 +22,23 @@
 
 type location = Lexing.position
 
-type variable = string
+type identificator = string
 
 type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
 type expr =
   | Number of float
-  | Variable of variable
+  | Variable of identificator
   | BinOp of binary_operator * expr * expr
-  | Assign of variable * expr
+  | Assign of identificator * expr
+  | FuncCall of identificator * identificator list
+  | Return of expr
 
 and statement =
   | Expression of location * expr
   | Block of location * statement list
+  | FuncDef of
+      location * identificator * identificator list * statement
 
 and program = statement list
 
@@ -65,5 +69,7 @@ let rec expr_to_string = function
       "Variable(" ^ v ^ ")"
   | BinOp (_, a, b) ->
       "BinOp(" ^ expr_to_string a ^ " op " ^ expr_to_string b ^ ")"
-  | Assign(v, expr) -> "Assign(" ^ v  ^ "," ^ (expr_to_string expr) ^ ")"
-  
+  | Assign (v, expr) ->
+      "Assign(" ^ v ^ "," ^ expr_to_string expr ^ ")"
+  | FuncCall (n, _) -> "FunctionCall(" ^ n ^ ")"
+  | Return(expr) -> "Return(" ^ expr_to_string expr ^ ")"

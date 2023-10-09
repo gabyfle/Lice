@@ -22,19 +22,23 @@
 
 type location = Lexing.position
 
-type variable = string
+type identificator = string
 
 type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
 type expr =
   | Number of float
-  | Variable of variable
+  | Variable of identificator
   | BinOp of binary_operator * expr * expr
-  | Assign of variable * expr
+  | Assign of identificator * expr
+  | FuncCall of identificator * identificator list
+  | Return of expr
 
 and statement =
   | Expression of location * expr
   | Block of location * statement list
+  | FuncDef of
+      location * identificator * identificator list * statement
 
 and program = statement list
 
