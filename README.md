@@ -4,11 +4,11 @@ Lice language interpreter.
 ## What is Lice ?
 
 Lice is a toy programming language that is designed to complain to what I like in a programming language:
-    - Strong types
-    - Pattern matching
-    - Lua/OCaml-like syntax
-    - Recursivity
-    - Modularity and easy-to-use API to enhance the language and create libraries
+    * Strong types
+    * Pattern matching
+    * Lua/OCaml-like syntax
+    * Recursivity
+    * Modularity and easy-to-use API to enhance the language and create libraries
 
 At first, this language isn't designed to be used by programmers, but if you want to try it, feel free.
 
