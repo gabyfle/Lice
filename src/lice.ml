@@ -20,33 +20,19 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Types
 open Kernel
 open Utils.Logger
 
 let () =
   let code =
-    "let a = b; { a = b - 5; } function main(a, b, c, d, e, f, g) { let x = r; let r = g; let f = e; return f; } main(a, b, c, d);"
+    "let map a = [];
+
+    function main(a: string): number {
+      return 1;
+    }
+
+    "
   in
   Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
-  let rec aux = function
-    | [] ->
-        ()
-    | h :: t -> (
-      match h with
-      | Expression (_, expr) ->
-          Logger.debug "Expression(%s)" (expr_to_string expr) ;
-          aux t
-      | Block (_, l) ->
-          Logger.debug "New block created" ;
-          aux l ;
-          Logger.debug "End of block" ;
-          aux t
-      | FuncDef (_, v, _, stmt) ->
-          Logger.debug "FunctionDeclaration: \n Name: %s \n" v ;
-          aux [stmt] ;
-          Logger.debug "End of %s" v ;
-          aux t )
-  in
-  aux ast
+  ignore ast;

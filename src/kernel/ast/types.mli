@@ -24,34 +24,29 @@ type location = Lexing.position
 
 type identificator = string
 
+and typ =
+  | T_Number
+  | T_String
+  | T_Map
+  | T_List
+  | T_Boolean
+  | T_Auto
+
+and typed_ident = identificator * typ
+
 type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
 type expr =
   | Number of float
-  | Variable of identificator
+  | Variable of typed_ident
   | BinOp of binary_operator * expr * expr
-  | Assign of identificator * expr
-  | FuncCall of identificator * identificator list
+  | Assign of typed_ident * expr
+  | FuncCall of typed_ident * typed_ident list
   | Return of expr
 
 and statement =
   | Expression of location * expr
   | Block of location * statement list
-  | FuncDef of
-      location * identificator * identificator list * statement
+  | FuncDef of location * typed_ident * typed_ident list * statement
 
 and program = statement list
-
-module type IDENT = sig
-  type t
-
-  val to_string : t -> string
-
-  val of_string : string -> t
-
-  val ( = ) : t -> t -> bool
-end
-
-module Variable : IDENT
-
-val expr_to_string : expr -> string

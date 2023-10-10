@@ -24,52 +24,29 @@ type location = Lexing.position
 
 type identificator = string
 
+and typ =
+  | T_Number
+  | T_String
+  | T_Map
+  | T_List
+  | T_Boolean
+  | T_Auto
+
+and typed_ident = identificator * typ
+
 type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
 type expr =
   | Number of float
-  | Variable of identificator
+  | Variable of typed_ident
   | BinOp of binary_operator * expr * expr
-  | Assign of identificator * expr
-  | FuncCall of identificator * identificator list
+  | Assign of typed_ident * expr
+  | FuncCall of typed_ident * typed_ident list
   | Return of expr
 
 and statement =
   | Expression of location * expr
   | Block of location * statement list
-  | FuncDef of
-      location * identificator * identificator list * statement
+  | FuncDef of location * typed_ident * typed_ident list * statement
 
 and program = statement list
-
-module type IDENT = sig
-  type t
-
-  val to_string : t -> string
-
-  val of_string : string -> t
-
-  val ( = ) : t -> t -> bool
-end
-
-module Variable : IDENT = struct
-  type t = string
-
-  let to_string a = a
-
-  let of_string a = a
-
-  let ( = ) a b = a = b
-end
-
-let rec expr_to_string = function
-  | Number f ->
-      "Number(" ^ string_of_float f ^ ")"
-  | Variable v ->
-      "Variable(" ^ v ^ ")"
-  | BinOp (_, a, b) ->
-      "BinOp(" ^ expr_to_string a ^ " op " ^ expr_to_string b ^ ")"
-  | Assign (v, expr) ->
-      "Assign(" ^ v ^ "," ^ expr_to_string expr ^ ")"
-  | FuncCall (n, _) -> "FunctionCall(" ^ n ^ ")"
-  | Return(expr) -> "Return(" ^ expr_to_string expr ^ ")"

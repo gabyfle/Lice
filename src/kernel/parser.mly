@@ -29,8 +29,17 @@
 %token <string> IDENT
 %token <int> INT
 %token <float> FLOAT
+
+(* Types annotation tokens *)
+%token NUMBER
+%token STRING
+%token MAP
+%token LIST
+%token BOOL
+
 %token COMMA
 %token SEMICOLON
+%token COLON
 %token LPAREN
 %token RPAREN
 %token LBRACE
@@ -73,17 +82,25 @@ let lprog :=
 let terminal ==
   | i = INT; { Number (float_of_int i) }
   | i = FLOAT; { Number i }
-  | i = IDENT; { Variable i }
+  | i = IDENT; { Variable (i, T_Auto) }
 
 let block ==
   | LBRACE; stmts = list(statement); RBRACE;
   { Block($startpos, stmts) }
 
+let typ ==
+  | { T_Auto }
+  | NUMBER; { T_Number }
+  | STRING; { T_String }
+  | MAP; { T_Map }
+  | LIST; { T_List }
+  | BOOL; { T_Boolean }
+
 let assign ==
-    | LET; p = IDENT; ASSIGN; e = expr;
-    { Assign (p, e)}
+    | LET; t = typ; p = IDENT; ASSIGN; e = expr;
+    { Assign ((p, t), e)}
     | p = IDENT; ASSIGN; e = expr;
-    { Assign(p, e) }
+    { Assign((p, T_Auto), e) }
 
 let parenthesis ==
   | LPAREN; p = expr; RPAREN;
@@ -93,13 +110,22 @@ let binary_operator ==
   | a = expr; op = binop; b = expr;
     { BinOp(op, a, b) }
 
+(* Parse the parameters of a function with the syntax for annotated types:
+  function name(arg1: type ...) *)
+let func_def_param ==
+  | a = IDENT; COLON; t = typ;
+    { (a, t) }
+
 let func_def ==
-  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, IDENT); RPAREN; b = block;
-    { FuncDef($startpos, p, args, b) }
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; b = block;
+    { FuncDef($startpos, (p, t), args, b) }
+
+let func_call_param ==
+  | p = IDENT; { (p, T_Auto) }
 
 let func_call ==
-  | p = IDENT; LPAREN; args=separated_list(COMMA, IDENT); RPAREN;
-    { FuncCall(p, args) }
+  | p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
+    { FuncCall((p, T_Auto), args) }
 
 let return_call ==
   | RETURN; r = expr;

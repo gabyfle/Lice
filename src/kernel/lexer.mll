@@ -7,7 +7,13 @@
     List.iter (fun (kwd, tok) -> Hashtbl.add keyword_table kwd tok)
               ["let", LET;
               "function", FUNCTION;
-              "return", RETURN]
+              "return", RETURN;
+
+              "number", NUMBER;
+              "string", STRING;
+              "map", MAP;
+              "list", LIST;
+              "bool", BOOL]
 }
 
 rule token = parse
@@ -34,5 +40,6 @@ rule token = parse
   | '{'             { LBRACE }
   | '}'             { RBRACE }
   | ';'             { SEMICOLON }
+  | ':'             { COLON }
   | eof             { EOF }
   | _               { ILLEGAL }
