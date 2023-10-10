@@ -30,12 +30,19 @@
 %token <int> INT
 %token <float> FLOAT
 
+%token <string> STRING_VALUE
+
 (* Types annotation tokens *)
 %token NUMBER
 %token STRING
 %token MAP
 %token LIST
 %token BOOL
+%token VOID
+
+(* TYPE SPECIFIC TOKENS *)
+%token LBRACKET
+%token RBRACKET
 
 %token COMMA
 %token SEMICOLON
@@ -83,6 +90,8 @@ let terminal ==
   | i = INT; { Number (float_of_int i) }
   | i = FLOAT; { Number i }
   | i = IDENT; { Variable (i, T_Auto) }
+  | s = STRING_VALUE; { String(s) }
+  | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET; { List(elems) }
 
 let block ==
   | LBRACE; stmts = list(statement); RBRACE;
@@ -95,6 +104,7 @@ let typ ==
   | MAP; { T_Map }
   | LIST; { T_List }
   | BOOL; { T_Boolean }
+  | VOID; { T_Void }
 
 let assign ==
     | LET; t = typ; p = IDENT; ASSIGN; e = expr;
@@ -128,18 +138,20 @@ let func_call ==
     { FuncCall((p, T_Auto), args) }
 
 let return_call ==
+  | RETURN;
+    { Return(Empty) }
   | RETURN; r = expr;
     { Return(r) }
 
 let statement ==
-  | p = expr; SEMICOLON; { Expression ($startpos, p) }
+  | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p) }
   | b = block; { b }
   | f = func_def; { f }
+  | r = return_call; SEMICOLON; { r }
+  | a = assign; SEMICOLON; { a }
 
 let expr :=
-  | a = assign; { a }
   | p = parenthesis; { p }
   | b = binary_operator; { b }
   | f = func_call; { f }
-  | r = return_call; { r }
   | t = terminal; { t }

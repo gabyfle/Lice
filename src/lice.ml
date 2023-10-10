@@ -24,15 +24,29 @@ open Kernel
 open Utils.Logger
 
 let () =
-  let code =
-    "let map a = [];
-
-    function main(a: string): number {
-      return 1;
-    }
-
-    "
+  let executable_dir =
+    match Sys.argv with
+    | [| _; exec_path |] ->
+      (* Get the directory containing the executable *)
+      let exec_dir = Filename.dirname exec_path in
+      (* Construct the full path to the test file *)
+      Filename.concat exec_dir "tests/parser/functions.lice"
+    | _ ->
+      failwith "Invalid command line arguments"
   in
-  Logger.set_level ["Debug"; "Info"; "Error"] ;
+  let in_channel = open_in executable_dir in
+  let rec read_code lines =
+    try
+      let line = input_line in_channel in
+      read_code (line :: lines)
+    with
+    | End_of_file -> List.rev lines
+  in
+  let code_lines = read_code [] in
+  close_in in_channel;
+
+  let code = String.concat "\n" code_lines in
+
+  Logger.set_level ["Debug"; "Info"; "Error"];
   let ast = parse_code code in
   ignore ast;
