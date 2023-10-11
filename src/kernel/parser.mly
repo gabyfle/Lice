@@ -116,7 +116,6 @@ let typ ==
   | { T_Auto }
   | NUMBER; { T_Number }
   | STRING; { T_String }
-  | MAP; { T_Map }
   | LIST; { T_List }
   | BOOL; { T_Boolean }
   | VOID; { T_Void }

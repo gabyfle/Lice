@@ -20,32 +20,18 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type location = Lexing.position
+open Ast.Value
 
-type identificator = string
+module Variable = struct
+  type t = (string, value) Hashtbl.t
 
-and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
+  let create () : t = Hashtbl.create 10
 
-and typed_ident = identificator * typ
+  let get (env : t) (name : string) : value option = Hashtbl.find_opt env name
 
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
+  let set (env : t) (name : string) (v : value) = Hashtbl.replace env name v
 
-type expr =
-  | Empty
-  | Number of float
-  | String of string
-  | Boolean of bool
-  | List of expr list
-  | Variable of typed_ident
-  | BinOp of binary_operator * expr * expr
-  | FuncCall of typed_ident * typed_ident list
+  let push_scope (env : t) : t = Hashtbl.copy env
 
-and statement =
-  | Return of expr
-  | Expression of location * expr
-  | Block of location * statement list
-  | Assign of typed_ident * expr
-  | FuncDef of location * typed_ident * typed_ident list * statement
-  | Match of location * expr * (expr * statement) list
-
-and program = statement list
+  let pop_scope (env : t) = Hashtbl.clear env
+end

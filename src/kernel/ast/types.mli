@@ -24,7 +24,7 @@ type location = Lexing.position
 
 type identificator = string
 
-and typ = T_Number | T_String | T_Map | T_List | T_Boolean | T_Auto | T_Void
+and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 
 and typed_ident = identificator * typ
 

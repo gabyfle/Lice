@@ -19,33 +19,3 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
-
-type location = Lexing.position
-
-type identificator = string
-
-and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
-
-and typed_ident = identificator * typ
-
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
-
-type expr =
-  | Empty
-  | Number of float
-  | String of string
-  | Boolean of bool
-  | List of expr list
-  | Variable of typed_ident
-  | BinOp of binary_operator * expr * expr
-  | FuncCall of typed_ident * typed_ident list
-
-and statement =
-  | Return of expr
-  | Expression of location * expr
-  | Block of location * statement list
-  | Assign of typed_ident * expr
-  | FuncDef of location * typed_ident * typed_ident list * statement
-  | Match of location * expr * (expr * statement) list
-
-and program = statement list

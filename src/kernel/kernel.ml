@@ -20,6 +20,8 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Ast.Types
+open Ast.Value
 open Utils.Logger
 
 let parse_code code =
@@ -28,5 +30,5 @@ let parse_code code =
     Parser.lprog Lexer.token
       lexbuf (* Use the entry point of your parser, e.g., lprog *)
   with Parser.Error ->
-    Logger.error "%s" "An error occurred while trying to parse the file";
-    exit 1;
+    Logger.error "%s" "An error occurred while trying to parse the file" ;
+    exit 1
