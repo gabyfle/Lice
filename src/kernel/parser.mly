@@ -80,6 +80,10 @@
 
 %%
 
+%inline cases:
+  l = separated_list(PIPE, pattern_match)
+    { l }
+
 let lprog :=
   | EOF; { [] }
   | s = statement; EOF; { [ s ] }
@@ -130,18 +134,13 @@ let pattern ==
   | s = STRING_VALUE; { String(s) }
   | WILDCARD; { Empty }
 
-let pattern_tail ==
-  | { [] }
-  | PIPE; p=pattern_match;
-    { p }
-
 let pattern_match ==
-  | r = pattern; ARROW; b = block; tail=pattern_tail;
-    { (r, b) :: tail }
+  | r = pattern; ARROW; b = block;
+    { (r, b) }
 
 let matching ==
-  | MATCH; LPAREN; expression = expr; RPAREN; WITH; p = pattern_match;
-  { Match($startpos, expression, p) }
+  | MATCH; LPAREN; expression = expr; RPAREN; WITH; c = cases;
+  { Match($startpos, expression, c) }
 
 let binary_operator ==
   | a = expr; op = binop; b = expr;
@@ -177,8 +176,6 @@ let statement ==
   | r = return_call; SEMICOLON; { r }
   | a = assign; SEMICOLON; { a }
   | m = matching; { m }
-  | error;
-    { failwith "an error occurred" }
 
 let expr :=
   | p = parenthesis; { p }

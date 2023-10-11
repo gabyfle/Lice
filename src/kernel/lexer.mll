@@ -37,7 +37,9 @@
               "bool", BOOL;
               "void", VOID;
               "match", MATCH;
-              "with", WITH;]
+              "with", WITH;
+              "true", BOOLEAN(true);
+              "false", BOOLEAN(false)]
 
   let buf = Buffer.create 256
 
@@ -67,16 +69,15 @@ rule token = parse
   | '('             { LPAREN }
   | ')'             { RPAREN }
   | ','             { COMMA }
-  | '{'             { LBRACE }
+  | '{'             { Logger.debug "%s" "Opening block"; LBRACE }
   | '}'             { RBRACE }
   | ';'             { SEMICOLON }
   | ':'             { COLON }
   | '|'             { PIPE }
-  | "->"            { ARROW }
+  | '_'             { WILDCARD }
+  | "->"            { Logger.debug "%s" "Arrow found"; ARROW }
   | '['             { LBRACKET }
   | ']'             { RBRACKET }
-  | "true"          { BOOLEAN(true) }
-  | "false"         { BOOLEAN(false) }
   | eof             { EOF }
   | _               { ILLEGAL }
 
