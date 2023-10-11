@@ -22,13 +22,12 @@
 
 %{
   open Ast.Types  (* Include the AST module *)
-
-  (* exception Syntax_Error of string *)
 %}
 
 %token <string> IDENT
 %token <int> INT
 %token <float> FLOAT
+%token <bool> BOOLEAN
 
 %token <string> STRING_VALUE
 
@@ -40,9 +39,16 @@
 %token BOOL
 %token VOID
 
-(* TYPE SPECIFIC TOKENS *)
+(* Type specific tokens *)
 %token LBRACKET
 %token RBRACKET
+
+(* Pattern matching *)
+%token MATCH
+%token WITH
+%token PIPE
+%token ARROW
+%token WILDCARD
 
 %token COMMA
 %token SEMICOLON
@@ -74,28 +80,33 @@
 
 %%
 
-%inline binop:
-| PLUS { Plus }
-| MINUS { Minus }
-| ASTERISK { Multiply }
-| SLASH { Divide }
-| MOD { Mod }
-
 let lprog :=
   | EOF; { [] }
   | s = statement; EOF; { [ s ] }
   | s = statement; EOL*;  sl = lprog; { s :: sl }
 
+let binop ==
+  | PLUS; { Plus }
+  | MINUS; { Minus }
+  | ASTERISK; { Multiply }
+  | SLASH; { Divide }
+  | MOD; { Mod }
+
 let terminal ==
   | i = INT; { Number (float_of_int i) }
   | i = FLOAT; { Number i }
   | i = IDENT; { Variable (i, T_Auto) }
+  | b = BOOLEAN; { Boolean (b) }
   | s = STRING_VALUE; { String(s) }
   | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET; { List(elems) }
 
 let block ==
   | LBRACE; stmts = list(statement); RBRACE;
   { Block($startpos, stmts) }
+
+let parenthesis ==
+  | LPAREN; p = expr; RPAREN;
+    { p }
 
 let typ ==
   | { T_Auto }
@@ -107,14 +118,30 @@ let typ ==
   | VOID; { T_Void }
 
 let assign ==
-    | LET; t = typ; p = IDENT; ASSIGN; e = expr;
-    { Assign ((p, t), e)}
-    | p = IDENT; ASSIGN; e = expr;
-    { Assign((p, T_Auto), e) }
+  | LET; t = typ; p = IDENT; ASSIGN; e = expr;
+  { Assign ((p, t), e)}
+  | p = IDENT; ASSIGN; e = expr;
+  { Assign((p, T_Auto), e) }
 
-let parenthesis ==
-  | LPAREN; p = expr; RPAREN;
+let pattern ==
+  | b = BOOLEAN; { Boolean (b) }
+  | n = INT; { Number (float_of_int n) }
+  | n = FLOAT; { Number (n) }
+  | s = STRING_VALUE; { String(s) }
+  | WILDCARD; { Empty }
+
+let pattern_tail ==
+  | { [] }
+  | PIPE; p=pattern_match;
     { p }
+
+let pattern_match ==
+  | r = pattern; ARROW; b = block; tail=pattern_tail;
+    { (r, b) :: tail }
+
+let matching ==
+  | MATCH; LPAREN; expression = expr; RPAREN; WITH; p = pattern_match;
+  { Match($startpos, expression, p) }
 
 let binary_operator ==
   | a = expr; op = binop; b = expr;
@@ -149,6 +176,9 @@ let statement ==
   | f = func_def; { f }
   | r = return_call; SEMICOLON; { r }
   | a = assign; SEMICOLON; { a }
+  | m = matching; { m }
+  | error;
+    { failwith "an error occurred" }
 
 let expr :=
   | p = parenthesis; { p }

@@ -34,6 +34,7 @@ type expr =
   | Empty
   | Number of float
   | String of string
+  | Boolean of bool
   | List of expr list
   | Variable of typed_ident
   | BinOp of binary_operator * expr * expr
@@ -45,5 +46,6 @@ and statement =
   | Block of location * statement list
   | Assign of typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement
+  | Match of location * expr * (expr * statement) list
 
 and program = statement list
