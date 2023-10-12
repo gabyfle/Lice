@@ -38,7 +38,7 @@ type expr =
   | List of expr list
   | Variable of typed_ident
   | BinOp of binary_operator * expr * expr
-  | FuncCall of typed_ident * typed_ident list
+  | FuncCall of identificator * typed_ident list
 
 and statement =
   | Return of expr

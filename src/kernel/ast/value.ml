@@ -23,6 +23,7 @@
 open Types
 
 type value =
+  | V_Void
   | V_Number of float
   | V_String of string
   | V_Boolean of bool

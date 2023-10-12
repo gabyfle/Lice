@@ -23,13 +23,17 @@
 open Types
 
 type value =
-  | V_Number of float
-  | V_String of string
-  | V_Boolean of bool
-  | V_List of value list
+  | V_Void
+  | V_Number of float option
+  | V_String of string option
+  | V_Boolean of bool option
+  | V_List of value list option
+  | V_Variable of variable
   | V_Function of function_value
 
 and function_value =
   { parameters: typed_ident list
   ; body: statement
   ; closure_environment: (string, value) Hashtbl.t }
+
+and variable = identificator * value

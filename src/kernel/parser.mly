@@ -160,7 +160,7 @@ let func_call_param ==
 
 let func_call ==
   | p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
-    { FuncCall((p, T_Auto), args) }
+    { FuncCall(p, args) }
 
 let return_call ==
   | RETURN;

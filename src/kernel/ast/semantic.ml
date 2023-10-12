@@ -19,3 +19,76 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
+
+open Types
+open Value
+
+exception Language_Error of location * string
+
+exception Not_Integer
+
+exception Not_Number
+
+module Converter = struct
+  let type_to_value = function
+    | T_Boolean ->
+        V_Boolean None
+    | T_String ->
+        V_String None
+    | T_List ->
+        V_List None
+    | T_Number ->
+        V_Number None
+    | T_Void ->
+        V_Void
+    | T_Auto ->
+        V_Void (* for the moment it's void, subject to changes *)
+
+  let rec expr_to_value = function
+    | Empty ->
+        V_Void
+    | Number n ->
+        V_Number (Some n)
+    | String s ->
+        V_String (Some s)
+    | Boolean b ->
+        V_Boolean (Some b)
+    | Variable (id, t) ->
+        V_Variable (id, type_to_value t)
+    | BinOp (bin, a, b) -> (
+        let a_val = expr_to_value a in
+        let b_val = expr_to_value b in
+        (* Perform the operation or return a default value if a conversion fails *)
+        match (a_val, b_val) with
+        | V_Number (Some a), V_Number (Some b) -> (
+          match bin with
+          | Plus ->
+              V_Number (Some (a +. b))
+          | Minus ->
+              V_Number (Some (a -. b))
+          | Multiply ->
+              V_Number (Some (a *. b))
+          | Divide ->
+              if b = 0. then raise Division_by_zero else V_Number (Some (a /. b))
+          | Mod ->
+              (* this part will surely need to be rewrited as we're casting maybe to many times *)
+              let is_integer x = float_of_int (int_of_float x) = x in
+              if not (is_integer b) then raise Not_Integer
+              else if b = 0. then raise Division_by_zero
+              else
+                let int_a, int_b = (int_of_float a, int_of_float b) in
+                V_Number (Some (float_of_int (int_a mod int_b))) )
+        | _ ->
+            raise Not_Number )
+    | FuncCall (id, params) ->
+        V_Void
+    | List lexpr ->
+        let rec aux acc = function
+          | [] ->
+              V_List (Some (List.rev acc))
+          | h :: t ->
+              let v = expr_to_value h in
+              aux (v :: acc) t
+        in
+        aux [] lexpr
+end
