@@ -80,7 +80,7 @@ module Converter = struct
                 V_Number (Some (float_of_int (int_a mod int_b))) )
         | _ ->
             raise Not_Number )
-    | FuncCall (id, params) ->
+    | FuncCall (_, _) ->
         V_Void
     | List lexpr ->
         let rec aux acc = function
@@ -91,4 +91,26 @@ module Converter = struct
               aux (v :: acc) t
         in
         aux [] lexpr
+
+  let rec statement_to_values = function
+    | Return e -> Return (expr_to_value e)
+    | Expression (loc, e) -> Expression(loc, (expr_to_value e))
+    | Block (loc, stmts) ->
+        let rec aux acc = function
+            | [] -> acc
+            | h :: t -> aux ((statement_to_values h) :: acc) t 
+        in
+        Block (loc, (aux [] stmts))
+    | Assign (t, e) -> Assign(t, (expr_to_value e))
+    | FuncDef (loc, name, params, body) ->
+    | Match (loc,e, cases) ->
+
+  let rec program_to_values =
+    let rec aux acc = function
+      | [] ->
+          acc
+      | h :: t ->
+          aux (statement_to_values h :: acc) t
+    in
+    aux []
 end
