@@ -20,16 +20,17 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Value
+open Ast.Types
 
-module Variable = struct
-  type t = (string, value) Hashtbl.t
+module Scope = struct
+  type t = (string, statement) Hashtbl.t
 
   let create () : t = Hashtbl.create 10
 
-  let get (env : t) (name : string) : value option = Hashtbl.find_opt env name
+  let get (env : t) (name : string) : statement option =
+    Hashtbl.find_opt env name
 
-  let set (env : t) (name : string) (v : value) = Hashtbl.replace env name v
+  let set (env : t) (name : string) (v : statement) = Hashtbl.replace env name v
 
   let push_scope (env : t) : t = Hashtbl.copy env
 
