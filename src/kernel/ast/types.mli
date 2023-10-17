@@ -42,9 +42,9 @@ type expr =
 
 and statement =
   | Return of expr
-  | Expression of location * expr
+  | Expression of location * expr * typ
   | Block of location * statement list
-  | Assign of typed_ident * expr
+  | Assign of location * typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement
   | Match of location * expr * (expr * statement) list
 

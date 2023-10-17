@@ -1,52 +1,18 @@
 # Lice
 Lice language interpreter
 
+## What is Lice ?
 
-## Roadmap
-    - Parser
-      - Variable definitions (done)
-      - Binary operators (done)
-      - Blocks of code (done)
-      - Recursive functions and returns (done)
-      - Comments, nested comments, single line and multi-line comments (done)
-      - Pattern matching (wip)
-      - OCaml-like lists
-    - 
+Lice is a little general purpose interpreted language. It's meant to be easy-to-learn when you know OCaml, C-like languages, and to be as easy to use as Lua.
 
-## Idea of what a program could looks like
+The Lice language doesn't aim to be super-fast neither to have super-extensible standard library. It's primary goal is to be easy to extend for OCaml developer: creating a library written in OCaml for Lice should not be a pain in the ass.
 
-```
-open Stdio
+## State of the project
 
-function main() = {
-    let n = 20;
-    
-    match expr with
-        | a -> b
-        | c -> d
-        | e -> f
-}
+For the moment, this is the very beginning of the project, the parser should work but hasn't been well tested yet, and the surrounding elements of what makes an interpreter aren't yet implemented/do not work yet. The project is still in the "WIP" stage.
 
-```
+Of course the ultimate goal, and also the primary feature of the language will be it's interoperability with OCaml, as well as its module system, to make OCaml developers able to build libraries for Lice in OCaml, but since we do not have something working yet, this will be in the last stage of the development.
 
-```
-open Math
+## Licence
 
--- Syracuse recursive function
-function syracuse (n) = {
-    if (n == 4 || n == 3 || n == 1) then return; end
-    else
-        print(n);
-        match (n % 2) with {
-            | 0 -> return syracuse(3 * n + 1);
-            | 1 -> return syracuse(2 * n);
-        }
-    end
-}
-
-function main() = {
-    let n = Math.random(1, 400);
-    syracuse(n);
-    return 0;
-}
-```
+The Lice interpreter is distributed under the Apache 2.0 licence. See the "LICENCE" file in the main repository to learn more about what you can do/what you can't do with it.

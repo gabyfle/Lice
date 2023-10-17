@@ -122,9 +122,9 @@ let typ ==
 
 let assign ==
   | LET; t = typ; p = IDENT; ASSIGN; e = expr;
-  { Assign ((p, t), e)}
+  { Assign ($startpos, (p, t), e)}
   | p = IDENT; ASSIGN; e = expr;
-  { Assign((p, T_Auto), e) }
+  { Assign ($startpos, (p, T_Auto), e) }
 
 let pattern ==
   | b = BOOLEAN; { Boolean (b) }
@@ -169,7 +169,7 @@ let return_call ==
     { Return(r) }
 
 let statement ==
-  | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p) }
+  | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
   | b = block; { b }
   | f = func_def; { f }
   | r = return_call; SEMICOLON; { r }

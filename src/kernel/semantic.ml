@@ -22,9 +22,10 @@
 
 open Ast.Types
 open Env
+open Utils.Logger
 
 module Typing = struct
-  exception Language_Error of location * string
+  exception Language_Error of string
 
   exception Not_Integer
 
@@ -36,7 +37,9 @@ module Typing = struct
 
   exception Wrong_Parameters_Number of int * int
 
-  exception Wrong_Parameter_Type of identificator * typ * typ
+  exception Wrong_Paramteter_Type of identificator * typ * typ
+
+  exception Wrong_Assign_Type of identificator * typ * typ
 
   let func_call_type_check expected params =
     if List.length expected <> List.length params then
@@ -97,4 +100,39 @@ module Typing = struct
           raise Not_A_Callable )
     | List _ ->
         T_List
+
+  let rec assign_type_check env id expected expression loc =
+    match Scope.get env id with
+    | Some (Expression (_, _, t)) ->
+        let t' = expr_type_check env expression in
+        if t' <> t then raise (Wrong_Assign_Type (id, t, t')) else T_Void
+    | None ->
+        let t = expr_type_check env expression in
+        if t = expected then (
+          Scope.set env id (Expression (loc, expression, t)) ;
+          T_Void )
+        else t
+    | _ ->
+        raise
+          (Language_Error "An error occured while trying to assign a variable")
+
+  let rec stmt_type_check env stmt =
+    match stmt with
+    | Return e ->
+        expr_type_check env e
+    | Expression (loc, e, t_) ->
+        expr_type_check env e
+    | Block (loc, stmts) ->
+        let rec aux = function
+          | [] ->
+              ()
+          | h :: t ->
+              ignore (stmt_type_check env h) ;
+              aux t
+        in
+        aux stmts ; T_Void
+    | Assign (loc, (id, t), e) ->
+        assign_type_check env id t e loc
+    | _ ->
+        T_Auto
 end
