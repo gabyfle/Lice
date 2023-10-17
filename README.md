@@ -13,6 +13,36 @@ For the moment, this is the very beginning of the project, the parser should wor
 
 Of course the ultimate goal, and also the primary feature of the language will be it's interoperability with OCaml, as well as its module system, to make OCaml developers able to build libraries for Lice in OCaml, but since we do not have something working yet, this will be in the last stage of the development.
 
+## Example program
+
+Here is an example program. Note that since the current stage of the project is still "WIP", this syntax may be subject to slight changes.
+
+```lua
+--[[---------------------------
+--     Example program       --
+--                           --
+--    (this is a comment)    --
+-----------------------------]]
+
+-- This program computes x^n
+function power(x, n): number {
+    if (n == 0) { return 1; }
+    match (n % 2) with
+        | 0 -> return power(x * x, n / 2);
+        | 1 -> return power(x, n - 1);
+}
+
+function main(): void {
+    let number x = 30;
+    let number n = 5;
+
+    let number p = power(x, n); --- p = 30^5
+}
+
+main();
+
+```
+
 ## Licence
 
 The Lice interpreter is distributed under the Apache 2.0 licence. See the "LICENCE" file in the main repository to learn more about what you can do/what you can't do with it.
