@@ -43,16 +43,18 @@ module Typing = struct
       raise (Wrong_Parameters_Number (List.length expected, List.length params))
     else
       List.iter2
-        (fun (ty, id) (v, _) ->
-          if ty <> v then raise (Wrong_Parameter_Type (id, ty, v)))
+        (fun (id, ty) (_, v) ->
+          if ty <> v then raise (Wrong_Parameter_Type (id, ty, v)) )
         expected params
 
-  let is_callable (env: Scope.t) (ident: string): bool =
-    match Scope.lookup env ident with
-    | Some (FuncDef _) -> true
-    | Some _ -> false
-    | None -> false
-  
+  let is_callable (env : Scope.t) (ident : string) :
+      (typed_ident * typed_ident list) option =
+    match Scope.get env ident with
+    | Some (FuncDef (_, tid, params, _)) ->
+        Some (tid, params)
+    | _ ->
+        None
+
   let rec expr_type_check env = function
     | Empty ->
         T_Void
@@ -84,22 +86,15 @@ module Typing = struct
             else if v' = 0. then raise Division_by_zero
             else T_Number )
       | _ ->
-          raise Not_Number
-      | FuncCall (ident, params) -> (
-          let t = Scope.get env ident in
-          match t with
-          | Some func -> match func with
-            | FuncDef(_, _, _, _) -> ()
-            | _ -> raise Not_A_Callable
-          | None ->
-              raise Undefined_Function )
-      | List lexpr ->
-          let rec aux acc = function
-            | [] ->
-                acc
-            | h :: t ->
-                let v = expr_type_check env h in
-                if v <> T_Auto then failwith "none"
-          in
-          aux T_Auto lexpr )
+          raise Not_Number )
+    | FuncCall (ident, params) -> (
+      match is_callable env ident with
+      | Some (tid, expected) ->
+          let _, t = tid in
+          func_call_type_check expected params ;
+          t
+      | None ->
+          raise Not_A_Callable )
+    | List _ ->
+        T_List
 end

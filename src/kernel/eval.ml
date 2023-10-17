@@ -19,14 +19,3 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
-
-open Utils.Logger
-
-let parse_code code =
-  let lexbuf = Lexing.from_string code in
-  try
-    Parser.lprog Lexer.token
-      lexbuf (* Use the entry point of your parser, e.g., lprog *)
-  with Parser.Error ->
-    Logger.error "%s" "An error occurred while trying to parse the file" ;
-    exit 1

@@ -20,13 +20,20 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Utils.Logger
+open Ast.Types
 
-let parse_code code =
-  let lexbuf = Lexing.from_string code in
-  try
-    Parser.lprog Lexer.token
-      lexbuf (* Use the entry point of your parser, e.g., lprog *)
-  with Parser.Error ->
-    Logger.error "%s" "An error occurred while trying to parse the file" ;
-    exit 1
+module type SCOPE = sig
+  type t = (string, statement) Hashtbl.t
+
+  val create : unit -> t
+
+  val get : t -> string -> statement option
+
+  val set : t -> string -> statement -> unit
+
+  val push_scope : t -> t
+
+  val pop_scope : t -> unit
+end
+
+module Scope : SCOPE
