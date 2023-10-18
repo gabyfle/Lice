@@ -47,4 +47,4 @@ let () =
   let code = String.concat "\n" code_lines in
   Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
-  Typing.type_check ast;
+  Typing.type_check ast
