@@ -60,6 +60,20 @@ module Typing : TYPING = struct
 
   exception Located_error of exception_type * location
 
+  let is_variable_type env id t =
+    match Scope.get env id with
+    | Some (Expression (_, Empty, t')) ->
+        t = t'
+    | _ ->
+        false
+
+  let get_variable_type env id =
+    match Scope.get env id with
+    | Some (Expression (_, Empty, t)) ->
+        t
+    | _ ->
+        T_Auto
+
   let func_call_type_check expected params loc =
     if List.length expected <> List.length params then
       raise
@@ -90,8 +104,8 @@ module Typing : TYPING = struct
         T_String
     | Boolean _ ->
         T_Boolean
-    | Variable (_, t) ->
-        t
+    | Variable (id, t) ->
+        if t = T_Auto then get_variable_type env id else t
     | BinOp (bin, a, b) -> (
       (* Perform the operation or return a default value if a conversion fails *)
       match (a, b) with
@@ -112,6 +126,12 @@ module Typing : TYPING = struct
             if not (is_integer v') then raise (Located_error (`Not_Integer, loc))
             else if v' = 0. then raise (Located_error (`Division_by_zero, loc))
             else T_Number )
+      | Variable (_, T_Number), Number _ | Number _, Variable (_, T_Number) ->
+          T_Number
+      | Variable (id, T_Auto), Number _ | Number _, Variable (id, T_Auto) ->
+          let is_number = is_variable_type env id T_Number in
+          if is_number then T_Number
+          else raise (Located_error (`Not_Number, loc))
       | _ ->
           raise (Located_error (`Not_Number, loc)) )
     | FuncCall (ident, params) -> (
@@ -131,13 +151,17 @@ module Typing : TYPING = struct
         let t' = expr_type_check env loc expression in
         if t' <> t then
           raise (Located_error (`Wrong_Assign_Type (id, t, t'), loc))
-        else T_Void
+        else (
+          Logger.debug "Pushed variable %s type %s" id (typ_to_string t') ;
+          Scope.set env id (Expression (loc, Empty, t')) ) ;
+        T_Void
     | None ->
         let t = expr_type_check env loc expression in
         if t = expected then (
-          Scope.set env id (Expression (loc, expression, t)) ;
+          Logger.debug "Pushed variable %s type %s" id (typ_to_string t) ;
+          Scope.set env id (Expression (loc, Empty, t)) ;
           T_Void )
-        else t
+        else raise (Located_error (`Wrong_Assign_Type (id, expected, t), loc))
     | _ ->
         raise
           (Located_error
@@ -158,6 +182,12 @@ module Typing : TYPING = struct
     in
     let rec perform_check_stmts = function
       | [] ->
+          Scope.set env fname
+            (FuncDef
+               ( loc
+               , (fname, expected)
+               , params
+               , Expression (loc, Empty, expected) ) ) ;
           T_Void
       | Return (loc', e) :: t ->
           let ret_type = get_return_type loc' e in
@@ -231,15 +261,15 @@ module Typing : TYPING = struct
         Logger.error "%s" str ; exit 1
     | Located_error (`Division_by_zero, loc) ->
         let str =
-          Formatting.misc_error loc "Division by zero occurred. Aborting."
+          Formatting.misc_error loc "Division by zero occurred. Aborting"
         in
         Logger.error "%s" str ; exit 1
     | Located_error (`Undefined_Function, loc) ->
-        let str = Formatting.misc_error loc "Calling an undefined function." in
+        let str = Formatting.misc_error loc "Calling an undefined function" in
         Logger.error "%s" str ; exit 1
     | Located_error (`Not_A_Callable, loc) ->
         let str =
-          Formatting.misc_error loc "Trying to call a non callable object."
+          Formatting.misc_error loc "Trying to call a non callable object"
         in
         Logger.error "%s" str ; exit 1
     | Located_error (`Wrong_Parameters_Number (a, b), loc) ->

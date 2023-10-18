@@ -5,8 +5,17 @@
 -----------------------------]]
 let list a = [c; a; c; d; e; f; e];
 
-let string str = 12;
+let string str = "12";
 
-function testing(a: string): number {
-    return a;
+let string b = "28";
+
+function testing(k: string): number {
+    return 12;
+}
+
+function main(a: number): number {
+    let number c = a + 12;
+    c = c + 21;
+
+    testing(str);
 }

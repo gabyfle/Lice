@@ -38,4 +38,4 @@ let params_number_error (loc : Lexing.position) expected actual =
 let misc_error (loc : Lexing.position) str =
   let char = loc.pos_cnum in
   let line = loc.pos_lnum in
-  Format.sprintf "Langage error: %s. At line %d, character %d." str line char
+  Format.sprintf "%s. At line %d, character %d." str line char
