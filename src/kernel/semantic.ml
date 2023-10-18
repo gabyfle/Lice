@@ -37,9 +37,11 @@ module Typing = struct
 
   exception Wrong_Parameters_Number of int * int
 
-  exception Wrong_Paramteter_Type of identificator * typ * typ
+  exception Wrong_Parameter_Type of identificator * typ * typ
 
   exception Wrong_Assign_Type of identificator * typ * typ
+
+  exception Wrong_Return_Type of identificator * typ * typ
 
   let func_call_type_check expected params =
     if List.length expected <> List.length params then
@@ -116,13 +118,38 @@ module Typing = struct
         raise
           (Language_Error "An error occured while trying to assign a variable")
 
-  let rec stmt_type_check env stmt =
+  let rec funcdef_type_check env (fname : identificator) (expected : typ) params
+      stmts loc =
+    (* we first need to create all the needed variables inside our function scope *)
+    let scope = Scope.push_scope env in
+    List.iter
+      (fun (id, ty) -> Scope.set scope id (Expression (loc, Empty, ty)))
+      params ;
+    let get_return_type expression =
+      let ret_typ = expr_type_check scope expression in
+      ret_typ
+    in
+    let rec perform_check_stmts = function
+      | [] ->
+          T_Void
+      | Return e :: t ->
+          let ret_type = get_return_type e in
+          if ret_type <> expected then
+            raise (Wrong_Return_Type (fname, expected, ret_type))
+          else perform_check_stmts t
+      | h :: t ->
+          ignore (stmt_type_check scope h) ;
+          perform_check_stmts t
+    in
+    perform_check_stmts stmts
+
+  and stmt_type_check env stmt =
     match stmt with
     | Return e ->
         expr_type_check env e
-    | Expression (loc, e, t_) ->
+    | Expression (_, e, _) ->
         expr_type_check env e
-    | Block (loc, stmts) ->
+    | Block (_, stmts) ->
         let rec aux = function
           | [] ->
               ()

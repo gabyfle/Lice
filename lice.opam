@@ -1,0 +1,15 @@
+opam-version: "2.1.2"
+name: "lice-lang"
+version: "0.0.1-dev"
+description: "The official Lice language interpreter"
+maintainer: "Gariel Santamaria (gaby.santamaria@outlook.fr)"
+authors: "Gabriel Santamaria (gaby.santamaria@outlook.fr)"
+depends: [
+  "ocaml" {>= "4.10.0"}
+  "dune" {>= "2.7.0"}
+  "odoc" {with-doc}
+  "ocamlformat" {with-test}
+  "ANSITerminal"
+]
+build: ["dune" "build" "ocamlopt"]
+install: ["ocamlbuild" "-install"]
