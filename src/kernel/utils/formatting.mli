@@ -21,3 +21,7 @@
 (*****************************************************************************)
 
 val typing_error : Lexing.position -> string -> string -> string
+
+val params_number_error : Lexing.position -> int -> int -> string
+
+val misc_error : Lexing.position -> string -> string

@@ -47,7 +47,7 @@
 }
 
 rule token = parse
-  | [' ' '\t']+     { token lexbuf } (* Skip whitespace *)
+  | [' ' '\t']+     { token lexbuf; } (* Skip whitespace *)
   | ['\n' ]         { token lexbuf }
   | "--[["          { comments lexbuf } (* Comment starting *)
   | '\"'            { string lexbuf } (* String starting *)

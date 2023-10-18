@@ -26,3 +26,16 @@ let typing_error (loc : Lexing.position) expected actual =
   Format.sprintf
     "Wrong types. Expected type %s but got type %s at line %d, character %d."
     expected actual line char
+
+let params_number_error (loc : Lexing.position) expected actual =
+  let char = loc.pos_cnum in
+  let line = loc.pos_lnum in
+  Format.sprintf
+    "Wrong parameters number. Expected %d parameter(s) but got type %d instead \
+     at line %d, character %d."
+    expected actual line char
+
+let misc_error (loc : Lexing.position) str =
+  let char = loc.pos_cnum in
+  let line = loc.pos_lnum in
+  Format.sprintf "Langage error: %s. At line %d, character %d." str line char

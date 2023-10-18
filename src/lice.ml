@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Kernel
+open Semantic
 open Utils.Logger
 
 let () =
@@ -46,4 +47,4 @@ let () =
   let code = String.concat "\n" code_lines in
   Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
-  ignore ast
+  Typing.type_check ast;

@@ -41,7 +41,7 @@ type expr =
   | FuncCall of identificator * typed_ident list
 
 and statement =
-  | Return of expr
+  | Return of location * expr
   | Expression of location * expr * typ
   | Block of location * statement list
   | Assign of location * typed_ident * expr
@@ -49,3 +49,5 @@ and statement =
   | Match of location * expr * (expr * statement) list
 
 and program = statement list
+
+val typ_to_string : typ -> string

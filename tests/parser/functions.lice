@@ -5,16 +5,8 @@
 -----------------------------]]
 let list a = [c; a; c; d; e; f; e];
 
-let string str = "This is a string";
+let string str = 12;
 
-function func(): string {
-    let string k = e;
+function testing(a: string): number {
     return a;
-}
-
-function main(a: string, b: string): void {
-    let string c = a + b;
-    c = a / b;
-
-    return;
 }

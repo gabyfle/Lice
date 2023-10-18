@@ -19,3 +19,26 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
+
+open Ast.Types
+
+module type TYPING = sig
+    type exception_type =
+      [ `Language_Error of string
+      | `Not_Integer
+      | `Not_Number
+      | `Division_by_zero
+      | `Undefined_Function
+      | `Not_A_Callable
+      | `Wrong_Parameters_Number of int * int
+      | `Wrong_Parameter_Type of identificator * typ * typ
+      | `Wrong_Assign_Type of identificator * typ * typ
+      | `Wrong_Return_Type of identificator * typ * typ
+      | `Wrong_Case_Type of typ * typ ]
+
+    exception Located_error of exception_type * location
+
+    val type_check : program -> unit
+  end
+
+module Typing : TYPING

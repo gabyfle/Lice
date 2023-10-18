@@ -164,9 +164,9 @@ let func_call ==
 
 let return_call ==
   | RETURN;
-    { Return(Empty) }
+    { Return($startpos, Empty) }
   | RETURN; r = expr;
-    { Return(r) }
+    { Return($startpos, r) }
 
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
