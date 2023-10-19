@@ -33,7 +33,7 @@ module type TYPING = sig
     | `Division_by_zero
     | `Undefined_Function
     | `Not_A_Callable
-    | `Wrong_Parameters_Number of int * int
+    | `Wrong_Parameters_Number of identificator * int * int
     | `Wrong_Parameter_Type of identificator * typ * typ
     | `Wrong_Assign_Type of identificator * typ * typ
     | `Wrong_Return_Type of identificator * typ * typ
@@ -52,7 +52,7 @@ module Typing : TYPING = struct
     | `Division_by_zero
     | `Undefined_Function
     | `Not_A_Callable
-    | `Wrong_Parameters_Number of int * int
+    | `Wrong_Parameters_Number of identificator * int * int
     | `Wrong_Parameter_Type of identificator * typ * typ
     | `Wrong_Assign_Type of identificator * typ * typ
     | `Wrong_Return_Type of identificator * typ * typ
@@ -74,16 +74,18 @@ module Typing : TYPING = struct
     | _ ->
         T_Auto
 
-  let func_call_type_check expected params loc =
+  let func_call_type_check (env : Scope.t) fname expected params loc =
     if List.length expected <> List.length params then
       raise
         (Located_error
-           ( `Wrong_Parameters_Number (List.length expected, List.length params)
+           ( `Wrong_Parameters_Number
+               (fname, List.length expected, List.length params)
            , loc ) )
     else
       List.iter2
-        (fun (id, ty) (_, v) ->
-          if ty <> v then
+        (fun (id, ty) (id', v) ->
+          let ptyp = get_variable_type env id' in
+          if ty <> ptyp then
             raise (Located_error (`Wrong_Parameter_Type (id, ty, v), loc)) )
         expected params
 
@@ -91,11 +93,14 @@ module Typing : TYPING = struct
       (typed_ident * typed_ident list) option =
     match Scope.get env ident with
     | Some (FuncDef (_, tid, params, _)) ->
+        let _, t = tid in
+        Logger.info "Type of the return of the function call: %s"
+          (typ_to_string t) ;
         Some (tid, params)
     | _ ->
         None
 
-  let expr_type_check env (loc : location) = function
+  let rec expr_type_check env (loc : location) = function
     | Empty ->
         T_Void
     | Number _ ->
@@ -126,19 +131,32 @@ module Typing : TYPING = struct
             if not (is_integer v') then raise (Located_error (`Not_Integer, loc))
             else if v' = 0. then raise (Located_error (`Division_by_zero, loc))
             else T_Number )
-      | Variable (_, T_Number), Number _ | Number _, Variable (_, T_Number) ->
+      | Variable (_, T_Number), Number _
+      | Number _, Variable (_, T_Number)
+      | Variable (_, T_Number), Variable (_, T_Number) ->
           T_Number
       | Variable (id, T_Auto), Number _ | Number _, Variable (id, T_Auto) ->
           let is_number = is_variable_type env id T_Number in
           if is_number then T_Number
           else raise (Located_error (`Not_Number, loc))
+      | Variable(id, t), Variable(id', t') -> (
+        let typ_v1 = expr_type_check env loc (Variable(id, t)) in
+        let typ_v2 = expr_type_check env loc (Variable(id', t')) in
+        if typ_v1 <> T_Number && typ_v2 <> T_Number then raise (Located_error (`Not_Number, loc))
+        else T_Number
+      )
+      | FuncCall (id, params), Number _ | Number _, FuncCall (id, params) ->
+          let func_ret_type = expr_type_check env loc (FuncCall (id, params)) in
+          if func_ret_type <> T_Number then
+            raise (Located_error (`Not_Number, loc))
+          else T_Number
       | _ ->
           raise (Located_error (`Not_Number, loc)) )
     | FuncCall (ident, params) -> (
       match is_callable env ident with
       | Some (tid, expected) ->
           let _, t = tid in
-          func_call_type_check expected params loc ;
+          func_call_type_check env ident expected params loc ;
           t
       | None ->
           raise (Located_error (`Not_A_Callable, loc)) )
@@ -169,6 +187,12 @@ module Typing : TYPING = struct
                  "An error occured while trying to assign a variable"
              , loc ) )
 
+  let add_func_to_scope env (fname : identificator) (expected : typ) params loc
+      =
+    Scope.set env fname
+      (FuncDef
+         (loc, (fname, expected), params, Expression (loc, Empty, expected)) )
+
   let rec funcdef_type_check env (fname : identificator) (expected : typ) params
       stmts loc =
     (* we first need to create all the needed variables inside our function scope *)
@@ -176,18 +200,15 @@ module Typing : TYPING = struct
     List.iter
       (fun (id, ty) -> Scope.set scope id (Expression (loc, Empty, ty)))
       params ;
+    (* to allow recursivity, we add it to the local scope of the function *)
+    add_func_to_scope scope fname expected params loc ;
     let get_return_type ret_loc expression =
       let ret_typ = expr_type_check scope ret_loc expression in
       ret_typ
     in
     let rec perform_check_stmts = function
       | [] ->
-          Scope.set env fname
-            (FuncDef
-               ( loc
-               , (fname, expected)
-               , params
-               , Expression (loc, Empty, expected) ) ) ;
+          add_func_to_scope env fname expected params loc ;
           T_Void
       | Return (loc', e) :: t ->
           let ret_type = get_return_type loc' e in
@@ -272,8 +293,8 @@ module Typing : TYPING = struct
           Formatting.misc_error loc "Trying to call a non callable object"
         in
         Logger.error "%s" str ; exit 1
-    | Located_error (`Wrong_Parameters_Number (a, b), loc) ->
-        let str = Formatting.params_number_error loc a b in
+    | Located_error (`Wrong_Parameters_Number (fname, a, b), loc) ->
+        let str = Formatting.params_number_error loc fname a b in
         Logger.error "%s" str ; exit 1
     | Located_error (`Wrong_Parameter_Type (_, a, b), loc)
     | Located_error (`Wrong_Assign_Type (_, a, b), loc)

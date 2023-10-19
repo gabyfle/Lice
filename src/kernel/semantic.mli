@@ -30,7 +30,7 @@ module type TYPING = sig
     | `Division_by_zero
     | `Undefined_Function
     | `Not_A_Callable
-    | `Wrong_Parameters_Number of int * int
+    | `Wrong_Parameters_Number of identificator * int * int
     | `Wrong_Parameter_Type of identificator * typ * typ
     | `Wrong_Assign_Type of identificator * typ * typ
     | `Wrong_Return_Type of identificator * typ * typ
