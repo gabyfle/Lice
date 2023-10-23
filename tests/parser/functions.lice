@@ -1,21 +1,21 @@
 --[[---------------------------
---     Testing program       --
+--     Example program       --
 --                           --
---                           --
+--    (this is a comment)    --
 -----------------------------]]
-let list a = [c; a; c; d; e; f; e];
 
-let string str = "12";
-
-let string b = "28";
-
-function testing(k: string): number {
-    return 12;
+function power(x: number, n: number): number {
+    match x % 2 with {
+        | 0 -> return power(x * x, n / 2);
+        | 1 -> return power(x, n - 1);
+    }
 }
 
-function main(a: number): number {
-    let number c = a + 12;
-    c = c + 21;
+function main(): void {
+    let number x = 30;
+    let number n = 5;
 
-    testing(str);
+    let number p = power(x, n);
 }
+
+main();

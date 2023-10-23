@@ -74,21 +74,6 @@ module Typing : TYPING = struct
     | _ ->
         T_Auto
 
-  let func_call_type_check (env : Scope.t) fname expected params loc =
-    if List.length expected <> List.length params then
-      raise
-        (Located_error
-           ( `Wrong_Parameters_Number
-               (fname, List.length expected, List.length params)
-           , loc ) )
-    else
-      List.iter2
-        (fun (id, ty) (id', v) ->
-          let ptyp = get_variable_type env id' in
-          if ty <> ptyp then
-            raise (Located_error (`Wrong_Parameter_Type (id, ty, v), loc)) )
-        expected params
-
   let is_callable (env : Scope.t) (ident : string) :
       (typed_ident * typed_ident list) option =
     match Scope.get env ident with
@@ -139,12 +124,12 @@ module Typing : TYPING = struct
           let is_number = is_variable_type env id T_Number in
           if is_number then T_Number
           else raise (Located_error (`Not_Number, loc))
-      | Variable(id, t), Variable(id', t') -> (
-        let typ_v1 = expr_type_check env loc (Variable(id, t)) in
-        let typ_v2 = expr_type_check env loc (Variable(id', t')) in
-        if typ_v1 <> T_Number && typ_v2 <> T_Number then raise (Located_error (`Not_Number, loc))
-        else T_Number
-      )
+      | Variable (id, t), Variable (id', t') ->
+          let typ_v1 = expr_type_check env loc (Variable (id, t)) in
+          let typ_v2 = expr_type_check env loc (Variable (id', t')) in
+          if typ_v1 <> T_Number && typ_v2 <> T_Number then
+            raise (Located_error (`Not_Number, loc))
+          else T_Number
       | FuncCall (id, params), Number _ | Number _, FuncCall (id, params) ->
           let func_ret_type = expr_type_check env loc (FuncCall (id, params)) in
           if func_ret_type <> T_Number then
@@ -163,20 +148,33 @@ module Typing : TYPING = struct
     | List _ ->
         T_List
 
+  and func_call_type_check (env : Scope.t) fname expected (params : expr list)
+      loc =
+    if List.length expected <> List.length params then
+      raise
+        (Located_error
+           ( `Wrong_Parameters_Number
+               (fname, List.length expected, List.length params)
+           , loc ) )
+    else
+      List.iter2
+        (fun (id, ty) e ->
+          let ptyp = expr_type_check env loc e in
+          if ty <> ptyp then
+            raise (Located_error (`Wrong_Parameter_Type (id, ty, ptyp), loc)) )
+        expected params
+
   let assign_type_check env id expected expression loc =
     match Scope.get env id with
     | Some (Expression (_, _, t)) ->
         let t' = expr_type_check env loc expression in
         if t' <> t then
           raise (Located_error (`Wrong_Assign_Type (id, t, t'), loc))
-        else (
-          Logger.debug "Pushed variable %s type %s" id (typ_to_string t') ;
-          Scope.set env id (Expression (loc, Empty, t')) ) ;
+        else Scope.set env id (Expression (loc, Empty, t')) ;
         T_Void
     | None ->
         let t = expr_type_check env loc expression in
         if t = expected then (
-          Logger.debug "Pushed variable %s type %s" id (typ_to_string t) ;
           Scope.set env id (Expression (loc, Empty, t)) ;
           T_Void )
         else raise (Located_error (`Wrong_Assign_Type (id, expected, t), loc))
@@ -223,14 +221,22 @@ module Typing : TYPING = struct
     in
     perform_check_stmts stmts
 
-  and match_type_check env match_expr (cases : (expr * statement) list) loc =
+  and match_type_check env match_expr (cases : (expr * statement list) list) loc
+      =
+    let rec ignore_iter f = function
+      | [] ->
+          ()
+      | h :: t ->
+          ignore (f h) ;
+          ignore_iter f t
+    in
     let mtyp = expr_type_check env loc match_expr in
     (* the type of the match *)
-    let check_cases ((e : expr), (stmt : statement)) =
+    let check_cases ((e : expr), (stmts : statement list)) =
       let ctyp = expr_type_check env loc e in
       if ctyp <> mtyp then
         raise (Located_error (`Wrong_Case_Type (mtyp, ctyp), loc))
-      else ignore (stmt_type_check env stmt)
+      else ignore_iter (stmt_type_check env) stmts
     in
     List.iter check_cases cases
 

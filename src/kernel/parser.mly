@@ -50,6 +50,10 @@
 %token ARROW
 %token WILDCARD
 
+(* Branching *)
+%token IF
+%token ELSE
+
 %token COMMA
 %token SEMICOLON
 %token COLON
@@ -80,12 +84,9 @@
 
 %%
 
-%inline cases:
-  l = separated_list(PIPE, pattern_match)
-    { l }
-
 let lprog :=
   | EOF; { [] }
+  | f = func_def; { [f] }
   | s = statement; EOF; { [ s ] }
   | s = statement; EOL*;  sl = lprog; { s :: sl }
 
@@ -133,13 +134,19 @@ let pattern ==
   | s = STRING_VALUE; { String(s) }
   | WILDCARD; { Empty }
 
-let pattern_match ==
-  | r = pattern; ARROW; b = block;
-    { (r, b) }
+let match_expr ==
+  | MATCH; e = expr; WITH; LBRACE; m = match_cases; RBRACE;
+  { Match($startpos, e, m) }
 
-let matching ==
-  | MATCH; LPAREN; expression = expr; RPAREN; WITH; c = cases;
-  { Match($startpos, expression, c) }
+let match_cases :=
+  | PIPE; h = match_case; t = match_cases;
+  { h :: t }
+  | PIPE; h = match_case;
+  { [h] }
+
+let match_case :=
+  | p = pattern; ARROW; b = statement;
+  { (p, [b]) }
 
 let binary_operator ==
   | a = expr; op = binop; b = expr;
@@ -156,7 +163,7 @@ let func_def ==
     { FuncDef($startpos, (p, t), args, b) }
 
 let func_call_param ==
-  | p = IDENT; { (p, T_Auto) }
+  | p = expr; { p }
 
 let func_call ==
   | p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
@@ -168,13 +175,16 @@ let return_call ==
   | RETURN; r = expr;
     { Return($startpos, r) }
 
+let if_branching ==
+  | IF; LPAREN; e = expr; RPAREN; f = expr; SEMICOLON;
+  | IF; LPAREN; e = expr; RPAREN; b = block;
+
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
   | b = block; { b }
-  | f = func_def; { f }
   | r = return_call; SEMICOLON; { r }
   | a = assign; SEMICOLON; { a }
-  | m = matching; { m }
+  | m = match_expr; { m }
 
 let expr :=
   | p = parenthesis; { p }

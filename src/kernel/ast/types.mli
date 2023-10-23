@@ -38,7 +38,7 @@ type expr =
   | List of expr list
   | Variable of typed_ident
   | BinOp of binary_operator * expr * expr
-  | FuncCall of identificator * typed_ident list
+  | FuncCall of identificator * expr list
 
 and statement =
   | Return of location * expr
@@ -46,7 +46,7 @@ and statement =
   | Block of location * statement list
   | Assign of location * typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement
-  | Match of location * expr * (expr * statement) list
+  | Match of location * expr * (expr * statement list) list
 
 and program = statement list
 

@@ -13,33 +13,54 @@ For the moment, this is the very beginning of the project, the parser should wor
 
 Of course the ultimate goal, and also the primary feature of the language will be it's interoperability with OCaml, as well as its module system, to make OCaml developers able to build libraries for Lice in OCaml, but since we do not have something working yet, this will be in the last stage of the development.
 
-## Example program
+## Example programs
 
-Here is an example program. Note that since the current stage of the project is still "WIP", this syntax may be subject to slight changes.
+Here are some example programs. Note that since the current stage of the project is still "WIP", this syntax may be subject to slight changes.
+
+#### Recursive power function
+
+This little snippet shows how you can compute x^n when n is an integer. It uses a recursive function as well as pattern matching in order to achieve the computation.
 
 ```lua
 --[[---------------------------
---     Example program       --
+--    Recursive power func   --
 --                           --
 --    (this is a comment)    --
 -----------------------------]]
 
--- This program computes x^n
 function power(x, n): number {
     if (n == 0) { return 1; }
-    match (n % 2) with
+    match (x % 2) with {
         | 0 -> return power(x * x, n / 2);
         | 1 -> return power(x, n - 1);
+    }
 }
 
 function main(): void {
     let number x = 30;
     let number n = 5;
 
-    let number p = power(x, n); --- p = 30^5
+    let number p = power(x, n);
+}
+```
+
+#### Count to ten
+
+This program demonstrate how to count to ten using a recursive function. Note: if we're using recursive functions for the moment, it's because we don't have any loop system in the language.
+
+```lua
+--[[---------------------------
+--    Recursive power func   --
+--                           --
+--    (this is a comment)    --
+-----------------------------]]
+
+function main(x: number): number {
+    if (x == 10) { return x; }
+    main(x + 1);
 }
 
-main();
+main(0);
 
 ```
 

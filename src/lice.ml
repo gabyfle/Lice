@@ -24,6 +24,12 @@ open Kernel
 open Semantic
 open Utils.Logger
 
+let time f x =
+  let t = Sys.time () in
+  let fx = f x in
+  Printf.printf "Execution time: %fs\n" (Sys.time () -. t) ;
+  fx
+
 let () =
   let executable_dir =
     match Sys.argv with
@@ -45,6 +51,6 @@ let () =
   let code_lines = read_code [] in
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
-  Logger.set_level ["Debug"; "Info"; "Error"] ;
+  Logger.set_level ["Error"] ;
   let ast = parse_code code in
-  Typing.type_check ast
+  time Typing.type_check ast

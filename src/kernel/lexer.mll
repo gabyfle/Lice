@@ -38,6 +38,8 @@
               "void", VOID;
               "match", MATCH;
               "with", WITH;
+              "if", IF;
+              "else", ELSE;
               "true", BOOLEAN(true);
               "false", BOOLEAN(false)]
 
@@ -49,7 +51,7 @@
 rule token = parse
   | [' ' '\t']+     { token lexbuf; } (* Skip whitespace *)
   | ['\n' ]         { token lexbuf }
-  | "--[["          { comments lexbuf } (* Comment starting *)
+  | "--[["          { block_comments lexbuf } (* Block comment starting *)
   | '\"'            { string lexbuf } (* String starting *)
   | ['0'-'9']+ as lxm { INT(int_of_string lxm) }
   | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] * as id
@@ -81,9 +83,9 @@ rule token = parse
   | eof             { EOF }
   | _               { ILLEGAL }
 
-and comments = parse (* we're skipping everything inside multilines comments *)
+and block_comments = parse (* we're skipping everything inside multilines comments *)
   | "]]" { token lexbuf }
-  | _    { comments lexbuf }
+  | _    { block_comments lexbuf }
 
 and string = parse
   | '\"' { STRING_VALUE (Buffer.contents buf) }
