@@ -22,7 +22,6 @@
 
 {
   open Parser
-  open Utils.Logger
   let keyword_table = Hashtbl.create 20
 
   let _ =
@@ -50,17 +49,14 @@
 
 rule token = parse
   | [' ' '\t']+     { token lexbuf; } (* Skip whitespace *)
-  | ['\n' ]         { token lexbuf }
+  | ['\n' ]         { Lexing.new_line lexbuf; token lexbuf }
   | "--[["          { block_comments lexbuf } (* Block comment starting *)
   | '\"'            { string lexbuf } (* String starting *)
   | ['0'-'9']+ as lxm { INT(int_of_string lxm) }
   | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] * as id
                     { try
-                        Logger.debug "Identifier: %s" id;
-                        let q = Hashtbl.find keyword_table id in
-                        Logger.debug "Found identifier %s" id; q
+                        Hashtbl.find keyword_table id
                       with Not_found ->
-                        Logger.debug "Not found identifier in keywords: %s" id;
                         IDENT id }
   | '+'             { PLUS }
   | '-'             { MINUS }
@@ -71,13 +67,13 @@ rule token = parse
   | '('             { LPAREN }
   | ')'             { RPAREN }
   | ','             { COMMA }
-  | '{'             { Logger.debug "%s" "Opening block"; LBRACE }
+  | '{'             { LBRACE }
   | '}'             { RBRACE }
   | ';'             { SEMICOLON }
   | ':'             { COLON }
   | '|'             { PIPE }
   | '_'             { WILDCARD }
-  | "->"            { Logger.debug "%s" "Arrow found"; ARROW }
+  | "->"            { ARROW }
   | '['             { LBRACKET }
   | ']'             { RBRACKET }
   | eof             { EOF }
@@ -85,6 +81,7 @@ rule token = parse
 
 and block_comments = parse (* we're skipping everything inside multilines comments *)
   | "]]" { token lexbuf }
+  | "\n" { Lexing.new_line lexbuf; block_comments lexbuf }
   | _    { block_comments lexbuf }
 
 and string = parse

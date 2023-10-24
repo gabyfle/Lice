@@ -34,7 +34,8 @@ module type TYPING = sig
     | `Wrong_Parameter_Type of identificator * typ * typ
     | `Wrong_Assign_Type of identificator * typ * typ
     | `Wrong_Return_Type of identificator * typ * typ
-    | `Wrong_Case_Type of typ * typ ]
+    | `Wrong_Case_Type of typ * typ
+    | `Wrong_Type of typ * typ ]
 
   exception Located_error of exception_type * location
 

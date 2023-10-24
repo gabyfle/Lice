@@ -3,11 +3,8 @@
 --                           --
 --    (this is a comment)    --
 -----------------------------]]
-
 function power(x: number, n: number): number {
-    if (true) {
-        return 3;
-    } else return 4;
+    if (true) return x;
     match x % 2 with {
         | 0 -> return power(x * x, n / 2);
         | 1 -> return power(x, n - 1);

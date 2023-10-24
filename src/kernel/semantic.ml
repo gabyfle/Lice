@@ -37,7 +37,8 @@ module type TYPING = sig
     | `Wrong_Parameter_Type of identificator * typ * typ
     | `Wrong_Assign_Type of identificator * typ * typ
     | `Wrong_Return_Type of identificator * typ * typ
-    | `Wrong_Case_Type of typ * typ ]
+    | `Wrong_Case_Type of typ * typ
+    | `Wrong_Type of typ * typ ]
 
   exception Located_error of exception_type * location
 
@@ -56,7 +57,8 @@ module Typing : TYPING = struct
     | `Wrong_Parameter_Type of identificator * typ * typ
     | `Wrong_Assign_Type of identificator * typ * typ
     | `Wrong_Return_Type of identificator * typ * typ
-    | `Wrong_Case_Type of typ * typ ]
+    | `Wrong_Case_Type of typ * typ
+    | `Wrong_Type of typ * typ ]
 
   exception Located_error of exception_type * location
 
@@ -183,6 +185,15 @@ module Typing : TYPING = struct
             raise (Located_error (`Wrong_Parameter_Type (id, ty, ptyp), loc)) )
         expected params
 
+  (* assign_type_check [env] [id] [expected] [expression] [loc] performs a type
+     check on an assign statement. it does check that the given expression has
+     the correct type expected by the variable definition
+
+     [env] is the current environement we're doing the assign in, [id] is the
+     name of the variable we're creating and/or assigning. [expected] is the
+     expected type, given during the assign [expression] is the expression we're
+     trying to assign to the variable and [loc] is the location of the
+     statement *)
   let assign_type_check env id expected expression loc =
     match Scope.get env id with
     | Some (Expression (_, _, t)) ->
@@ -204,12 +215,22 @@ module Typing : TYPING = struct
                  "An error occured while trying to assign a variable"
              , loc ) )
 
+  (* add_func_to_scope [env] [fname] [expected] [params] [loc] adds a new
+     function to the scope given in parameter.
+
+     [env] is the actual scope [fname] is the name of the function to add
+     [expected] is the expected return type of the function [params] are the
+     expected params of the function and [loc] is the location of the function
+     definition *)
   let add_func_to_scope env (fname : identificator) (expected : typ) params loc
       =
     Scope.set env fname
       (FuncDef
          (loc, (fname, expected), params, Expression (loc, Empty, expected)) )
 
+  (* funcdef_type_check [env] [fname] [expected] [params] performs a type check
+     on the defined function [fname]. Same parameters than add_func_to_scope
+     excepted for [stmts] which is the list of the statements of the function *)
   let rec funcdef_type_check env (fname : identificator) (expected : typ) params
       stmts loc =
     (* we first need to create all the needed variables inside our function
@@ -233,7 +254,7 @@ module Typing : TYPING = struct
           if ret_type <> expected then
             raise
               (Located_error
-                 (`Wrong_Return_Type (fname, expected, ret_type), loc) )
+                 (`Wrong_Return_Type (fname, expected, ret_type), loc') )
           else perform_check_stmts t
       | h :: t ->
           ignore (stmt_type_check scope h) ;
@@ -288,9 +309,20 @@ module Typing : TYPING = struct
     | Match (loc, expression, cases) ->
         match_type_check env expression cases loc ;
         T_Void
-    | If (_, _, _, _) ->
-        T_Void
+    | If (loc, cond, pass, break) ->
+        (* pass: stmts when the cond is true; break: stmts when the cond is
+           false *)
+        let cond_typ = expr_type_check env loc cond in
+        if cond_typ <> T_Boolean then
+          raise (Located_error (`Wrong_Case_Type (T_Boolean, cond_typ), loc))
+        else (
+          ignore (stmt_type_check env pass) ;
+          ignore (stmt_type_check env break) ;
+          T_Void )
 
+  (* handle_type_exception is an helper function that allows to display nice
+     error messages and to handle Located_error exception during the type
+     checking process. *)
   let handle_type_exception f a b =
     try f a b with
     | Located_error (`Language_Error s, loc) ->
@@ -327,12 +359,18 @@ module Typing : TYPING = struct
     | Located_error (`Wrong_Parameter_Type (_, a, b), loc)
     | Located_error (`Wrong_Assign_Type (_, a, b), loc)
     | Located_error (`Wrong_Return_Type (_, a, b), loc)
-    | Located_error (`Wrong_Case_Type (a, b), loc) ->
+    | Located_error (`Wrong_Case_Type (a, b), loc)
+    | Located_error (`Wrong_Type (a, b), loc) ->
         let ta = typ_to_string a in
         let tb = typ_to_string b in
         let str = Formatting.typing_error loc ta tb in
         Logger.error "%s" str ; exit 1
 
+  (* type_check [p] is the main entry of the type checking module. it performs a
+     type check using all the above functions on the statement list given in
+     parameter
+
+     [p] is the program to type check (which is, a statement list) *)
   let type_check (p : program) =
     let global_scope = Scope.create () in
     let rec aux = function

@@ -21,22 +21,21 @@
 (*****************************************************************************)
 
 let typing_error (loc : Lexing.position) expected actual =
-  let char = loc.pos_cnum in
+  let char = loc.pos_cnum - loc.pos_bol in
   let line = loc.pos_lnum in
-  Format.sprintf
-    "Wrong types. Expected type %s but got type %s at line %d, character %d."
-    expected actual line char
+  Format.sprintf "Expected a %s but got a %s at line %d, character %d." expected
+    actual line char
 
 let params_number_error (loc : Lexing.position) (fname : string) expected actual
     =
-  let char = loc.pos_cnum in
+  let char = loc.pos_cnum - loc.pos_bol in
   let line = loc.pos_lnum in
   Format.sprintf
-    "Wrong parameters number in call of function %s. Expected %d parameter(s) \
-     but got type %d instead at line %d, character %d."
+    "Function %s expect %d parameters but called with %d parameter(s) at line \
+     %d, character %d."
     fname expected actual line char
 
 let misc_error (loc : Lexing.position) str =
-  let char = loc.pos_cnum in
+  let char = loc.pos_cnum - loc.pos_bol in
   let line = loc.pos_lnum in
   Format.sprintf "%s. At line %d, character %d." str line char
