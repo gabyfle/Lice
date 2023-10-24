@@ -85,6 +85,15 @@ module Typing : TYPING = struct
     | _ ->
         None
 
+  (* expr_type [env] [loc] [expr] performs a type check on the given expression
+
+     [env] is the current environement on which we're doing the check [loc] is
+     the location of the expression we're currently checking [expr] is the
+     actual expression to check
+
+     this function is recursive. in the near future, if we have performances
+     problems, we might check back this function to improve performaces as i'm
+     pretty sure every troubles will come from this file :p *)
   let rec expr_type_check env (loc : location) = function
     | Empty ->
         T_Void
@@ -97,7 +106,8 @@ module Typing : TYPING = struct
     | Variable (id, t) ->
         if t = T_Auto then get_variable_type env id else t
     | BinOp (bin, a, b) -> (
-      (* Perform the operation or return a default value if a conversion fails *)
+      (* Perform the operation or return a default value if a conversion
+         fails *)
       match (a, b) with
       | Number _, Number v' -> (
         match bin with
@@ -111,7 +121,8 @@ module Typing : TYPING = struct
             if v' = 0. then raise (Located_error (`Division_by_zero, loc))
             else T_Number
         | Mod ->
-            (* this part will surely need to be rewrited as we're casting maybe to many times *)
+            (* this part will surely need to be rewrited as we're casting maybe
+               to many times *)
             let is_integer x = float_of_int (int_of_float x) = x in
             if not (is_integer v') then raise (Located_error (`Not_Integer, loc))
             else if v' = 0. then raise (Located_error (`Division_by_zero, loc))
@@ -148,6 +159,14 @@ module Typing : TYPING = struct
     | List _ ->
         T_List
 
+  (* func_call_type_check [env] [fname: string] [expected] [params] performs a
+     type check on a function call. it does checks that all given parameters do
+     have the correct type when calling the given function
+
+     [env] is the current scope on which we're doing the check [fname] is the
+     function name, used to retreive function's properties into the environement
+     [expected] are the actual expected parameters types [params] is a list of
+     expressions given as parameters when doing the function call *)
   and func_call_type_check (env : Scope.t) fname expected (params : expr list)
       loc =
     if List.length expected <> List.length params then
@@ -193,7 +212,8 @@ module Typing : TYPING = struct
 
   let rec funcdef_type_check env (fname : identificator) (expected : typ) params
       stmts loc =
-    (* we first need to create all the needed variables inside our function scope *)
+    (* we first need to create all the needed variables inside our function
+       scope *)
     let scope = Scope.push_scope env in
     List.iter
       (fun (id, ty) -> Scope.set scope id (Expression (loc, Empty, ty)))
@@ -268,7 +288,8 @@ module Typing : TYPING = struct
     | Match (loc, expression, cases) ->
         match_type_check env expression cases loc ;
         T_Void
-    | If(_, _, _, _) -> T_Void
+    | If (_, _, _, _) ->
+        T_Void
 
   let handle_type_exception f a b =
     try f a b with
