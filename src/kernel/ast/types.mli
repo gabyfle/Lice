@@ -47,6 +47,7 @@ and statement =
   | Assign of location * typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement
   | Match of location * expr * (expr * statement list) list
+  | If of location * expr * statement * statement
 
 and program = statement list
 

@@ -54,6 +54,7 @@
 %token IF
 %token ELSE
 
+(* General syntax *)
 %token COMMA
 %token SEMICOLON
 %token COLON
@@ -61,15 +62,31 @@
 %token RPAREN
 %token LBRACE
 %token RBRACE
+
+(* Variable assigns *)
 %token LET
 %token ASSIGN
+
+(* Functions *)
 %token FUNCTION
 %token RETURN
+
+(* Arithmetics *)
 %token PLUS
 %token MINUS
 %token ASTERISK
 %token SLASH
 %token MOD
+
+(* Comparison *)
+%token EQEQ
+%token NOTEQ
+%token LEQ
+%token GEQ
+%token GREATER
+%token LESSER
+
+(* Misc *)
 %token ILLEGAL
 %token EOF
 %token EOL
@@ -175,9 +192,11 @@ let return_call ==
   | RETURN; r = expr;
     { Return($startpos, r) }
 
-let if_branching ==
-  | IF; LPAREN; e = expr; RPAREN; f = expr; SEMICOLON;
-  | IF; LPAREN; e = expr; RPAREN; b = block;
+let if_stmt :=
+  | IF; LPAREN; e = expr; RPAREN; b1 = statement; ELSE; b2 = statement;
+  { If ($startpos, e, b1, b2) }
+  | IF; LPAREN; e = expr; RPAREN; b1 = statement;
+  { If ($startpos, e, b1, Expression($startpos, Empty, T_Void)) }
 
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
@@ -185,6 +204,7 @@ let statement ==
   | r = return_call; SEMICOLON; { r }
   | a = assign; SEMICOLON; { a }
   | m = match_expr; { m }
+  | i = if_stmt; { i }
 
 let expr :=
   | p = parenthesis; { p }

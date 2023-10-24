@@ -268,6 +268,7 @@ module Typing : TYPING = struct
     | Match (loc, expression, cases) ->
         match_type_check env expression cases loc ;
         T_Void
+    | If(_, _, _, _) -> T_Void
 
   let handle_type_exception f a b =
     try f a b with
