@@ -1,0 +1,15 @@
+open Stdio;
+open Math;
+open Sys;
+
+function main(): void {
+    Stdio.println("This is an Hello World message");
+
+    Math.seed(Sys.time());
+
+    let number rd = Math.random();
+
+    Stdio.print((string) rd);
+
+    return;
+}
