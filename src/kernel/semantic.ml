@@ -273,11 +273,17 @@ module Typing : TYPING = struct
     in
     let mtyp = expr_type_check env loc match_expr in
     (* the type of the match *)
-    let check_cases ((e : expr), (stmts : statement list)) =
-      let ctyp = expr_type_check env loc e in
-      if ctyp <> mtyp then
-        raise (Located_error (`Wrong_Case_Type (mtyp, ctyp), loc))
-      else ignore_iter (stmt_type_check env) stmts
+    let check_cases (e, stmts) =
+      match (e, stmts) with
+      | List (_, Variable (ident, T_Auto)), _ ->
+          let scope = Scope.push_scope env in
+          Scope.set scope ident (Expression (loc, Empty, T_List)) ;
+          ignore_iter (stmt_type_check scope) stmts
+      | _ ->
+          let ctyp = expr_type_check env loc e in
+          if ctyp <> mtyp then
+            raise (Located_error (`Wrong_Case_Type (mtyp, ctyp), loc))
+          else ignore_iter (stmt_type_check env) stmts
     in
     List.iter check_cases cases
 

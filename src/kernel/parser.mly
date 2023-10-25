@@ -120,13 +120,31 @@ let binop ==
   | GREATER; { `Compare(Greater) }
   | LESSER; { `Compare(Lesser) }
 
+let list_terminals :=
+  | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
+  {
+    let construct_list elems =
+      let rec aux acc = function
+        | [] -> acc
+        | h :: t -> aux (List(Some h, acc)) t
+      in
+      aux (List(None, Empty)) (List.rev elems);
+    in
+    construct_list elems
+  }
+  | h = terminal; COLON; COLON; t = IDENT;
+  { List(Some h, Variable(t, T_Auto))}
+  | h = terminal; COLON; COLON; LBRACKET; RBRACKET;
+  { List(Some h, List(None, Empty))}
+
 let terminal ==
   | i = INT; { Number (float_of_int i) }
   | i = FLOAT; { Number i }
   | i = IDENT; { Variable (i, T_Auto) }
   | b = BOOLEAN; { Boolean (b) }
   | s = STRING_VALUE; { String(s) }
-  | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET; { List(elems) }
+  | l = list_terminals; { l }
+
 
 let block ==
   | LBRACE; stmts = list(statement); RBRACE;
@@ -155,6 +173,7 @@ let pattern ==
   | n = INT; { Number (float_of_int n) }
   | n = FLOAT; { Number (n) }
   | s = STRING_VALUE; { String(s) }
+  | l = list_terminals; { l }
   | WILDCARD; { Empty }
 
 let match_expr ==

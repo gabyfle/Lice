@@ -39,7 +39,7 @@ type expr =
   | Number of float
   | String of string
   | Boolean of bool
-  | List of expr list
+  | List of expr option * expr
   | Variable of typed_ident
   | BinOp of binop_type * expr * expr
   | FuncCall of identificator * expr list

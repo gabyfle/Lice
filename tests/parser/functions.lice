@@ -4,7 +4,6 @@
 --    (this is a comment)    --
 -----------------------------]]
 
-let list lst = [];
 
 function power(x: number, n: number): number {
     if (x == 0) return x;
@@ -14,9 +13,15 @@ function power(x: number, n: number): number {
     }
 }
 
-function nothing(x: list): list {
-    let list f = [];
-    return x;
+function reverse_aux(l: list, acc: list): list {
+    match l with {
+        | [] -> return acc;
+        | h :: t -> return reverse_aux(t, h :: acc);
+    }
+}
+
+function reverse(l: list): list {
+    return reverse_aux(l, []);
 }
 
 function main(): void {

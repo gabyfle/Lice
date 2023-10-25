@@ -54,6 +54,23 @@ function main(): void {
 main();
 ```
 
+#### Reverse a list
+
+As you can see in this example, lists constructions are heavily inspired from the OCaml way of building and deconstructing lists. Here is a little snippet to show how you can reverse a list inside the Lice language.
+
+```lua
+function reverse_aux(l: list, acc: list): list {
+    match l with {
+        | [] -> return acc;
+        | h :: t -> return reverse_aux(t, h :: acc);
+    }
+}
+
+function reverse(l: list): list {
+    return reverse_aux(l, []);
+}
+```
+
 #### Count to ten
 
 This program demonstrate how to count to ten using a recursive function. Note: if we're using recursive functions for the moment, it's because we don't have any loop system in the language.
