@@ -27,7 +27,7 @@ open Utils.Logger
 let time f x =
   let t = Sys.time () in
   let fx = f x in
-  Printf.printf "Execution time: %fs\n" (Sys.time () -. t) ;
+  Logger.warning "Execution time: %fs\n" (Sys.time () -. t) ;
   fx
 
 let () =
@@ -51,6 +51,6 @@ let () =
   let code_lines = read_code [] in
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
-  Logger.set_level ["Error"] ;
+  Logger.set_level ["Warning"; "Error"] ;
   let ast = parse_code code in
   time Typing.type_check ast

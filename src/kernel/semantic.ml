@@ -87,6 +87,47 @@ module Typing : TYPING = struct
     | _ ->
         None
 
+  (* binop_type_check [env] [loc] [a] [b] [op] performs a type check on a binary
+     operation involving two operands
+
+     [env] is the current environement, [loc] is the location of the binary
+     operation, [a] is the first operand (left) [b] is the second operand
+     (right) and [op] is the operator involved in the operation *)
+  let rec binop_type_check env (loc : location) a b op =
+    match (a, b) with
+    | Number _, Number v' -> (
+      match op with
+      | Plus | Minus | Multiply ->
+          T_Number
+      | Divide ->
+          if v' = 0. then raise (Located_error (`Division_by_zero, loc))
+          else T_Number
+      | Mod ->
+          if not (Float.is_integer v') then
+            raise (Located_error (`Not_Integer, loc))
+          else if v' = 0. then raise (Located_error (`Division_by_zero, loc))
+          else T_Number )
+    | Variable (_, T_Number), Number _
+    | Number _, Variable (_, T_Number)
+    | Variable (_, T_Number), Variable (_, T_Number) ->
+        T_Number
+    | Variable (id, T_Auto), Number _ | Number _, Variable (id, T_Auto) ->
+        let is_number = is_variable_type env id T_Number in
+        if is_number then T_Number else raise (Located_error (`Not_Number, loc))
+    | Variable (id, t), Variable (id', t') ->
+        let typ_v1 = expr_type_check env loc (Variable (id, t)) in
+        let typ_v2 = expr_type_check env loc (Variable (id', t')) in
+        if typ_v1 <> T_Number && typ_v2 <> T_Number then
+          raise (Located_error (`Not_Number, loc))
+        else T_Number
+    | FuncCall (id, params), Number _ | Number _, FuncCall (id, params) ->
+        let func_ret_type = expr_type_check env loc (FuncCall (id, params)) in
+        if func_ret_type <> T_Number then
+          raise (Located_error (`Not_Number, loc))
+        else T_Number
+    | _ ->
+        raise (Located_error (`Not_Number, loc))
+
   (* expr_type [env] [loc] [expr] performs a type check on the given expression
 
      [env] is the current environement on which we're doing the check [loc] is
@@ -96,7 +137,7 @@ module Typing : TYPING = struct
      this function is recursive. in the near future, if we have performances
      problems, we might check back this function to improve performaces as i'm
      pretty sure every troubles will come from this file :p *)
-  let rec expr_type_check env (loc : location) = function
+  and expr_type_check env (loc : location) = function
     | Empty ->
         T_Void
     | Number _ ->
@@ -107,49 +148,10 @@ module Typing : TYPING = struct
         T_Boolean
     | Variable (id, t) ->
         if t = T_Auto then get_variable_type env id else t
-    | BinOp (bin, a, b) -> (
-      (* Perform the operation or return a default value if a conversion
-         fails *)
-      match (a, b) with
-      | Number _, Number v' -> (
-        match bin with
-        | Plus ->
-            T_Number
-        | Minus ->
-            T_Number
-        | Multiply ->
-            T_Number
-        | Divide ->
-            if v' = 0. then raise (Located_error (`Division_by_zero, loc))
-            else T_Number
-        | Mod ->
-            (* this part will surely need to be rewrited as we're casting maybe
-               to many times *)
-            let is_integer x = float_of_int (int_of_float x) = x in
-            if not (is_integer v') then raise (Located_error (`Not_Integer, loc))
-            else if v' = 0. then raise (Located_error (`Division_by_zero, loc))
-            else T_Number )
-      | Variable (_, T_Number), Number _
-      | Number _, Variable (_, T_Number)
-      | Variable (_, T_Number), Variable (_, T_Number) ->
-          T_Number
-      | Variable (id, T_Auto), Number _ | Number _, Variable (id, T_Auto) ->
-          let is_number = is_variable_type env id T_Number in
-          if is_number then T_Number
-          else raise (Located_error (`Not_Number, loc))
-      | Variable (id, t), Variable (id', t') ->
-          let typ_v1 = expr_type_check env loc (Variable (id, t)) in
-          let typ_v2 = expr_type_check env loc (Variable (id', t')) in
-          if typ_v1 <> T_Number && typ_v2 <> T_Number then
-            raise (Located_error (`Not_Number, loc))
-          else T_Number
-      | FuncCall (id, params), Number _ | Number _, FuncCall (id, params) ->
-          let func_ret_type = expr_type_check env loc (FuncCall (id, params)) in
-          if func_ret_type <> T_Number then
-            raise (Located_error (`Not_Number, loc))
-          else T_Number
-      | _ ->
-          raise (Located_error (`Not_Number, loc)) )
+    | BinOp (`Compare _, _, _) ->
+        T_Boolean
+    | BinOp (`Operator op, a, b) ->
+        binop_type_check env loc a b op
     | FuncCall (ident, params) -> (
       match is_callable env ident with
       | Some (tid, expected) ->

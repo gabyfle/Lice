@@ -108,11 +108,17 @@ let lprog :=
   | s = statement; EOL*;  sl = lprog; { s :: sl }
 
 let binop ==
-  | PLUS; { Plus }
-  | MINUS; { Minus }
-  | ASTERISK; { Multiply }
-  | SLASH; { Divide }
-  | MOD; { Mod }
+  | PLUS; { `Operator(Plus) }
+  | MINUS; { `Operator(Minus) }
+  | ASTERISK; { `Operator(Multiply) }
+  | SLASH; { `Operator(Divide) }
+  | MOD; { `Operator(Mod) }
+  | EQEQ; { `Compare(Equal) }
+  | NOTEQ; { `Compare(NotEqual) }
+  | LEQ; { `Compare(LEQ) }
+  | GEQ; { `Compare(GEQ) }
+  | GREATER; { `Compare(Greater) }
+  | LESSER; { `Compare(Lesser) }
 
 let terminal ==
   | i = INT; { Number (float_of_int i) }

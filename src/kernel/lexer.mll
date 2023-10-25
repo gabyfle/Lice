@@ -40,7 +40,7 @@
               "if", IF;
               "else", ELSE;
               "true", BOOLEAN(true);
-              "false", BOOLEAN(false)]
+              "false", BOOLEAN(false);]
 
   let buf = Buffer.create 256
 
@@ -58,6 +58,12 @@ rule token = parse
                         Hashtbl.find keyword_table id
                       with Not_found ->
                         IDENT id }
+  | "=="            { EQEQ }
+  | "~="            { NOTEQ }
+  | ">="            { GEQ }
+  | "<="            { LEQ }
+  | '>'             { GREATER }
+  | '<'             { LESSER }
   | '+'             { PLUS }
   | '-'             { MINUS }
   | '*'             { ASTERISK }

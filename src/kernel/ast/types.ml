@@ -30,6 +30,10 @@ and typed_ident = identificator * typ
 
 type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
+type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+
+type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
+
 type expr =
   | Empty
   | Number of float
@@ -37,7 +41,7 @@ type expr =
   | Boolean of bool
   | List of expr list
   | Variable of typed_ident
-  | BinOp of binary_operator * expr * expr
+  | BinOp of binop_type * expr * expr
   | FuncCall of identificator * expr list
 
 and statement =
