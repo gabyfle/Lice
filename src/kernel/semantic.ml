@@ -62,6 +62,8 @@ module Typing : TYPING = struct
 
   exception Located_error of exception_type * location
 
+  let expected_return_typ = ref ("", T_Auto)
+
   let is_variable_type env id t =
     match Scope.get env id with
     | Some (Expression (_, Empty, t')) ->
@@ -241,28 +243,25 @@ module Typing : TYPING = struct
       params ;
     (* to allow recursivity, we add it to the local scope of the function *)
     add_func_to_scope scope fname expected params loc ;
-    let get_return_type ret_loc expression =
-      let ret_typ = expr_type_check scope ret_loc expression in
-      ret_typ
-    in
     let rec perform_check_stmts = function
       | [] ->
           Logger.debug "Leaving function: %s" fname ;
+          expected_return_typ := ("", T_Auto) ;
           add_func_to_scope env fname expected params loc ;
           T_Void
-      | Return (loc', e) :: t ->
-          let ret_type = get_return_type loc' e in
-          if ret_type <> expected then
-            raise
-              (Located_error
-                 (`Wrong_Return_Type (fname, expected, ret_type), loc') )
-          else perform_check_stmts t
       | h :: t ->
+          expected_return_typ := (fname, expected) ;
           ignore (stmt_type_check scope h) ;
           perform_check_stmts t
     in
     perform_check_stmts stmts
 
+  (* match_type_check [env] [match_expr] [cases] [loc] performs a type checking
+     onto a matching expression.
+
+     [env] is the actual scope [match_expr] is the expression we're trying to
+     match [cases] is the list of case matches to match [match_expr] and [loc]
+     is the location of the matching expr *)
   and match_type_check env match_expr (cases : (expr * statement list) list) loc
       =
     let rec ignore_iter f = function
@@ -282,11 +281,20 @@ module Typing : TYPING = struct
     in
     List.iter check_cases cases
 
+  (* stmt_type_check [env] [stmt] performs a type check on a whole statement.
+
+     [env] is the environement on which we perform the type check of the
+     statement [stmt] is the statement to check *)
   and stmt_type_check env stmt =
     Logger.debug "STMT CHECK: Statement encountred: %s" (stmt_to_string stmt) ;
     match stmt with
     | Return (loc, e) ->
-        expr_type_check env loc e
+        let expr_typ = expr_type_check env loc e in
+        let fname, expected = !expected_return_typ in
+        if expected <> T_Auto && expected = expr_typ then expr_typ
+        else
+          raise
+            (Located_error (`Wrong_Return_Type (fname, expected, expr_typ), loc))
     | Expression (loc, e, _) ->
         expr_type_check env loc e
     | Block (_, stmts) ->

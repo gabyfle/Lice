@@ -4,12 +4,19 @@
 --    (this is a comment)    --
 -----------------------------]]
 
+let list lst = [];
+
 function power(x: number, n: number): number {
     if (x == 0) return x;
     match x % 2 with {
         | 0 -> return power(x * x, n / 2);
         | 1 -> return power(x, n - 1);
     }
+}
+
+function nothing(x: list): list {
+    let list f = [];
+    return x;
 }
 
 function main(): void {
