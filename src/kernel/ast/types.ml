@@ -55,8 +55,7 @@ and statement =
 
 and program = statement list
 
-let typ_to_string typ =
-  match typ with
+let typ_to_string = function
   | T_Number ->
       "number"
   | T_String ->
@@ -69,3 +68,19 @@ let typ_to_string typ =
       "auto"
   | T_Void ->
       "void"
+
+let stmt_to_string = function
+  | Return (_, _) ->
+      "Return"
+  | Expression (_, _, _) ->
+      "Expression"
+  | Block (_, _) ->
+      "Block"
+  | Assign (_, _, _) ->
+      "Assign"
+  | FuncDef (_, _, _, _) ->
+      "Function definition"
+  | Match (_, _, _) ->
+      "Pattern-matching"
+  | If (_, _, _, _) ->
+      "If statement"

@@ -3,6 +3,7 @@
 --                           --
 --    (this is a comment)    --
 -----------------------------]]
+
 function power(x: number, n: number): number {
     if (x == 0) return x;
     match x % 2 with {
@@ -15,7 +16,7 @@ function main(): void {
     let number x = 30;
     let number n = 5;
 
-    let number p = power(x, n);
+    let number pow = power(x, n);
 }
 
 main();

@@ -103,7 +103,7 @@
 
 let lprog :=
   | EOF; { [] }
-  | f = func_def; { [f] }
+  | f = func_def; EOL*; sl = lprog; { f :: sl}
   | s = statement; EOF; { [ s ] }
   | s = statement; EOL*;  sl = lprog; { s :: sl }
 

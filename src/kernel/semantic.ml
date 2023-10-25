@@ -80,9 +80,6 @@ module Typing : TYPING = struct
       (typed_ident * typed_ident list) option =
     match Scope.get env ident with
     | Some (FuncDef (_, tid, params, _)) ->
-        let _, t = tid in
-        Logger.info "Type of the return of the function call: %s"
-          (typ_to_string t) ;
         Some (tid, params)
     | _ ->
         None
@@ -111,20 +108,21 @@ module Typing : TYPING = struct
     | Number _, Variable (_, T_Number)
     | Variable (_, T_Number), Variable (_, T_Number) ->
         T_Number
-    | Variable (id, T_Auto), Number _ | Number _, Variable (id, T_Auto) ->
+    | Variable (id, T_Auto), Number v | Number v, Variable (id, T_Auto) ->
         let is_number = is_variable_type env id T_Number in
-        if is_number then T_Number else raise (Located_error (`Not_Number, loc))
+        if is_number then binop_type_check env loc (Number 1.) (Number v) op
+        else raise (Located_error (`Not_Number, loc))
     | Variable (id, t), Variable (id', t') ->
         let typ_v1 = expr_type_check env loc (Variable (id, t)) in
         let typ_v2 = expr_type_check env loc (Variable (id', t')) in
         if typ_v1 <> T_Number && typ_v2 <> T_Number then
           raise (Located_error (`Not_Number, loc))
         else T_Number
-    | FuncCall (id, params), Number _ | Number _, FuncCall (id, params) ->
+    | FuncCall (id, params), Number v | Number v, FuncCall (id, params) ->
         let func_ret_type = expr_type_check env loc (FuncCall (id, params)) in
         if func_ret_type <> T_Number then
           raise (Located_error (`Not_Number, loc))
-        else T_Number
+        else binop_type_check env loc (Number 1.) (Number v) op
     | _ ->
         raise (Located_error (`Not_Number, loc))
 
@@ -249,6 +247,7 @@ module Typing : TYPING = struct
     in
     let rec perform_check_stmts = function
       | [] ->
+          Logger.debug "Leaving function: %s" fname ;
           add_func_to_scope env fname expected params loc ;
           T_Void
       | Return (loc', e) :: t ->
@@ -284,23 +283,27 @@ module Typing : TYPING = struct
     List.iter check_cases cases
 
   and stmt_type_check env stmt =
+    Logger.debug "STMT CHECK: Statement encountred: %s" (stmt_to_string stmt) ;
     match stmt with
     | Return (loc, e) ->
         expr_type_check env loc e
     | Expression (loc, e, _) ->
         expr_type_check env loc e
     | Block (_, stmts) ->
+        let scope = Scope.push_scope env in
+        (* a block has its own scope *)
         let rec aux = function
           | [] ->
               ()
           | h :: t ->
-              ignore (stmt_type_check env h) ;
+              ignore (stmt_type_check scope h) ;
               aux t
         in
         aux stmts ; T_Void
     | Assign (loc, (id, t), e) ->
         assign_type_check env id t e loc
     | FuncDef (loc, (id, ret_type), params, Block (_, stmts)) ->
+        Logger.debug "Entering function: %s" id ;
         funcdef_type_check env id ret_type params stmts loc
     | FuncDef (loc, _, _, _) ->
         raise
@@ -379,6 +382,8 @@ module Typing : TYPING = struct
       | [] ->
           ()
       | stmt :: t ->
+          Logger.debug "TYPE CHECK: Statement encountred: %s"
+            (stmt_to_string stmt) ;
           ignore (handle_type_exception stmt_type_check global_scope stmt) ;
           aux t
     in
