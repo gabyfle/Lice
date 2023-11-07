@@ -58,6 +58,7 @@ rule token = parse
                         Hashtbl.find keyword_table id
                       with Not_found ->
                         IDENT id }
+  | "::"            { DOUBLE_COLON }
   | "=="            { EQEQ }
   | "~="            { NOTEQ }
   | ">="            { GEQ }

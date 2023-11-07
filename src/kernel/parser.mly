@@ -58,6 +58,7 @@
 %token COMMA
 %token SEMICOLON
 %token COLON
+%token DOUBLE_COLON
 %token LPAREN
 %token RPAREN
 %token LBRACE
@@ -129,12 +130,11 @@ let list_terminals :=
         | h :: t -> aux (List(Some h, acc)) t
       in
       aux (List(None, Empty)) (List.rev elems);
-    in
-    construct_list elems
+      in construct_list elems
   }
-  | h = terminal; COLON; COLON; t = IDENT;
+  | h = terminal; DOUBLE_COLON; t = IDENT;
   { List(Some h, Variable(t, T_Auto))}
-  | h = terminal; COLON; COLON; LBRACKET; RBRACKET;
+  | h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
   { List(Some h, List(None, Empty))}
 
 let terminal ==

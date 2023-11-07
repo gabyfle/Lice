@@ -42,7 +42,7 @@ module type TYPING = sig
 
   exception Located_error of exception_type * location
 
-  val type_check : program -> unit
+  val type_check : program -> Scope.t
 end
 
 module Typing : TYPING = struct
@@ -394,7 +394,7 @@ module Typing : TYPING = struct
     let global_scope = Scope.create () in
     let rec aux = function
       | [] ->
-          ()
+          global_scope
       | stmt :: t ->
           Logger.debug "TYPE CHECK: Statement encountred: %s"
             (stmt_to_string stmt) ;
