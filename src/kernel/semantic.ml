@@ -22,46 +22,15 @@
 
 open Ast.Types
 open Env
+open Located_error
 open Utils
 open Utils.Logger
 
 module type TYPING = sig
-  type exception_type =
-    [ `Language_Error of string
-    | `Not_Integer
-    | `Not_Number
-    | `Division_by_zero
-    | `Undefined_Function
-    | `Not_A_Callable
-    | `Wrong_Parameters_Number of identificator * int * int
-    | `Wrong_Parameter_Type of identificator * typ * typ
-    | `Wrong_Assign_Type of identificator * typ * typ
-    | `Wrong_Return_Type of identificator * typ * typ
-    | `Wrong_Case_Type of typ * typ
-    | `Wrong_Type of typ * typ ]
-
-  exception Located_error of exception_type * location
-
   val type_check : program -> Scope.t
 end
 
 module Typing : TYPING = struct
-  type exception_type =
-    [ `Language_Error of string
-    | `Not_Integer
-    | `Not_Number
-    | `Division_by_zero
-    | `Undefined_Function
-    | `Not_A_Callable
-    | `Wrong_Parameters_Number of identificator * int * int
-    | `Wrong_Parameter_Type of identificator * typ * typ
-    | `Wrong_Assign_Type of identificator * typ * typ
-    | `Wrong_Return_Type of identificator * typ * typ
-    | `Wrong_Case_Type of typ * typ
-    | `Wrong_Type of typ * typ ]
-
-  exception Located_error of exception_type * location
-
   let expected_return_typ = ref ("", T_Auto)
 
   let is_variable_type env id t =
