@@ -25,7 +25,9 @@ open Env
 open Located_error
 
 module type EVAL = sig
-  val exec : Scope.t -> program -> unit
+  val exec : program -> unit
+
+  val exec_string : string -> unit
 end
 
 module Eval : EVAL = struct
@@ -58,5 +60,48 @@ module Eval : EVAL = struct
           let int_v' = Int.of_float v' in
           Number (Float.of_int (int_v mod int_v'))
 
-  let exec (_ : Scope.t) (_ : program) = ()
+  let bincomp_helper v v' = function
+    | Equal ->
+        Boolean (v = v')
+    | NotEqual ->
+        Boolean (v <> v')
+    | GEQ ->
+        Boolean (v >= v')
+    | LEQ ->
+        Boolean (v <= v')
+    | Greater ->
+        Boolean (v > v')
+    | Lesser ->
+        Boolean (v < v')
+
+  (* compute_list recreates a list object from a syntax like h :: t. [env] is
+     the current environement in which we're doing this [loc] is the location of
+     the statement that asked to create that list [head] is the head of the list
+     we want to create (the h in h :: t) [tail] is an identificator for the list
+     tail we want to create *)
+  let compute_list env loc head (tail : identificator) =
+    let v = get_value env loc tail in
+    match v with
+    | Expression (_, List (h, t), _) -> (
+      match h with None -> List (head, t) | Some _ -> List (head, List (h, t)) )
+    | _ ->
+        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+
+  let eval_expr env loc = function
+    | Empty ->
+        ()
+    | Number _ | String _ | Boolean _ ->
+        ()
+    | List (h, t) ->
+        ()
+    | Variable name ->
+        ()
+    | BinOp (_, _, _) ->
+        ()
+    | FuncCall (_, _) ->
+        ()
+
+  let exec (_ : program) = ()
+
+  let exec_string (_ : string) = ()
 end
