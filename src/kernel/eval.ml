@@ -23,6 +23,7 @@
 open Ast.Types
 open Env
 open Located_error
+open Semantic.Typing
 
 module type EVAL = sig
   val exec : program -> unit
@@ -43,22 +44,61 @@ module Eval : EVAL = struct
           let str = Printf.sprintf "Variable %s definition error." ident in
           raise (Located_error (`Language_Error str, loc)) )
 
-  let binop_helper v v' = function
-    | Plus ->
-        Number (v +. v')
-    | Minus ->
-        Number (v -. v')
-    | Multiply ->
-        Number (v *. v')
-    | Divide ->
-        if v' = 0. then raise Division_by_zero else Number (v /. v')
-    | Mod ->
-        if not (Float.is_integer v') then raise Division_by_zero
-        else if v' = 0. then raise Division_by_zero
-        else
-          let int_v = Int.of_float v in
-          let int_v' = Int.of_float v' in
-          Number (Float.of_int (int_v mod int_v'))
+  let rec binop_helper env loc v v' op =
+    let a, b =
+      match (v, v') with
+      | Number _, Number _ ->
+          (v, v')
+      | Number k, Variable (id, _) ->
+          let is_number = is_variable_type env id T_Number in
+          if is_number then
+            let value =
+              match get_value env loc id with
+              | Expression (_, Number k', _) ->
+                  Number k'
+              | _ ->
+                  raise (Located_error (`Not_Number, loc))
+            in
+            ((Number k), value)
+          else raise (Located_error (`Not_Number, loc))
+      | Variable (id, _), Number k ->
+          let is_number = is_variable_type env id T_Number in
+          if is_number then
+            let value =
+              match get_value env loc id with
+              | Expression (_, Number k', _) ->
+                  Number k'
+              | _ ->
+                  raise (Located_error (`Not_Number, loc))
+            in
+           (value, (Number k))
+          else raise (Located_error (`Not_Number, loc))
+      | Variable (id, _), Variable (id', _) ->
+        let is_number = is_variable_type env id T_Number in
+        let is_number' = is_variable_type env id' T_Number in
+        ()
+$
+      | _ ->
+          (v, v')
+    in
+    let aux k k' = function
+      | Plus ->
+          Number (k +. k')
+      | Minus ->
+          Number (k -. k')
+      | Multiply ->
+          Number (k *. k')
+      | Divide ->
+          if k' = 0. then raise Division_by_zero else Number (k /. k')
+      | Mod ->
+          if not (Float.is_integer k') then raise Division_by_zero
+          else if k' = 0. then raise Division_by_zero
+          else
+            let int_k = Int.of_float k in
+            let int_k' = Int.of_float k' in
+            Number (Float.of_int (int_k mod int_k'))
+    in
+    aux a b op
 
   let bincomp_helper v v' = function
     | Equal ->
@@ -96,8 +136,12 @@ module Eval : EVAL = struct
         ()
     | Variable name ->
         ()
-    | BinOp (_, _, _) ->
-        ()
+    | BinOp (op, a, b) -> (
+      match op with
+      | `Compare _ ->
+          ()
+      | `Operator _ ->
+          ignore (binop_helper env loc a b op) )
     | FuncCall (_, _) ->
         ()
 

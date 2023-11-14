@@ -24,6 +24,8 @@ open Env
 open Ast.Types
 
 module type TYPING = sig
+  val is_variable_type : Scope.t -> identificator -> typ -> bool
+
   val type_check : program -> Scope.t
 end
 
