@@ -45,21 +45,21 @@ module Eval : EVAL = struct
           raise (Located_error (`Language_Error str, loc)) )
 
   let rec binop_helper env loc v v' op =
-    let a, b =
+    let values =
       match (v, v') with
-      | Number _, Number _ ->
-          (v, v')
+      | Number k, Number k' ->
+          (k, k')
       | Number k, Variable (id, _) ->
           let is_number = is_variable_type env id T_Number in
           if is_number then
             let value =
               match get_value env loc id with
               | Expression (_, Number k', _) ->
-                  Number k'
+                  k'
               | _ ->
                   raise (Located_error (`Not_Number, loc))
             in
-            ((Number k), value)
+            (k, value)
           else raise (Located_error (`Not_Number, loc))
       | Variable (id, _), Number k ->
           let is_number = is_variable_type env id T_Number in
@@ -67,21 +67,33 @@ module Eval : EVAL = struct
             let value =
               match get_value env loc id with
               | Expression (_, Number k', _) ->
-                  Number k'
+                  k'
               | _ ->
                   raise (Located_error (`Not_Number, loc))
             in
-           (value, (Number k))
+            (value, k)
           else raise (Located_error (`Not_Number, loc))
       | Variable (id, _), Variable (id', _) ->
-        let is_number = is_variable_type env id T_Number in
-        let is_number' = is_variable_type env id' T_Number in
-        ()
-$
+          let is_number = is_variable_type env id T_Number in
+          let is_number' = is_variable_type env id' T_Number in
+          if is_number && is_number' then
+            let v = get_value env loc id in
+            let v' = get_value env loc id' in
+            match (v, v') with
+            | Expression (_, Number k, _), Expression (_, Number k', _) ->
+                (k, k')
+            | _ ->
+                raise (Located_error (`Not_Number, loc))
+          else raise (Located_error (`Not_Number, loc))
       | _ ->
-          (v, v')
+          raise
+            (Located_error
+               ( `Language_Error
+                   "An unknown error occured while trying to perform a binary \
+                    operation on Numbers."
+               , loc ) )
     in
-    let aux k k' = function
+    let aux (k, k') = function
       | Plus ->
           Number (k +. k')
       | Minus ->
@@ -98,7 +110,7 @@ $
             let int_k' = Int.of_float k' in
             Number (Float.of_int (int_k mod int_k'))
     in
-    aux a b op
+    aux values op
 
   let bincomp_helper v v' = function
     | Equal ->
@@ -132,16 +144,16 @@ $
         ()
     | Number _ | String _ | Boolean _ ->
         ()
-    | List (h, t) ->
+    | List (_, _) ->
         ()
-    | Variable name ->
+    | Variable _ ->
         ()
     | BinOp (op, a, b) -> (
       match op with
       | `Compare _ ->
           ()
-      | `Operator _ ->
-          ignore (binop_helper env loc a b op) )
+      | `Operator binop ->
+          ignore (binop_helper env loc a b binop) )
     | FuncCall (_, _) ->
         ()
 
