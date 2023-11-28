@@ -23,6 +23,7 @@
 open Kernel
 open Semantic
 open Utils.Logger
+open Eval
 
 let time f x =
   let t = Sys.time () in
@@ -53,4 +54,5 @@ let () =
   let code = String.concat "\n" code_lines in
   Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
-  time Typing.type_check ast
+  ignore (time Typing.type_check ast) ;
+  Eval.exec ast

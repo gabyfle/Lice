@@ -27,8 +27,6 @@ open Semantic.Typing
 
 module type EVAL = sig
   val exec : program -> unit
-
-  val exec_string : string -> unit
 end
 
 module Eval : EVAL = struct
@@ -44,7 +42,7 @@ module Eval : EVAL = struct
           let str = Printf.sprintf "Variable %s definition error." ident in
           raise (Located_error (`Language_Error str, loc)) )
 
-  let rec binop_helper env loc v v' op =
+  let binop_helper env loc v v' op =
     let values =
       match (v, v') with
       | Number k, Number k' ->
@@ -112,7 +110,7 @@ module Eval : EVAL = struct
     in
     aux values op
 
-  let bincomp_helper v v' = function
+  let bincomp_helper _env _loc v v' = function
     | Equal ->
         Boolean (v = v')
     | NotEqual ->
@@ -131,7 +129,7 @@ module Eval : EVAL = struct
      the statement that asked to create that list [head] is the head of the list
      we want to create (the h in h :: t) [tail] is an identificator for the list
      tail we want to create *)
-  let compute_list env loc head (tail : identificator) =
+  let _compute_list env loc head (tail : identificator) =
     let v = get_value env loc tail in
     match v with
     | Expression (_, List (h, t), _) -> (
@@ -150,14 +148,36 @@ module Eval : EVAL = struct
         ()
     | BinOp (op, a, b) -> (
       match op with
-      | `Compare _ ->
-          ()
+      | `Compare bincomp ->
+          ignore (bincomp_helper env loc a b bincomp)
       | `Operator binop ->
           ignore (binop_helper env loc a b binop) )
     | FuncCall (_, _) ->
         ()
 
-  let exec (_ : program) = ()
+  let eval_statement env = function
+    | Return (_, _) ->
+        ()
+    | Expression (loc, e, _typ) ->
+        eval_expr env loc e
+    | Block (_, _) ->
+        ()
+    | Assign (_, _, _) ->
+        ()
+    | FuncDef (_, _, _, _) ->
+        ()
+    | Match (_, _, _) ->
+        ()
+    | If (_, _, _, _) ->
+        ()
 
-  let exec_string (_ : string) = ()
+  let exec (p : program) =
+    let env = Scope.create () in
+    let rec aux = function
+      | [] ->
+          ()
+      | stmt :: t ->
+          eval_statement env stmt ; aux t
+    in
+    aux p
 end
