@@ -20,6 +20,8 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Ast.Types
+
 let typing_error (loc : Lexing.position) expected actual =
   let char = loc.pos_cnum - loc.pos_bol in
   let line = loc.pos_lnum in
@@ -39,3 +41,26 @@ let misc_error (loc : Lexing.position) str =
   let char = loc.pos_cnum - loc.pos_bol in
   let line = loc.pos_lnum in
   Format.sprintf "%s. At line %d, character %d." str line char
+
+let expr_format expr =
+  let rec aux acc = function
+    | Empty ->
+        "Empty expression \n"
+    | Number num ->
+        Printf.sprintf "Number expression value : %f \n" num
+    | String str ->
+        Printf.sprintf "String expression value: %s\n" str
+    | Boolean b ->
+        Printf.sprintf "Boolean expression value %b\n" b
+    | List (head, tail) -> (
+      match head with
+      | None ->
+          aux acc tail
+      | Some h ->
+          let t = aux "" h in
+          aux (acc ^ t) tail )
+    | Variable (id, t) ->
+        let str_t = typ_to_string t in
+        Printf.sprintf "Variable name %s of type %s" id str_t
+  in
+  aux "" expr

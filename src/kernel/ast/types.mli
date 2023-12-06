@@ -58,3 +58,7 @@ and program = statement list
 val typ_to_string : typ -> string
 
 val stmt_to_string : statement -> string
+
+val bincomp_to_string : binary_comp -> string
+
+val binop_to_string : binary_operator -> string

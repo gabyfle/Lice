@@ -84,3 +84,29 @@ let stmt_to_string = function
       "Pattern-matching"
   | If (_, _, _, _) ->
       "If statement"
+
+let bincomp_to_string = function
+  | Equal ->
+      "="
+  | NotEqual ->
+      "!="
+  | GEQ ->
+      ">="
+  | LEQ ->
+      "<="
+  | Greater ->
+      ">"
+  | Lesser ->
+      "<"
+
+let binop_to_string = function
+  | Plus ->
+      "+"
+  | Minus ->
+      "-"
+  | Divide ->
+      "/"
+  | Multiply ->
+      "*"
+  | Mod ->
+      "%"
