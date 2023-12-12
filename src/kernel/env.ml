@@ -24,7 +24,7 @@ open Ast.Types
 open Utils
 
 module type SCOPE = sig
-  type t = (string, statement) Hashtbl.t
+  type t
 
   val create : unit -> t
 
@@ -39,31 +39,42 @@ module type SCOPE = sig
   val dump : t -> unit
 end
 
+module Identificator = struct
+  type t = string
+  let compare = String.compare
+end
+
+module Table = Map.Make (Identificator)
+
 module Scope = struct
-  type t = (string, statement) Hashtbl.t
+  type t = statement Table.t
 
-  let create () : t = Hashtbl.create 10
+  let create () : t = Table.empty
 
-  let get (env : t) (name : string) : statement option =
-    Hashtbl.find_opt env name
+  let get (env : t) (name : identificator) : statement option =
+    Table.find_opt name env
 
-  let set (env : t) (name : string) (v : statement) = Hashtbl.replace env name v
-
-  let push_scope (env : t) : t = Hashtbl.copy env
-
-  let pop_scope (env : t) = Hashtbl.clear env
-
-  let inter (env : t) (env' : t) =
-    let f key value =
-      match (Hashtbl.find_opt env key) with
-        | Some v when v = value -> Some v
-        | _ -> None
+  let set (env : t) (name : string) (v : statement) : t =
+    let replace = function
+      | Some _ -> Some v
+      | None -> None
     in
-    Hashtbl.filter_map_inplace f env'
+    Table.update name replace env
+
+  let push_scope (env : t) : t =
+    let n = create () in
+    let rec f _key a b = match a, b with
+      | _ as v, _ -> Some v
+    in
+    Table.union f env n
+
+  let pop_scope (env : t) =
+    let clear _k a = None in
+    Table.filter_map clear env
 
   let dump (env : t) =
     let iter k s =
       Printf.printf "Key: %s \nValue: %s \n\n" k (Formatting.stmt_format s)
     in
-    Hashtbl.iter iter env
+    Table.iter iter env
 end

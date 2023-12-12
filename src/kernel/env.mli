@@ -23,13 +23,13 @@
 open Ast.Types
 
 module type SCOPE = sig
-  type t = (string, statement) Hashtbl.t
+  type t
 
   val create : unit -> t
 
   val get : t -> string -> statement option
 
-  val set : t -> string -> statement -> unit
+  val set : t -> string -> statement -> t
 
   val push_scope : t -> t
 
