@@ -217,21 +217,21 @@ module Eval : EVAL = struct
 
   and eval_statement env = function
     | Return (_, e) ->
-        e
+        (env, e)
     | Expression (loc, e, _typ) ->
-        eval_expr env loc e
+        (env, eval_expr env loc e)
     | Block (_, stmts) ->
         let blck_env = Scope.push_scope env in
-        let rec aux = function
+        let rec aux env = function
           | [] ->
-              Empty
+              (env, Empty)
           | (Return _ as r) :: _ ->
               eval_statement blck_env r
           | h :: t ->
-              ignore (eval_statement blck_env h) ;
-              aux t
+              let (nenv, _) = (eval_statement blck_env h) in
+              aux nenv t
         in
-        aux stmts
+        aux blck_env stmts
     | Assign (loc, (id, t), e) ->
         let processed = eval_expr env loc e in
         Scope.set env id (Expression (loc, processed, t)) ;
