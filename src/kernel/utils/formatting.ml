@@ -47,11 +47,11 @@ let expr_format expr =
     | Empty ->
         "Empty expression \n"
     | Number num ->
-        Printf.sprintf "Number expression value : %f \n" num
+        Printf.sprintf "Number expression value : %f" num
     | String str ->
-        Printf.sprintf "String expression value: %s\n" str
+        Printf.sprintf "String expression value: %s" str
     | Boolean b ->
-        Printf.sprintf "Boolean expression value %b\n" b
+        Printf.sprintf "Boolean expression value %b" b
     | List (head, tail) -> (
       match head with
       | None ->
@@ -62,5 +62,70 @@ let expr_format expr =
     | Variable (id, t) ->
         let str_t = typ_to_string t in
         Printf.sprintf "Variable name %s of type %s" id str_t
+    | BinOp (binop_t, e, e') ->
+        let bin =
+          match binop_t with
+          | `Compare comp ->
+              bincomp_to_string comp
+          | `Operator op ->
+              binop_to_string op
+        in
+        let left = aux "" e in
+        let right = aux "" e' in
+        Printf.sprintf "Binary operator: [%s] %s [%s]\n" left bin right
+    | FuncCall (id, expr_list) ->
+        let t = ref "" in
+        (* bad functionnal code *)
+        let iter e = t := !t ^ ";" ^ aux "" e in
+        List.iter iter expr_list ;
+        Printf.sprintf "Function call ID: %s; Expression list: %s\n" id !t
   in
   aux "" expr
+
+let stmt_format stmt =
+  let rec aux = function
+    | Return (_, e) ->
+        Printf.sprintf "Return statement: %s\n\n" (expr_format e)
+    | Expression (_, e, _) ->
+        Printf.sprintf "Expression statement: %s\n\n" (expr_format e)
+    | Block (_, stmt_list) ->
+        let t = ref "" in
+        (* bad functionnal code *)
+        let iter e = t := !t ^ aux e in
+        List.iter iter stmt_list ;
+        Printf.sprintf "Block statement with statements: %s\n\n" !t
+    | Assign (_, (id, _), e) ->
+        Printf.sprintf "Assign statement id %s with expression %s\n\n" id
+          (expr_format e)
+    | FuncDef (_, (name, _), _, def) ->
+        let t = aux def in
+        Printf.sprintf "Function definition id: %s and definition: %s\n\n" name
+          t
+    | Match (_, to_match, patterns) ->
+        let str_match = expr_format to_match in
+        let rec str_patterns acc' = function
+          | [] ->
+              acc'
+          | (p, stmts) :: t ->
+              let e = Printf.sprintf "Pattern: %s\n" (expr_format p) in
+              let tmp = ref "" in
+              let iter s = tmp := !tmp ^ aux s in
+              List.iter iter stmts ;
+              str_patterns (Printf.sprintf "%s. Statements: %s\n" e !tmp) t
+        in
+        Printf.sprintf "Matching statement:\n To match: %s\n %s" str_match
+          (str_patterns "" patterns)
+    | If (_, e, t, f) ->
+        Printf.sprintf "If statement on condition %s. If true: %s if false: %s"
+          (expr_format e) (aux t) (aux f)
+  in
+  aux stmt
+
+let program_format =
+  let rec aux acc = function
+    | [] ->
+        acc
+    | h :: t ->
+        aux (acc ^ stmt_format h) t
+  in
+  aux ""

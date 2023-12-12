@@ -20,8 +20,16 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Ast.Types
+
 val typing_error : Lexing.position -> string -> string -> string
 
 val params_number_error : Lexing.position -> string -> int -> int -> string
 
 val misc_error : Lexing.position -> string -> string
+
+val expr_format : expr -> string
+
+val stmt_format : statement -> string
+
+val program_format : program -> string

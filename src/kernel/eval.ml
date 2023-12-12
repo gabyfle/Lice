@@ -24,6 +24,7 @@ open Ast.Types
 open Env
 open Located_error
 open Semantic.Typing
+open Utils
 
 module type EVAL = sig
   val exec : program -> unit
@@ -172,6 +173,7 @@ module Eval : EVAL = struct
         ()
 
   let exec (p : program) =
+    Printf.printf "%s" (Formatting.program_format p) ;
     let env = Scope.create () in
     let rec aux = function
       | [] ->
