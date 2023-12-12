@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Ast.Types
+open Utils
 
 module type SCOPE = sig
   type t = (string, statement) Hashtbl.t
@@ -34,6 +35,8 @@ module type SCOPE = sig
   val push_scope : t -> t
 
   val pop_scope : t -> unit
+
+  val dump : t -> unit
 end
 
 module Scope = struct
@@ -49,4 +52,18 @@ module Scope = struct
   let push_scope (env : t) : t = Hashtbl.copy env
 
   let pop_scope (env : t) = Hashtbl.clear env
+
+  let inter (env : t) (env' : t) =
+    let f key value =
+      match (Hashtbl.find_opt env key) with
+        | Some v when v = value -> Some v
+        | _ -> None
+    in
+    Hashtbl.filter_map_inplace f env'
+
+  let dump (env : t) =
+    let iter k s =
+      Printf.printf "Key: %s \nValue: %s \n\n" k (Formatting.stmt_format s)
+    in
+    Hashtbl.iter iter env
 end

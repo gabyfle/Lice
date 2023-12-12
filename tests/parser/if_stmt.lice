@@ -1,4 +1,4 @@
 let number a = 24;
 
-if (true) { a = a + 4; }
+if (true) a = a + 4;
 else a = a - 4;

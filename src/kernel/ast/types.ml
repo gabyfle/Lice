@@ -87,7 +87,7 @@ let stmt_to_string = function
 
 let bincomp_to_string = function
   | Equal ->
-      "="
+      "=="
   | NotEqual ->
       "!="
   | GEQ ->

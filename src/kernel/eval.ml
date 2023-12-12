@@ -235,6 +235,10 @@ module Eval : EVAL = struct
     | Assign (loc, (id, t), e) ->
         let processed = eval_expr env loc e in
         Scope.set env id (Expression (loc, processed, t)) ;
+        Logger.Logger.debug
+          "Adding variable %s to scope with type: %s and expression: %s" id
+          (typ_to_string t)
+          (Formatting.expr_format processed) ;
         Empty
     | FuncDef (_, (id, _), _, _) as f ->
         Scope.set env id f ; Empty
@@ -251,7 +255,6 @@ module Eval : EVAL = struct
   (* for the moment we're not getting the type of the expression *)
 
   let exec (p : program) =
-    Printf.printf "%s" (Formatting.program_format p) ;
     let env = Scope.create () in
     let rec aux = function
       | [] ->

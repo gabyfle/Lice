@@ -36,7 +36,7 @@ module Typing : TYPING = struct
 
   let is_variable_type env id t =
     match Scope.get env id with
-    | Some (Expression (_, Empty, t')) ->
+    | Some (Expression (_, _, t')) ->
         t = t'
     | _ ->
         false

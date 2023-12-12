@@ -34,6 +34,8 @@ module type SCOPE = sig
   val push_scope : t -> t
 
   val pop_scope : t -> unit
+
+  val dump : t -> unit
 end
 
 module Scope : SCOPE
