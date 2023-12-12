@@ -31,7 +31,7 @@ module type EVAL = sig
 end
 
 module Eval : EVAL = struct
-  type expr_or_statement = [`Expression of expr | `Statement of statement]
+  type _expr_or_statement = [`Expression of expr | `Statement of statement]
 
   let get_value env loc ident =
     match Scope.get env ident with
@@ -198,21 +198,57 @@ module Eval : EVAL = struct
     | FuncCall (id, expr_list) ->
         eval_function env loc id expr_list
 
+  and eval_match env loc pattern cases =
+    let eval_pattern = eval_expr env loc pattern in
+    let rec iterate_cases = function
+      | [] ->
+          Empty
+      (* if we find a wildcard then we can stop analysis of the match
+         statement *)
+      | (Empty, stmts) :: _ ->
+          eval_statement env (Block (loc, stmts))
+      (* same if we find a corresponding pattern *)
+      | (case, stmts) :: _ when case = eval_pattern ->
+          eval_statement env (Block (loc, stmts))
+      | _ :: t ->
+          iterate_cases t
+    in
+    iterate_cases cases
+
   and eval_statement env = function
     | Return (_, e) ->
         e
     | Expression (loc, e, _typ) ->
         eval_expr env loc e
-    | Block (_, _) ->
+    | Block (_, stmts) ->
+        let blck_env = Scope.push_scope env in
+        let rec aux = function
+          | [] ->
+              Empty
+          | (Return _ as r) :: _ ->
+              eval_statement blck_env r
+          | h :: t ->
+              ignore (eval_statement blck_env h) ;
+              aux t
+        in
+        aux stmts
+    | Assign (loc, (id, t), e) ->
+        let processed = eval_expr env loc e in
+        Scope.set env id (Expression (loc, processed, t)) ;
         Empty
-    | Assign (_, _, _) ->
-        Empty
-    | FuncDef (_, _, _, _) ->
-        Empty
-    | Match (_, _, _) ->
-        Empty
-    | If (_, _, _, _) ->
-        Empty
+    | FuncDef (_, (id, _), _, _) as f ->
+        Scope.set env id f ; Empty
+    | Match (loc, pattern, cases) ->
+        eval_match env loc pattern cases
+    | If (loc, cond, t, f) -> (
+        (* t = true, f = false *)
+        let eval_cond = eval_expr env loc cond in
+        match eval_cond with
+        | Boolean b ->
+            if b then eval_statement env t else eval_statement env f
+        | _ ->
+            raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
+  (* for the moment we're not getting the type of the expression *)
 
   let exec (p : program) =
     Printf.printf "%s" (Formatting.program_format p) ;
@@ -221,7 +257,7 @@ module Eval : EVAL = struct
       | [] ->
           ()
       | stmt :: t ->
-          ignore (eval_statement env stmt) ;
+          ignore (Errors.handle_type_exception eval_statement env stmt) ;
           aux t
     in
     aux p

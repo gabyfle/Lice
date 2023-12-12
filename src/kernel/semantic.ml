@@ -23,7 +23,6 @@
 open Ast.Types
 open Env
 open Located_error
-open Utils
 open Utils.Logger
 
 module type TYPING = sig
@@ -310,52 +309,6 @@ module Typing : TYPING = struct
           ignore (stmt_type_check env break) ;
           T_Void )
 
-  (* handle_type_exception is an helper function that allows to display nice
-     error messages and to handle Located_error exception during the type
-     checking process. *)
-  let handle_type_exception f a b =
-    try f a b with
-    | Located_error (`Language_Error s, loc) ->
-        let str = Formatting.misc_error loc s in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Not_Integer, loc) ->
-        let str =
-          Formatting.misc_error loc
-            "Attempting to do modulo arithmetics with a non-integer"
-        in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Not_Number, loc) ->
-        let str =
-          Formatting.misc_error loc
-            "Attempting to do number operation with a non-number"
-        in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Division_by_zero, loc) ->
-        let str =
-          Formatting.misc_error loc "Division by zero occurred. Aborting"
-        in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Undefined_Function, loc) ->
-        let str = Formatting.misc_error loc "Calling an undefined function" in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Not_A_Callable, loc) ->
-        let str =
-          Formatting.misc_error loc "Trying to call a non callable object"
-        in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Wrong_Parameters_Number (fname, a, b), loc) ->
-        let str = Formatting.params_number_error loc fname a b in
-        Logger.error "%s" str ; exit 1
-    | Located_error (`Wrong_Parameter_Type (_, a, b), loc)
-    | Located_error (`Wrong_Assign_Type (_, a, b), loc)
-    | Located_error (`Wrong_Return_Type (_, a, b), loc)
-    | Located_error (`Wrong_Case_Type (a, b), loc)
-    | Located_error (`Wrong_Type (a, b), loc) ->
-        let ta = typ_to_string a in
-        let tb = typ_to_string b in
-        let str = Formatting.typing_error loc ta tb in
-        Logger.error "%s" str ; exit 1
-
   (* type_check [p] is the main entry of the type checking module. it performs a
      type check using all the above functions on the statement list given in
      parameter
@@ -369,7 +322,8 @@ module Typing : TYPING = struct
       | stmt :: t ->
           Logger.debug "TYPE CHECK: Statement encountred: %s"
             (stmt_to_string stmt) ;
-          ignore (handle_type_exception stmt_type_check global_scope stmt) ;
+          ignore
+            (Errors.handle_type_exception stmt_type_check global_scope stmt) ;
           aux t
     in
     aux p
