@@ -228,7 +228,7 @@ module Eval : EVAL = struct
           | (Return _ as r) :: _ ->
               eval_statement blck_env r
           | h :: t ->
-              let (nenv, _) = (eval_statement blck_env h) in
+              let nenv, _ = eval_statement blck_env h in
               aux nenv t
         in
         aux blck_env stmts
