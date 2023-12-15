@@ -23,7 +23,6 @@
 open Ast.Types
 open Env
 open Located_error
-open Semantic.Typing
 open Utils
 
 module type EVAL = sig
@@ -32,6 +31,13 @@ end
 
 module Eval : EVAL = struct
   type _expr_or_statement = [`Expression of expr | `Statement of statement]
+
+  let is_variable_type env id t =
+    match Scope.get env id with
+    | Some (Expression (_, _, t')) ->
+        t = t'
+    | _ ->
+        false
 
   let get_value env loc ident =
     match Scope.get env ident with
@@ -168,45 +174,61 @@ module Eval : EVAL = struct
     (* f_env is a copy of our current env *)
     (* then we want to populate the new env with these processed arguments so
        that inside the function we got our local variables *)
-    let iter2 (id, _) param =
-      Scope.set f_env id (Expression (loc, param, T_Auto))
+    let rec iter2 acc a b =
+      match (a, b) with
+      | [], [] ->
+          acc
+      | [], _ | _, [] ->
+          raise
+            (Located_error
+               ( `Wrong_Parameters_Number
+                   (id, List.length params, List.length processed_args)
+               , loc ) )
+      | (id, _) :: t, (_, h) :: t' ->
+          iter2 (Scope.set acc id (Expression (loc, h, T_Auto))) t t'
     in
-    List.iter2 iter2 params processed_args ;
-    eval_expr f_env loc (eval_statement f_env stmts)
+    let n_env = iter2 f_env params processed_args in
+    eval_expr n_env loc (eval_statement n_env stmts)
 
-  and eval_expr env loc = function
-    | Empty ->
-        Empty
-    | (Number _ | String _ | Boolean _ | List (_, _)) as v ->
+  and eval_expr _env loc = function
+    | env, Empty ->
+        (env, Empty)
+    | (_, (Number _ | String _ | Boolean _ | List (_, _))) as v ->
         v
-    | Variable (id, _) -> (
+    | env, Variable (id, _) -> (
       match get_value env loc id with
       | `Expression e ->
-          e
+          (env, e)
       | `Statement _ ->
           raise
             (Located_error
                ( `Language_Error
                    "An error occurred while trying to get the variable"
                , loc ) ) )
-    | BinOp (op, a, b) -> (
+    | env, BinOp (op, a, b) -> (
       match op with
       | `Compare bincomp ->
-          bincomp_helper env loc a b bincomp
+          (env, bincomp_helper env loc a b bincomp)
       | `Operator binop ->
-          binop_helper env loc a b binop )
-    | FuncCall (id, expr_list) ->
-        eval_function env loc id expr_list
+          (env, binop_helper env loc a b binop) )
+    | env, FuncCall (id, expr_list) ->
+        let rec exprs acc = function
+          | [] ->
+              List.rev acc
+          | h :: t ->
+              exprs ((env, h) :: acc) t
+        in
+        eval_function env loc id (exprs [] expr_list)
 
   and eval_match env loc pattern cases =
-    let eval_pattern = eval_expr env loc pattern in
+    let n_env, eval_pattern = eval_expr env loc pattern in
     let rec iterate_cases = function
       | [] ->
-          Empty
+          (n_env, Empty)
       (* if we find a wildcard then we can stop analysis of the match
          statement *)
       | (Empty, stmts) :: _ ->
-          eval_statement env (Block (loc, stmts))
+          eval_statement n_env (Block (loc, stmts))
       (* same if we find a corresponding pattern *)
       | (case, stmts) :: _ when case = eval_pattern ->
           eval_statement env (Block (loc, stmts))
@@ -219,7 +241,7 @@ module Eval : EVAL = struct
     | Return (_, e) ->
         (env, e)
     | Expression (loc, e, _typ) ->
-        (env, eval_expr env loc e)
+        eval_expr env loc (env, e)
     | Block (_, stmts) ->
         let blck_env = Scope.push_scope env in
         let rec aux env = function
@@ -233,23 +255,23 @@ module Eval : EVAL = struct
         in
         aux blck_env stmts
     | Assign (loc, (id, t), e) ->
-        let processed = eval_expr env loc e in
-        Scope.set env id (Expression (loc, processed, t)) ;
+        let tmp, processed = eval_expr env loc (env, e) in
+        let n_env = Scope.set tmp id (Expression (loc, processed, t)) in
         Logger.Logger.debug
           "Adding variable %s to scope with type: %s and expression: %s" id
           (typ_to_string t)
           (Formatting.expr_format processed) ;
-        Empty
+        (n_env, Empty)
     | FuncDef (_, (id, _), _, _) as f ->
-        Scope.set env id f ; Empty
+        (Scope.set env id f, Empty)
     | Match (loc, pattern, cases) ->
-        eval_match env loc pattern cases
+        eval_match env loc (env, pattern) cases
     | If (loc, cond, t, f) -> (
         (* t = true, f = false *)
-        let eval_cond = eval_expr env loc cond in
+        let n_env, eval_cond = eval_expr env loc (env, cond) in
         match eval_cond with
         | Boolean b ->
-            if b then eval_statement env t else eval_statement env f
+            if b then eval_statement n_env t else eval_statement n_env f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
   (* for the moment we're not getting the type of the expression *)

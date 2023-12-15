@@ -30,11 +30,11 @@ module type SCOPE = sig
 
   val get : t -> string -> statement option
 
-  val set : t -> string -> statement -> unit
+  val set : t -> string -> statement -> t
 
   val push_scope : t -> t
 
-  val pop_scope : t -> unit
+  val pop_scope : t -> t
 
   val dump : t -> unit
 end
@@ -80,7 +80,7 @@ module Scope = struct
   let push_scope (env : t) : t =
     let head = List.hd env in
     let n = Table.empty in
-    let rec f _key a b = match (a, b) with (_ as v), _ -> Some v in
+    let f _key a b = match (a, b) with (_ as v), _ -> Some v in
     Table.union f head n :: env
 
   let pop_scope (env : t) : t =

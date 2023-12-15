@@ -21,15 +21,8 @@
 (*****************************************************************************)
 
 open Kernel
-open Semantic
 open Utils.Logger
 open Eval
-
-let time f x =
-  let t = Sys.time () in
-  let fx = f x in
-  Logger.info "Execution time: %fs\n" (Sys.time () -. t) ;
-  fx
 
 let () =
   let executable_dir =
@@ -54,5 +47,10 @@ let () =
   let code = String.concat "\n" code_lines in
   Logger.set_level ["Debug"; "Info"; "Error"] ;
   let ast = parse_code code in
-  ignore (time Typing.type_check ast) ;
-  Eval.exec ast
+  try
+    let t r = r in
+    let _ = (Errors.handle_type_exception t Eval.exec ast) in
+    ()
+  with Located_error.Located_error (_t, _loc) ->
+    Logger.error "%s\n" "An unknown error occurred" ;
+    exit 1;

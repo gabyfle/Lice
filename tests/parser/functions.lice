@@ -4,9 +4,6 @@
 --    (this is a comment)    --
 -----------------------------]]
 
-
-let list l = "a" :: [];
-
 function power(x: number, n: number): number {
     if (x == 0) return x;
     match x % 2 with {
