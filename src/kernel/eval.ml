@@ -35,6 +35,7 @@ module Eval : EVAL = struct
   let is_variable_type env id t =
     match Scope.get env id with
     | Some (Expression (_, _, t')) ->
+        Printf.printf "Found value";
         t = t'
     | _ ->
         false
@@ -65,20 +66,27 @@ module Eval : EVAL = struct
               match get_value env loc id with
               | `Expression (Number k') ->
                   k'
+              | `Expression e ->
+                    Printf.printf "e = %s\n" (Formatting.expr_format e) ;
+                    raise (Located_error (`Not_Number, loc))
               | _ ->
                   raise (Located_error (`Not_Number, loc))
             in
             (k, value)
           else raise (Located_error (`Not_Number, loc))
       | Variable (id, _), Number k ->
+            Printf.printf "We're here\n";
           let is_number = is_variable_type env id T_Number in
           if is_number then
             let value =
-              match get_value env loc id with
-              | `Expression (Number k') ->
-                  k'
-              | _ ->
-                  raise (Located_error (`Not_Number, loc))
+                match get_value env loc id with
+                | `Expression (Number k') ->
+                    k'
+                | `Expression e ->
+                      Printf.printf "e = %s\n" (Formatting.expr_format e) ;
+                      raise (Located_error (`Not_Number, loc))
+                | _ ->
+                    raise (Located_error (`Not_Number, loc))
             in
             (value, k)
           else raise (Located_error (`Not_Number, loc))
@@ -255,13 +263,10 @@ module Eval : EVAL = struct
         in
         aux blck_env stmts
     | Assign (loc, (id, t), e) ->
+        Printf.printf "Assigning %s\n" id ;
         let tmp, processed = eval_expr env loc (env, e) in
         let n_env = Scope.set tmp id (Expression (loc, processed, t)) in
-        Logger.Logger.debug
-          "Adding variable %s to scope with type: %s and expression: %s" id
-          (typ_to_string t)
-          (Formatting.expr_format processed) ;
-        (n_env, Empty)
+        Scope.dump n_env ; (n_env, Empty)
     | FuncDef (_, (id, _), _, _) as f ->
         (Scope.set env id f, Empty)
     | Match (loc, pattern, cases) ->
@@ -277,13 +282,13 @@ module Eval : EVAL = struct
   (* for the moment we're not getting the type of the expression *)
 
   let exec (p : program) =
-    let env = Scope.create () in
-    let rec aux = function
+    let _env = Scope.create () in
+    let rec aux env = function
       | [] ->
           ()
       | stmt :: t ->
-          ignore (Errors.handle_type_exception eval_statement env stmt) ;
-          aux t
+          let nenv, _ = eval_statement env stmt in
+          aux nenv t
     in
-    aux p
+    aux _env p
 end

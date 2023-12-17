@@ -54,7 +54,24 @@ module Scope = struct
 
   let create () : t = []
 
+  let dump (env : t) =
+    let rec aux = function
+      | [] ->
+          ()
+      | h :: t ->
+          let iter k s =
+            Printf.printf "Key: %s \nValue: %s \n\n" k
+              (Formatting.stmt_format s)
+          in
+          Printf.printf "Scope DUMP: \n" ;
+          Table.iter iter h ;
+          aux t
+    in
+    aux env
+
   let get (env : t) (name : identificator) : statement option =
+    Printf.printf "Looking for %s inside this scope:\n" name ;
+    dump env ;
     let rec find_opt name = function
       | [] ->
           None
@@ -78,28 +95,9 @@ module Scope = struct
     aux name v env
 
   let push_scope (env : t) : t =
-    let head = List.hd env in
-    let n = Table.empty in
-    let f _key a b = match (a, b) with (_ as v), _ -> Some v in
-    Table.union f head n :: env
+    match env with [] -> [Table.empty] | h :: _ -> h :: env
 
-  let pop_scope (env : t) : t =
-    match env with
-    | [] ->
-        raise (Failure "Cannot pop empty scope")
-    | _ :: t ->
-        t
+  let pop_scope (env : t) : t = match env with [] -> env | _ :: t -> t
 
-  let dump (env : t) =
-    let rec aux = function
-      | [] ->
-          ()
-      | h :: t ->
-          let iter k s =
-            Printf.printf "Key: %s \nValue: %s \n\n" k
-              (Formatting.stmt_format s)
-          in
-          Printf.printf "Scope: \n" ; Table.iter iter h ; aux t
-    in
-    aux env
+
 end

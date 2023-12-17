@@ -86,8 +86,9 @@ let stmt_format stmt =
   let rec aux = function
     | Return (_, e) ->
         Printf.sprintf "Return statement: %s\n\n" (expr_format e)
-    | Expression (_, e, _) ->
-        Printf.sprintf "Expression statement: %s\n\n" (expr_format e)
+    | Expression (_, e, t) ->
+        Printf.sprintf "Expression statement of type %s: %s\n\n "
+          (typ_to_string t) (expr_format e)
     | Block (_, stmt_list) ->
         let t = ref "" in
         (* bad functionnal code *)
