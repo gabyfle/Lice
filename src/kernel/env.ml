@@ -81,6 +81,7 @@ module Scope = struct
     find_opt name env
 
   let set (env : t) (name : string) (v : statement) : t =
+    Printf.printf "Setting %s to %s\n" name (Formatting.stmt_format v) ;
     let rec aux name v = function
       | [] ->
           [Table.add name v Table.empty]

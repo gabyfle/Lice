@@ -3,6 +3,7 @@ a = a + 49;
 
 if (true) {
     a = a + 4;
-} else {
-    a = a - 4;
+    let number b = a;
 }
+
+let c = a;
