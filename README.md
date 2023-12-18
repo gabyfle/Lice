@@ -21,6 +21,13 @@ For the moment, this is the very beginning of the project, the parser should wor
 
 Of course the ultimate goal, and also the primary feature of the language will be it's interoperability with OCaml, as well as its module system, to make OCaml developers able to build libraries for Lice in OCaml, but since we do not have something working yet, this will be in the last stage of the development.
 
+## Features of the language
+    - Type annotations
+    - Recursive functions
+    - OCaml-like pattern matching
+    - Native lists
+    - Embedabble withing any OCaml application
+
 ## Example programs
 
 Here are some example programs. Note that since the current stage of the project is still "WIP", this syntax may be subject to slight changes.
@@ -36,7 +43,7 @@ This little snippet shows how you can compute x^n when n is an integer. It uses 
 --    (this is a comment)    --
 -----------------------------]]
 
-function power(x, n): number {
+function power(x, n): number { -- you're not forced to use type annotations, they are optionnal
     if (n == 0) { return 1; }
     match (x % 2) with {
         | 0 -> return power(x * x, n / 2);
@@ -82,7 +89,7 @@ This program demonstrate how to count to ten using a recursive function. Note: i
 --    (this is a comment)    --
 -----------------------------]]
 
-function main(x: number): number {
+function main(x) {
     if (x == 10) { return x; }
     main(x + 1);
 }
