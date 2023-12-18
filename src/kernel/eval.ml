@@ -23,7 +23,6 @@
 open Ast.Types
 open Env
 open Located_error
-open Utils
 
 module type EVAL = sig
   val exec : program -> unit
@@ -36,7 +35,8 @@ module Eval : EVAL = struct
     match Scope.get env id with
     | Some (Expression (_, expr, T_Auto)) ->
         val_to_typ expr
-    | Some (Expression (_, _, t)) -> t
+    | Some (Expression (_, _, t)) ->
+        t
     | _ ->
         raise (Located_error (`Undefined_Variable id, loc))
 
@@ -44,8 +44,7 @@ module Eval : EVAL = struct
     try
       let t' = get_type env loc id in
       t = t'
-    with Located_error (`Undefined_Variable _, _) ->
-      false
+    with Located_error (`Undefined_Variable _, _) -> false
 
   let get_value env loc ident =
     match Scope.get env ident with
@@ -73,27 +72,24 @@ module Eval : EVAL = struct
               match get_value env loc id with
               | `Expression (Number k') ->
                   k'
-              | `Expression e ->
-                    Printf.printf "e = %s\n" (Formatting.expr_format e) ;
-                    raise (Located_error (`Not_Number, loc))
+              | `Expression _ ->
+                  raise (Located_error (`Not_Number, loc))
               | _ ->
                   raise (Located_error (`Not_Number, loc))
             in
             (k, value)
           else raise (Located_error (`Not_Number, loc))
       | Variable (id, _), Number k ->
-            Printf.printf "We're here\n";
           let is_number = is_variable_type env loc id T_Number in
           if is_number then
             let value =
-                match get_value env loc id with
-                | `Expression (Number k') ->
-                    k'
-                | `Expression e ->
-                      Printf.printf "e = %s\n" (Formatting.expr_format e) ;
-                      raise (Located_error (`Not_Number, loc))
-                | _ ->
-                    raise (Located_error (`Not_Number, loc))
+              match get_value env loc id with
+              | `Expression (Number k') ->
+                  k'
+              | `Expression _ ->
+                  raise (Located_error (`Not_Number, loc))
+              | _ ->
+                  raise (Located_error (`Not_Number, loc))
             in
             (value, k)
           else raise (Located_error (`Not_Number, loc))
@@ -270,10 +266,9 @@ module Eval : EVAL = struct
         in
         aux blck_env stmts
     | Assign (loc, (id, t), e) ->
-        Printf.printf "Assigning %s\n" id ;
         let tmp, processed = eval_expr env loc (env, e) in
         let n_env = Scope.set tmp id (Expression (loc, processed, t)) in
-        Scope.dump n_env ; (n_env, Empty)
+        (n_env, Empty)
     | FuncDef (_, (id, _), _, _) as f ->
         (Scope.set env id f, Empty)
     | Match (loc, pattern, cases) ->

@@ -70,8 +70,6 @@ module Scope = struct
     aux env
 
   let get (env : t) (name : identificator) : statement option =
-    Printf.printf "Looking for %s inside this scope:\n" name ;
-    dump env ;
     let rec find_opt name = function
       | [] ->
           None
@@ -98,6 +96,4 @@ module Scope = struct
     match env with [] -> [Table.empty] | h :: _ -> h :: env
 
   let pop_scope (env : t) : t = match env with [] -> env | _ :: t -> t
-
-
 end
