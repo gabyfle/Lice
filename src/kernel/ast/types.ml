@@ -55,6 +55,24 @@ and statement =
 
 and program = statement list
 
+let val_to_typ = function
+    | Number _ ->
+        T_Number
+    | String _ ->
+        T_String
+    | Boolean _ ->
+        T_Boolean
+    | List _ ->
+        T_List
+    | Variable (_, t) ->
+        t
+    | BinOp (_, _, _) ->
+        T_Number
+    | FuncCall (_, _) ->
+        T_Auto
+    | Empty ->
+        T_Void
+
 let typ_to_string = function
   | T_Number ->
       "number"

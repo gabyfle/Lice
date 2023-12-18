@@ -32,13 +32,20 @@ end
 module Eval : EVAL = struct
   type _expr_or_statement = [`Expression of expr | `Statement of statement]
 
-  let is_variable_type env id t =
+  let get_type env loc id =
     match Scope.get env id with
-    | Some (Expression (_, _, t')) ->
-        Printf.printf "Found value";
-        t = t'
+    | Some (Expression (_, expr, T_Auto)) ->
+        val_to_typ expr
+    | Some (Expression (_, _, t)) -> t
     | _ ->
-        false
+        raise (Located_error (`Undefined_Variable id, loc))
+
+  let is_variable_type env loc id t =
+    try
+      let t' = get_type env loc id in
+      t = t'
+    with Located_error (`Undefined_Variable _, _) ->
+      false
 
   let get_value env loc ident =
     match Scope.get env ident with
@@ -60,7 +67,7 @@ module Eval : EVAL = struct
       | Number k, Number k' ->
           (k, k')
       | Number k, Variable (id, _) ->
-          let is_number = is_variable_type env id T_Number in
+          let is_number = is_variable_type env loc id T_Number in
           if is_number then
             let value =
               match get_value env loc id with
@@ -76,7 +83,7 @@ module Eval : EVAL = struct
           else raise (Located_error (`Not_Number, loc))
       | Variable (id, _), Number k ->
             Printf.printf "We're here\n";
-          let is_number = is_variable_type env id T_Number in
+          let is_number = is_variable_type env loc id T_Number in
           if is_number then
             let value =
                 match get_value env loc id with
@@ -91,8 +98,8 @@ module Eval : EVAL = struct
             (value, k)
           else raise (Located_error (`Not_Number, loc))
       | Variable (id, _), Variable (id', _) ->
-          let is_number = is_variable_type env id T_Number in
-          let is_number' = is_variable_type env id' T_Number in
+          let is_number = is_variable_type env loc id T_Number in
+          let is_number' = is_variable_type env loc id' T_Number in
           if is_number && is_number' then
             let v = get_value env loc id in
             let v' = get_value env loc id' in

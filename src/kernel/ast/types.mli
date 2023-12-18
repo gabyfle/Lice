@@ -55,6 +55,8 @@ and statement =
 
 and program = statement list
 
+val val_to_typ : expr -> typ
+
 val typ_to_string : typ -> string
 
 val stmt_to_string : statement -> string

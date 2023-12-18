@@ -163,6 +163,8 @@ let typ ==
   | VOID; { T_Void }
 
 let assign ==
+  | LET; p = IDENT; COLON; ASSIGN; e = expr;
+  { Assign ($startpos, (p, T_Auto), e)}
   | LET; t = typ; p = IDENT; ASSIGN; e = expr;
   { Assign ($startpos, (p, t), e)}
   | p = IDENT; ASSIGN; e = expr;
