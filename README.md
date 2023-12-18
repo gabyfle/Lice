@@ -83,12 +83,6 @@ function reverse(l: list): list {
 This program demonstrate how to count to ten using a recursive function. Note: if we're using recursive functions for the moment, it's because we don't have any loop system in the language.
 
 ```lua
---[[---------------------------
---    Recursive power func   --
---                           --
---    (this is a comment)    --
------------------------------]]
-
 function main(x) {
     if (x == 10) { return x; }
     main(x + 1);
