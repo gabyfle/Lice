@@ -63,6 +63,7 @@ module Eval : EVAL = struct
           raise (Located_error (`Language_Error str, loc)) )
 
   let rec binop_helper env loc v v' =
+    Utils.Logger.Logger.debug "Binop helper" ;
     let aux (k, k') = function
       | Plus ->
           Number (k +. k')
@@ -124,8 +125,16 @@ module Eval : EVAL = struct
               raise (Located_error (`Not_Number, loc))
         else raise (Located_error (`Not_Number, loc))
     | a, b ->
-        let tmp, v_a = eval_expr env loc (env, a) in
-        let tmp', v_b = eval_expr tmp loc (tmp, b) in
+        let rec eval_to_value env loc expr =
+          let tmp, v = eval_expr env loc (env, expr) in
+          match v with
+          | Number _ | String _ | Boolean _ | Variable _ ->
+              (tmp, v)
+          | _ ->
+              eval_to_value tmp loc v
+        in
+        let tmp, v_a = eval_to_value env loc a in
+        let tmp', v_b = eval_to_value tmp loc b in
         binop_helper tmp' loc v_a v_b
 
   and bincomp_helper env loc v v' =
@@ -163,9 +172,11 @@ module Eval : EVAL = struct
               raise (Located_error (`Function_Value, loc))
         else raise (Located_error (`Wrong_Type (val_to_typ v, e_typ), loc))
     | a, b ->
-        let tmp, v_a = eval_expr env loc (env, a) in
-        let tmp', v_b = eval_expr tmp loc (tmp, b) in
-        bincomp_helper tmp' loc v_a v_b
+        Printf.printf "%s\n" (Utils.Formatting.expr_format a) ;
+        Printf.printf "%s\n" (Utils.Formatting.expr_format b) ;
+        aux (Number 0.) (Number 0.)
+  (*let tmp, v_a = eval_expr env loc (env, a) in let tmp', v_b = eval_expr tmp
+    loc (tmp, b) in bincomp_helper tmp' loc v_a v_b*)
 
   (* compute_list recreates a list object from a syntax like h :: t. [env] is
      the current environement in which we're doing this [loc] is the location of
@@ -263,11 +274,13 @@ module Eval : EVAL = struct
                    "An error occurred while trying to get the variable"
                , loc ) ) )
     | env, BinOp (op, a, b) -> (
-      match op with
-      | `Compare bincomp ->
-          (env, bincomp_helper env loc a b bincomp)
-      | `Operator binop ->
-          (env, binop_helper env loc a b binop) )
+        let env', a' = eval_expr env loc (env, a) in
+        let env'', b' = eval_expr env' loc (env', b) in
+        match op with
+        | `Compare bincomp ->
+            (env'', bincomp_helper env loc a' b' bincomp)
+        | `Operator binop ->
+            (env'', binop_helper env loc a b binop) )
     | env, FuncCall (id, expr_list) ->
         let rec exprs acc = function
           | [] ->

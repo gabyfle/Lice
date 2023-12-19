@@ -1,0 +1,7 @@
+let a = 30;
+let b = 50;
+let c = 90;
+
+let d = (a - b) * c;
+
+let f = (d - 4) * 0;

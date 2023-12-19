@@ -6,10 +6,11 @@ function main(): number {
 let c = main();
 
 function two(a: number): bool {
-    if (a == 23) {
+    let cond = (a + 1) * 0;
+    if ((a + 1) * 0 == 23) {
         let d = true;
         return d;
     } else return false;
 }
 
-let bool is_true = two(c + 1);
+let bool is_true = two(c - 1);
