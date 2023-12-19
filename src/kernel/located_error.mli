@@ -40,3 +40,8 @@ type exception_type =
   | `Expected_Return_Statement ]
 
 exception Located_error of exception_type * location
+
+(* handle_type_exception is an helper function that allows to display nice error
+   messages and to handle Located_error exception during the type checking
+   process. *)
+val handle_type_exception : ('a -> 'b -> 'c) -> 'a -> 'b -> 'c

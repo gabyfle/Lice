@@ -31,7 +31,7 @@ let () =
         (* Get the directory containing the executable *)
         let exec_dir = Filename.dirname exec_path in
         (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/lists/reverse.lice"
+        Filename.concat exec_dir "tests/pattern/power.lice"
     | _ ->
         failwith "Invalid command line arguments"
   in
@@ -49,7 +49,7 @@ let () =
   let ast = parse_code code in
   try
     let t r = r in
-    let _ = Errors.handle_type_exception t Eval.exec ast in
+    let _ = Located_error.handle_type_exception t Eval.exec ast in
     ()
   with _ ->
     Logger.error "Error while evaluating the Lice code. Exiting..." ;
