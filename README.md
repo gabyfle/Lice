@@ -43,19 +43,21 @@ This little snippet shows how you can compute x^n when n is an integer. It uses 
 --    (this is a comment)    --
 -----------------------------]]
 
-function power(x, n): number { -- you're not forced to use type annotations, they are optionnal
-    if (n == 0) { return 1; }
-    match (x % 2) with {
-        | 0 -> return power(x * x, n / 2);
-        | 1 -> return power(x, n - 1);
-    }
+function power(x: number, n: number, acc: number): number {
+    if (n == 0) return acc;
+    if (n == 1) return acc * x;
+
+    if ((n % 2) ~= 0) return power(x * x, (n - 1) / 2, x * acc);
+    else return power(x * x, n / 2, acc);
 }
 
 function main(): void {
-    let number x = 30;
-    let number n = 5;
+    let number x = 2;
+    let number n = 8;
 
-    let number p = power(x, n);
+    let number p = power(x, n, 1);
+
+    return;
 }
 
 main();
