@@ -53,9 +53,26 @@ let handle_type_exception f a b =
   | Located_error (`Undefined_Function, loc) ->
       let str = Formatting.misc_error loc "Calling an undefined function" in
       Logger.error "%s" str ; exit 1
+  | Located_error (`Undefined_Variable id, loc) ->
+      let str =
+        Formatting.misc_error loc "Using an undefined variable of name "
+      in
+      Logger.error "%s %s" str id ;
+      exit 1
   | Located_error (`Not_A_Callable, loc) ->
       let str =
         Formatting.misc_error loc "Trying to call a non callable object"
+      in
+      Logger.error "%s" str ; exit 1
+  | Located_error (`Function_Value, loc) ->
+      let str =
+        Formatting.misc_error loc "Trying to use a function as a value"
+      in
+      Logger.error "%s" str ; exit 1
+  | Located_error (`Expected_Return_Statement, loc) ->
+      let str =
+        Formatting.misc_error loc
+          "Expected a return statement in the function body"
       in
       Logger.error "%s" str ; exit 1
   | Located_error (`Wrong_Parameters_Number (fname, a, b), loc) ->

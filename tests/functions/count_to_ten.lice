@@ -1,0 +1,6 @@
+function main(x: number): number {
+    if (x == 10) { return x; }
+    return main(x + 1);
+}
+
+let d = main(0);
