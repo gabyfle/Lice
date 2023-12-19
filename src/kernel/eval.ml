@@ -125,16 +125,8 @@ module Eval : EVAL = struct
               raise (Located_error (`Not_Number, loc))
         else raise (Located_error (`Not_Number, loc))
     | a, b ->
-        let rec eval_to_value env loc expr =
-          let tmp, v = eval_expr env loc (env, expr) in
-          match v with
-          | Number _ | String _ | Boolean _ | Variable _ ->
-              (tmp, v)
-          | _ ->
-              eval_to_value tmp loc v
-        in
-        let tmp, v_a = eval_to_value env loc a in
-        let tmp', v_b = eval_to_value tmp loc b in
+        let tmp, v_a = eval_expr env loc (env, a) in
+        let tmp', v_b = eval_expr tmp loc (tmp, b) in
         binop_helper tmp' loc v_a v_b
 
   and bincomp_helper env loc v v' =
@@ -172,11 +164,9 @@ module Eval : EVAL = struct
               raise (Located_error (`Function_Value, loc))
         else raise (Located_error (`Wrong_Type (val_to_typ v, e_typ), loc))
     | a, b ->
-        Printf.printf "%s\n" (Utils.Formatting.expr_format a) ;
-        Printf.printf "%s\n" (Utils.Formatting.expr_format b) ;
-        aux (Number 0.) (Number 0.)
-  (*let tmp, v_a = eval_expr env loc (env, a) in let tmp', v_b = eval_expr tmp
-    loc (tmp, b) in bincomp_helper tmp' loc v_a v_b*)
+        let tmp, v_a = eval_expr env loc (env, a) in
+        let tmp', v_b = eval_expr tmp loc (tmp, b) in
+        bincomp_helper tmp' loc v_a v_b
 
   (* compute_list recreates a list object from a syntax like h :: t. [env] is
      the current environement in which we're doing this [loc] is the location of

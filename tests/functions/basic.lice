@@ -7,9 +7,8 @@ let c = main();
 
 function two(a: number): bool {
     let cond = (a + 1) * 0;
-    if ((a + 1) * 0 == 23) {
-        let d = true;
-        return d;
+    if (((a + 1) * 0) == 23) {
+        return true;
     } else return false;
 }
 
