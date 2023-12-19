@@ -31,8 +31,6 @@ end
 module Eval : EVAL = struct
   type _expr_or_statement = [`Expression of expr | `Statement of statement]
 
-  type 'a _value_or_none = [`Value of 'a | `None]
-
   let get_type env loc id =
     match Scope.get env id with
     | Some (Expression (_, expr, T_Auto)) ->
@@ -61,6 +59,22 @@ module Eval : EVAL = struct
       | _ ->
           let str = Printf.sprintf "Variable %s definition error." ident in
           raise (Located_error (`Language_Error str, loc)) )
+
+  let rec get_list_head loc = function
+    | List (Some h, _) ->
+        Some h
+    | List (None, Empty) ->
+        None
+    | List (None, t) ->
+        get_list_head loc t
+    | _ ->
+        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+
+  let get_list_tail loc = function
+    | List (_, t) ->
+        t
+    | _ ->
+        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
 
   let rec binop_helper env loc v v' =
     Utils.Logger.Logger.debug "Binop helper" ;
@@ -253,10 +267,10 @@ module Eval : EVAL = struct
         (env, Empty)
     | (_, (Number _ | String _ | Boolean _)) as v ->
         v
-    | env, (List(h, Variable(id, _))) ->
+    | env, List (h, Variable (id, _)) ->
         let l' = compute_list env loc h id in
         (env, l')
-    | env, (List(_, _) as l) ->
+    | env, (List (_, _) as l) ->
         (env, l)
     | env, Variable (id, _) -> (
       match get_value env loc id with
@@ -295,10 +309,53 @@ module Eval : EVAL = struct
       | (Empty, stmts) :: _ ->
           eval_statement n_env (Block (loc, stmts))
       (* same if we find a corresponding pattern *)
-      | (case, stmts) :: _ when case = eval_pattern ->
-          eval_statement env (Block (loc, stmts))
-      | _ :: t ->
-          iterate_cases t
+      | ( List
+            (Some ((Number _ | String _ | Boolean _) as term), Variable (id, _))
+        , stmts )
+        :: _ -> (
+          if not (val_to_typ eval_pattern = T_List) then
+            iterate_cases (List.tl cases)
+          else
+            let hd = get_list_head loc eval_pattern in
+            match hd with
+            | Some k ->
+                if compare_expr k term then
+                  let n_env =
+                    Scope.set n_env id
+                      (Expression
+                         ( loc
+                         , get_list_tail loc eval_pattern
+                         , val_to_typ eval_pattern ) )
+                  in
+                  eval_statement n_env (Block (loc, stmts))
+                else iterate_cases (List.tl cases)
+            | None ->
+                iterate_cases (List.tl cases) )
+    | (List (Some Variable(id, _), Variable(id', _)), stmts) :: _ -> (
+          if not (val_to_typ eval_pattern = T_List) then
+            iterate_cases (List.tl cases)
+          else
+            let hd = get_list_head loc eval_pattern in
+            let tail = get_list_tail loc eval_pattern in
+            match hd with
+            | Some k ->
+                let tmp = Scope.push_scope n_env in
+                let tmp' =
+                  Scope.set tmp id
+                    (Expression (loc, k, val_to_typ eval_pattern))
+                in
+                let n_env =
+                    Scope.set tmp' id'
+                        (Expression (loc, tail, val_to_typ eval_pattern))
+                in
+                eval_statement n_env (Block (loc, stmts))
+            | None ->
+                iterate_cases (List.tl cases) )
+      | (case, stmts) :: _ ->
+          let n_env, eval_case = eval_expr n_env loc (n_env, case) in
+          if compare_expr eval_pattern eval_case then
+            eval_statement n_env (Block (loc, stmts))
+          else iterate_cases (List.tl cases)
     in
     iterate_cases cases
 

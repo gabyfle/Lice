@@ -64,3 +64,5 @@ val stmt_to_string : statement -> string
 val bincomp_to_string : binary_comp -> string
 
 val binop_to_string : binary_operator -> string
+
+val compare_expr : expr -> expr -> bool

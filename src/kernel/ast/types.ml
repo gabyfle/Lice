@@ -128,3 +128,31 @@ let binop_to_string = function
       "*"
   | Mod ->
       "%"
+
+let rec compare_expr e1 e2 =
+  match (e1, e2) with
+  | Empty, Empty ->
+      true
+  | Number f, Number f' ->
+      f = f'
+  | String s, String s' ->
+      s = s'
+  | Boolean b, Boolean b' ->
+      b = b'
+  | List (e1_opt, e1'), List (e2_opt, e2') ->
+      ( match (e1_opt, e2_opt) with
+      | Some e1_opt', Some e2_opt' ->
+          compare_expr e1_opt' e2_opt'
+      | None, None ->
+          true
+      | _ ->
+          false )
+      && compare_expr e1' e2'
+  | Variable (id, _), Variable (id', _) ->
+      id = id' (* assuming typed_ident can be compared directly *)
+  | BinOp (op1, e1_1, e1_2), BinOp (op2, e2_1, e2_2) ->
+      op1 = op2 && compare_expr e1_1 e2_1 && compare_expr e1_2 e2_2
+  | FuncCall (id, exprs1), FuncCall (id', exprs2) ->
+      id = id' && List.for_all2 compare_expr exprs1 exprs2
+  | _ ->
+      false

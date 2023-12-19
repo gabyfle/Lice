@@ -58,7 +58,8 @@ let expr_format expr =
     | List (Some head, tail) ->
         let head_str = aux head in
         let tail_str = aux tail in
-        Printf.sprintf "List expression: [\nHEAD: %s; \nTAIL: %s\n]" head_str tail_str
+        Printf.sprintf "List expression: [\nHEAD: %s; \nTAIL: %s\n]" head_str
+          tail_str
     | Variable (id, t) ->
         let str_t = typ_to_string t in
         Printf.sprintf "Variable name %s of type %s" id str_t
