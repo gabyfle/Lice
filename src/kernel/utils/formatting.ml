@@ -43,7 +43,7 @@ let misc_error (loc : Lexing.position) str =
   Format.sprintf "%s. At line %d, character %d." str line char
 
 let expr_format expr =
-  let rec aux acc = function
+  let rec aux = function
     | Empty ->
         "Empty expression \n"
     | Number num ->
@@ -52,13 +52,13 @@ let expr_format expr =
         Printf.sprintf "String expression value: %s" str
     | Boolean b ->
         Printf.sprintf "Boolean expression value %b" b
-    | List (head, tail) -> (
-      match head with
-      | None ->
-          aux acc tail
-      | Some h ->
-          let t = aux "" h in
-          aux (acc ^ t) tail )
+    | List (None, tail) ->
+        let tail_str = aux tail in
+        Printf.sprintf "List expression: [%s]" tail_str
+    | List (Some head, tail) ->
+        let head_str = aux head in
+        let tail_str = aux tail in
+        Printf.sprintf "List expression: [\nHEAD: %s; \nTAIL: %s\n]" head_str tail_str
     | Variable (id, t) ->
         let str_t = typ_to_string t in
         Printf.sprintf "Variable name %s of type %s" id str_t
@@ -70,17 +70,17 @@ let expr_format expr =
           | `Operator op ->
               binop_to_string op
         in
-        let left = aux "" e in
-        let right = aux "" e' in
+        let left = aux e in
+        let right = aux e' in
         Printf.sprintf "Binary operator: [%s] %s [%s]\n" left bin right
     | FuncCall (id, expr_list) ->
         let t = ref "" in
         (* bad functionnal code *)
-        let iter e = t := !t ^ ";" ^ aux "" e in
+        let iter e = t := !t ^ ";" ^ aux e in
         List.iter iter expr_list ;
         Printf.sprintf "Function call ID: %s; Expression list: %s\n" id !t
   in
-  aux "" expr
+  aux expr
 
 let stmt_format stmt =
   let rec aux = function

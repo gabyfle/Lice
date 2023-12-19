@@ -22,6 +22,7 @@
 
 %{
   open Ast.Types  (* Include the AST module *)
+  open Utils
 %}
 
 %token <string> IDENT
@@ -122,13 +123,17 @@ let binop ==
 let list_terminals :=
   | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
   {
-    let construct_list elems =
-      let rec aux acc = function
-        | [] -> acc
-        | h :: t -> aux (List(Some h, acc)) t
-      in
-      aux (List(None, Empty)) (List.rev elems);
-      in construct_list elems
+    let rec print = function
+      | [] -> ()
+      | h :: t -> Printf.printf "%s\n" (Formatting.expr_format h); print t
+    in
+    print elems;
+
+    let rec aux acc = function
+      | [] -> acc
+      | h :: t -> aux (List(Some h, acc)) t
+    in
+    aux (List(None, Empty)) (List.rev elems)
   }
   | h = terminal; DOUBLE_COLON; t = IDENT;
   { List(Some h, Variable(t, T_Auto))}

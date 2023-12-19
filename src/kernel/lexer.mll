@@ -90,7 +90,11 @@ and block_comments = parse (* we're skipping everything inside multilines commen
   | _    { block_comments lexbuf }
 
 and string = parse
-  | '\"' { STRING_VALUE (Buffer.contents buf) }
+  | '\"' {
+    let str = Buffer.contents buf in
+    Buffer.clear buf;
+    STRING_VALUE str
+  }
   | _ as char {
       Buffer.add_char buf char;
       string lexbuf

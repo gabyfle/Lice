@@ -173,7 +173,7 @@ module Eval : EVAL = struct
      the statement that asked to create that list [head] is the head of the list
      we want to create (the h in h :: t) [tail] is an identificator for the list
      tail we want to create *)
-  and _compute_list env loc head (tail : identificator) =
+  and compute_list env loc head (tail : identificator) =
     let v = get_value env loc tail in
     match v with
     | `Expression (List (h, t)) -> (
@@ -251,8 +251,13 @@ module Eval : EVAL = struct
   and eval_expr _env loc = function
     | env, Empty ->
         (env, Empty)
-    | (_, (Number _ | String _ | Boolean _ | List (_, _))) as v ->
+    | (_, (Number _ | String _ | Boolean _)) as v ->
         v
+    | env, (List(h, Variable(id, _))) ->
+        let l' = compute_list env loc h id in
+        (env, l')
+    | env, (List(_, _) as l) ->
+        (env, l)
     | env, Variable (id, _) -> (
       match get_value env loc id with
       | `Expression e ->

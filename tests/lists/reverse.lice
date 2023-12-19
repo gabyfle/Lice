@@ -1,0 +1,14 @@
+function reverse_aux(l: list, acc: list): list {
+    match l with {
+        | [] -> return acc;
+        | h :: t -> return reverse_aux(t, h :: acc);
+    }
+}
+
+function reverse(l: list): list {
+    return reverse_aux(l, []);
+}
+
+let list l = ["b"; "o"; "n"; "j"; "o"; "u"; "r"];
+
+let ll = reverse(l);
