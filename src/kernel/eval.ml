@@ -257,19 +257,19 @@ module Eval : EVAL = struct
         let blck_env = Scope.push_scope env in
         let rec aux env = function
           | [] ->
-              (env, Empty)
+              (Scope.pop_scope env, Empty)
           | (Return _ as r) :: _ ->
-              eval_statement blck_env r
+              eval_statement env r
           | h :: t ->
-              let nenv, _ = eval_statement blck_env h in
+              let nenv, _ = eval_statement env h in
               aux nenv t
         in
         aux blck_env stmts
     | Assign (loc, (id, _t), e) ->
-        Printf.printf "Assigning %s\n" id;
         let tmp, processed = eval_expr env loc (env, e) in
-        let n_env = Scope.set tmp id (Expression (loc, processed, (val_to_typ processed))) in
-        Scope.dump n_env;
+        let n_env =
+          Scope.set tmp id (Expression (loc, processed, val_to_typ processed))
+        in
         (n_env, Empty)
     | FuncDef (_, (id, _), _, _) as f ->
         (Scope.set env id f, Empty)
@@ -280,8 +280,7 @@ module Eval : EVAL = struct
         let n_env, eval_cond = eval_expr env loc (env, cond) in
         match eval_cond with
         | Boolean b ->
-            Printf.printf "Condition is %b\n" b;
-            if b then (Printf.printf "We're here\n";  eval_statement n_env t) else (Printf.printf "And here\n"; eval_statement n_env f)
+            if b then eval_statement n_env t else eval_statement n_env f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
   (* for the moment we're not getting the type of the expression *)
@@ -292,8 +291,6 @@ module Eval : EVAL = struct
       | [] ->
           ()
       | stmt :: t ->
-          Printf.printf "Executing statement\n";
-          Printf.printf "%s" Utils.Formatting.(stmt_format stmt);
           let nenv, _ = eval_statement env stmt in
           aux nenv t
     in

@@ -2,8 +2,8 @@ let number a = 24;
 a = a + 49;
 
 if (true) {
-    a = a + 4;
-    let number b = a;
+    let a = 0;
+    let number b = a - 4;
 }
 
 let c = a;

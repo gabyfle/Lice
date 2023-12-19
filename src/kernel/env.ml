@@ -22,6 +22,7 @@
 
 open Ast.Types
 open Utils
+open Utils.Logger
 
 module type SCOPE = sig
   type t
@@ -63,13 +64,13 @@ module Scope = struct
             Printf.printf "Key: %s \nValue: %s \n\n" k
               (Formatting.stmt_format s)
           in
-          Printf.printf "Scope DUMP: \n" ;
-          Table.iter iter h ;
-          aux t
+          Table.iter iter h ; aux t
     in
+    Printf.printf "Scope DUMP: \n" ;
     aux env
 
   let get (env : t) (name : identificator) : statement option =
+    Logger.debug "Getting %s\n" name ;
     let rec find_opt name = function
       | [] ->
           None
@@ -81,17 +82,17 @@ module Scope = struct
     find_opt name env
 
   let set (env : t) (name : string) (v : statement) : t =
-    Printf.printf "Setting %s to %s\n" name (Formatting.stmt_format v) ;
-    let rec aux name v = function
-      | [] ->
-          [Table.add name v Table.empty]
-      | h :: t when Table.mem name h ->
-          let replace = function Some _ -> Some v | None -> None in
-          Table.update name replace h :: t
-      | h :: t ->
-          h :: aux name v t
-    in
-    aux name v env
+    Logger.debug "Setting %s to %s\n" name (Formatting.stmt_format v) ;
+    match env with
+    | [] ->
+        [Table.add name v Table.empty]
+    | h :: t ->
+        if Table.mem name h then
+          let updated = Table.add name v h in
+          updated :: t
+        else
+          let n = Table.add name v h in
+          n :: t
 
   let push_scope (env : t) : t =
     match env with [] -> [Table.empty] | h :: _ -> h :: env
