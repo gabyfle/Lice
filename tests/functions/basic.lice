@@ -1,0 +1,15 @@
+
+function main(): number {
+    return 22;
+}
+
+let c = main();
+
+function two(a: number): bool {
+    if (a == 23) {
+        let d = true;
+        return d;
+    } else return false;
+}
+
+let bool is_true = two(c + 1);

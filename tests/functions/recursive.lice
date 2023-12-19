@@ -1,0 +1,10 @@
+
+function main(v: number): number {
+    if (v > 500) {
+        return v;
+    }
+
+    return main(v * 500);
+}
+
+let c = main(200);

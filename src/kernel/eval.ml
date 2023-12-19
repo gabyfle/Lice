@@ -31,6 +31,8 @@ end
 module Eval : EVAL = struct
   type _expr_or_statement = [`Expression of expr | `Statement of statement]
 
+  type 'a _value_or_none = [`Value of 'a | `None]
+
   let get_type env loc id =
     match Scope.get env id with
     | Some (Expression (_, expr, T_Auto)) ->
@@ -60,59 +62,7 @@ module Eval : EVAL = struct
           let str = Printf.sprintf "Variable %s definition error." ident in
           raise (Located_error (`Language_Error str, loc)) )
 
-  let binop_helper env loc v v' op =
-    let values =
-      match (v, v') with
-      | Number k, Number k' ->
-          (k, k')
-      | Number k, Variable (id, _) ->
-          let is_number = is_variable_type env loc id T_Number in
-          if is_number then
-            let value =
-              match get_value env loc id with
-              | `Expression (Number k') ->
-                  k'
-              | `Expression _ ->
-                  raise (Located_error (`Not_Number, loc))
-              | _ ->
-                  raise (Located_error (`Not_Number, loc))
-            in
-            (k, value)
-          else raise (Located_error (`Not_Number, loc))
-      | Variable (id, _), Number k ->
-          let is_number = is_variable_type env loc id T_Number in
-          if is_number then
-            let value =
-              match get_value env loc id with
-              | `Expression (Number k') ->
-                  k'
-              | `Expression _ ->
-                  raise (Located_error (`Not_Number, loc))
-              | _ ->
-                  raise (Located_error (`Not_Number, loc))
-            in
-            (value, k)
-          else raise (Located_error (`Not_Number, loc))
-      | Variable (id, _), Variable (id', _) ->
-          let is_number = is_variable_type env loc id T_Number in
-          let is_number' = is_variable_type env loc id' T_Number in
-          if is_number && is_number' then
-            let v = get_value env loc id in
-            let v' = get_value env loc id' in
-            match (v, v') with
-            | `Expression (Number k), `Expression (Number k') ->
-                (k, k')
-            | _ ->
-                raise (Located_error (`Not_Number, loc))
-          else raise (Located_error (`Not_Number, loc))
-      | _ ->
-          raise
-            (Located_error
-               ( `Language_Error
-                   "An unknown error occured while trying to perform a binary \
-                    operation on Numbers."
-               , loc ) )
-    in
+  let rec binop_helper env loc v v' =
     let aux (k, k') = function
       | Plus ->
           Number (k +. k')
@@ -130,28 +80,99 @@ module Eval : EVAL = struct
             let int_k' = Int.of_float k' in
             Number (Float.of_int (int_k mod int_k'))
     in
-    aux values op
+    match (v, v') with
+    | Number k, Number k' ->
+        aux (k, k')
+    | Number k, Variable (id, _) ->
+        let is_number = is_variable_type env loc id T_Number in
+        if is_number then
+          let value =
+            match get_value env loc id with
+            | `Expression (Number k') ->
+                k'
+            | `Expression _ ->
+                raise (Located_error (`Not_Number, loc))
+            | _ ->
+                raise (Located_error (`Not_Number, loc))
+          in
+          aux (k, value)
+        else raise (Located_error (`Not_Number, loc))
+    | Variable (id, _), Number k ->
+        let is_number = is_variable_type env loc id T_Number in
+        if is_number then
+          let value =
+            match get_value env loc id with
+            | `Expression (Number k') ->
+                k'
+            | `Expression _ ->
+                raise (Located_error (`Not_Number, loc))
+            | _ ->
+                raise (Located_error (`Not_Number, loc))
+          in
+          aux (value, k)
+        else raise (Located_error (`Not_Number, loc))
+    | Variable (id, _), Variable (id', _) ->
+        let is_number = is_variable_type env loc id T_Number in
+        let is_number' = is_variable_type env loc id' T_Number in
+        if is_number && is_number' then
+          let v = get_value env loc id in
+          let v' = get_value env loc id' in
+          match (v, v') with
+          | `Expression (Number k), `Expression (Number k') ->
+              aux (k, k')
+          | _ ->
+              raise (Located_error (`Not_Number, loc))
+        else raise (Located_error (`Not_Number, loc))
+    | a, b ->
+        let tmp, v_a = eval_expr env loc (env, a) in
+        let tmp', v_b = eval_expr tmp loc (tmp, b) in
+        binop_helper tmp' loc v_a v_b
 
-  let bincomp_helper _env _loc v v' = function
-    | Equal ->
-        Boolean (v = v')
-    | NotEqual ->
-        Boolean (v <> v')
-    | GEQ ->
-        Boolean (v >= v')
-    | LEQ ->
-        Boolean (v <= v')
-    | Greater ->
-        Boolean (v > v')
-    | Lesser ->
-        Boolean (v < v')
+  and bincomp_helper env loc v v' =
+    let aux a b = function
+      | Equal ->
+          Boolean (a = b)
+      | NotEqual ->
+          Boolean (a <> b)
+      | GEQ ->
+          Boolean (a >= b)
+      | LEQ ->
+          Boolean (a <= b)
+      | Greater ->
+          Boolean (a > b)
+      | Lesser ->
+          Boolean (a < b)
+    in
+    match (v, v') with
+    | Number k, Number k' ->
+        aux k k'
+    | String k, String k' ->
+        aux k k'
+    | Boolean k, Boolean k' ->
+        aux k k'
+    | (Variable (id, _) as v), ((Number _ | String _ | Boolean _) as e)
+    | ((Number _ | String _ | Boolean _) as e), (Variable (id, _) as v) ->
+        let e_typ = val_to_typ e in
+        let same_typ = is_variable_type env loc id e_typ in
+        if same_typ then
+          let v_val = get_value env loc id in
+          match v_val with
+          | `Expression v_val ->
+              aux v_val e
+          | _ ->
+              raise (Located_error (`Function_Value, loc))
+        else raise (Located_error (`Wrong_Type (val_to_typ v, e_typ), loc))
+    | a, b ->
+        let tmp, v_a = eval_expr env loc (env, a) in
+        let tmp', v_b = eval_expr tmp loc (tmp, b) in
+        bincomp_helper tmp' loc v_a v_b
 
   (* compute_list recreates a list object from a syntax like h :: t. [env] is
      the current environement in which we're doing this [loc] is the location of
      the statement that asked to create that list [head] is the head of the list
      we want to create (the h in h :: t) [tail] is an identificator for the list
      tail we want to create *)
-  let _compute_list env loc head (tail : identificator) =
+  and _compute_list env loc head (tail : identificator) =
     let v = get_value env loc tail in
     match v with
     | `Expression (List (h, t)) -> (
@@ -164,10 +185,10 @@ module Eval : EVAL = struct
      the given arguments first, then populates a new scope made out of the
      current one but with the new local variables defined in the function
      definition *)
-  let rec eval_function env loc id expr_list =
+  and eval_function env loc id expr_list =
     let params, stmts =
       match get_value env loc id with
-      | `Statement (FuncDef (_, _, p, s)) ->
+      | `Statement (FuncDef (_, _, p, Block (_, s))) ->
           (p, s)
       | _ ->
           raise (Located_error (`Not_A_Callable, loc))
@@ -181,11 +202,10 @@ module Eval : EVAL = struct
           process_args (eval_expr env loc h :: acc) t
     in
     let processed_args = List.rev (process_args [] expr_list) in
-    let f_env = Scope.push_scope env in
     (* f_env is a copy of our current env *)
     (* then we want to populate the new env with these processed arguments so
        that inside the function we got our local variables *)
-    let rec iter2 acc a b =
+    let rec add_to_scope acc a b =
       match (a, b) with
       | [], [] ->
           acc
@@ -196,10 +216,36 @@ module Eval : EVAL = struct
                    (id, List.length params, List.length processed_args)
                , loc ) )
       | (id, _) :: t, (_, h) :: t' ->
-          iter2 (Scope.set acc id (Expression (loc, h, T_Auto))) t t'
+          add_to_scope (Scope.set acc id (Expression (loc, h, T_Auto))) t t'
     in
-    let n_env = iter2 f_env params processed_args in
-    eval_expr n_env loc (eval_statement n_env stmts)
+    let f_env = add_to_scope (Scope.push_scope env) params processed_args in
+    (* now we can evaluate the function statements *)
+    let rec aux env = function
+      | [] ->
+          raise (Located_error (`Expected_Return_Statement, loc))
+      | stmt :: t -> (
+          let n_env, stmt = eval_statement env stmt in
+          match stmt with
+          | Return (_, e) ->
+              let expected_ret =
+                Scope.get env id
+                |> function
+                | Some (FuncDef (_, (_, t), _, _)) ->
+                    t
+                | _ ->
+                    raise (Located_error (`Not_A_Callable, loc))
+              in
+              let scp, processed = eval_expr n_env loc (n_env, e) in
+              (* check the return type of the processed return expression *)
+              let return_type = val_to_typ processed in
+              if expected_ret <> T_Auto && return_type <> expected_ret then
+                raise
+                  (Located_error (`Wrong_Type (expected_ret, return_type), loc))
+              else (Scope.pop_scope scp, processed)
+          | _ ->
+              aux n_env t )
+    in
+    aux f_env stmts
 
   and eval_expr _env loc = function
     | env, Empty ->
@@ -235,7 +281,7 @@ module Eval : EVAL = struct
     let n_env, eval_pattern = eval_expr env loc pattern in
     let rec iterate_cases = function
       | [] ->
-          (n_env, Empty)
+          (n_env, Expression (loc, Empty, T_Void))
       (* if we find a wildcard then we can stop analysis of the match
          statement *)
       | (Empty, stmts) :: _ ->
@@ -249,38 +295,52 @@ module Eval : EVAL = struct
     iterate_cases cases
 
   and eval_statement env = function
-    | Return (_, e) ->
-        (env, e)
+    | Return (loc, e) ->
+        Utils.Logger.Logger.debug "Return statement found" ;
+        (env, Return (loc, e)) (* Wrap the expression in a Return statement *)
     | Expression (loc, e, _typ) ->
-        eval_expr env loc (env, e)
-    | Block (_, stmts) ->
+        let env, expr = eval_expr env loc (env, e) in
+        (env, Expression (loc, expr, _typ))
+        (* Wrap the expression in an Expression statement *)
+    | Block (loc, stmts) ->
         let blck_env = Scope.push_scope env in
         let rec aux env = function
           | [] ->
-              (Scope.pop_scope env, Empty)
-          | (Return _ as r) :: _ ->
-              eval_statement env r
-          | h :: t ->
-              let nenv, _ = eval_statement env h in
-              aux nenv t
+              (Scope.pop_scope env, Expression (loc, Empty, T_Void))
+          | stmt :: t -> (
+              let nenv, stmt = eval_statement env stmt in
+              match stmt with
+              | Return _ ->
+                  (nenv, stmt)
+                  (* If the statement is a Return statement, immediately return
+                     it *)
+              | _ ->
+                  aux nenv t (* Otherwise, continue with the next statement *) )
         in
         aux blck_env stmts
     | Assign (loc, (id, _t), e) ->
         let tmp, processed = eval_expr env loc (env, e) in
-        let n_env =
-          Scope.set tmp id (Expression (loc, processed, val_to_typ processed))
-        in
-        (n_env, Empty)
+        if _t <> T_Auto && _t <> val_to_typ processed then
+          raise (Located_error (`Wrong_Type (_t, val_to_typ processed), loc))
+        else
+          let n_env =
+            Scope.set tmp id (Expression (loc, processed, val_to_typ processed))
+          in
+          (n_env, Expression (loc, Empty, T_Void))
     | FuncDef (_, (id, _), _, _) as f ->
-        (Scope.set env id f, Empty)
+        (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
-        eval_match env loc (env, pattern) cases
+        let env, stmt = eval_match env loc (env, pattern) cases in
+        (env, stmt)
+        (* Return the match statement *)
     | If (loc, cond, t, f) -> (
-        (* t = true, f = false *)
         let n_env, eval_cond = eval_expr env loc (env, cond) in
         match eval_cond with
         | Boolean b ->
-            if b then eval_statement n_env t else eval_statement n_env f
+            if b then (
+              Utils.Logger.Logger.debug "True statement found" ;
+              eval_statement n_env t )
+            else eval_statement n_env f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
   (* for the moment we're not getting the type of the expression *)
@@ -291,7 +351,7 @@ module Eval : EVAL = struct
       | [] ->
           ()
       | stmt :: t ->
-          let nenv, _ = eval_statement env stmt in
+          let nenv, _stmt = eval_statement env stmt in
           aux nenv t
     in
     aux _env p

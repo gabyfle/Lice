@@ -30,11 +30,13 @@ type exception_type =
   | `Undefined_Function
   | `Undefined_Variable of identificator
   | `Not_A_Callable
+  | `Function_Value
   | `Wrong_Parameters_Number of identificator * int * int
   | `Wrong_Parameter_Type of identificator * typ * typ
   | `Wrong_Assign_Type of identificator * typ * typ
   | `Wrong_Return_Type of identificator * typ * typ
   | `Wrong_Case_Type of typ * typ
-  | `Wrong_Type of typ * typ ]
+  | `Wrong_Type of typ * typ
+  | `Expected_Return_Statement ]
 
 exception Located_error of exception_type * location

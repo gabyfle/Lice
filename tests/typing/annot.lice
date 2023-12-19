@@ -1,0 +1,9 @@
+
+let number a = 0;
+let number b = a;
+
+--[[
+    this should raise an error because a +b is of type number
+]]
+
+let string c = a + b;

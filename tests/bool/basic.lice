@@ -1,0 +1,7 @@
+let number a = 10;
+
+let number b = 20;
+
+let number c = 30;
+
+let d = (((a + b) + c) / 3) > 10;
