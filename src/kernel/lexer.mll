@@ -31,7 +31,6 @@
               "return", RETURN;
               "number", NUMBER;
               "string", STRING;
-              "map", MAP;
               "list", LIST;
               "bool", BOOL;
               "void", VOID;
@@ -84,7 +83,6 @@ rule token = parse
   | '['             { LBRACKET }
   | ']'             { RBRACKET }
   | eof             { EOF }
-  | _               { ILLEGAL }
 
 and block_comments = parse (* we're skipping everything inside multilines comments *)
   | "]]" { token lexbuf }

@@ -1,0 +1,20 @@
+function power(x, n, acc) {
+    if (n == 0) return acc;
+    if (n == 1) return acc * x;
+
+    match (n % 2) with {
+        | 0 -> return power(x * x, n / 2, acc);
+        | 1 -> return power(x * x, (n - 1) / 2, x * acc);
+    }
+}
+
+function main(): void {
+    let number x = 2;
+    let number n = 8;
+
+    let number p = power(x, n, 1);
+
+    return;
+}
+
+main();

@@ -34,7 +34,6 @@
 (* Types annotation tokens *)
 %token NUMBER
 %token STRING
-%token MAP
 %token LIST
 %token BOOL
 %token VOID
@@ -88,7 +87,6 @@
 %token LESSER
 
 (* Misc *)
-%token ILLEGAL
 %token EOF
 %token EOL
 
@@ -201,10 +199,14 @@ let binary_operator ==
 let func_def_param ==
   | a = IDENT; COLON; t = typ;
     { (a, t) }
+  | a = IDENT;
+    { (a, T_Auto) }
 
 let func_def ==
   | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; b = block;
     { FuncDef($startpos, (p, t), args, b) }
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; b = block;
+    { FuncDef($startpos, (p, T_Auto), args, b) }
 
 let func_call_param ==
   | p = expr; { p }
