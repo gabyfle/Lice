@@ -71,17 +71,7 @@ module type T = sig
 end
 
 module Make (Ty : S) : T with type t = Ty.t and type value = Ty.value = struct
-  type t = Ty.t
-
-  type value = Ty.value
-
-  let name = Ty.name
-
-  let pretty = Ty.pretty
-
-  let compare = Ty.compare
-
-  let from = Ty.from
+  include Ty
 
   let eq : t -> t -> bool = fun x y -> compare x y = 0
 

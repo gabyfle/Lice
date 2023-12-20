@@ -20,46 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module type S = sig
-  type t
-
-  type value
-
-  val name : string
-
-  val pretty : Format.formatter -> t -> unit
-
-  val compare : t -> t -> int
-
-  val from : value -> t
-end
-
-(* Type signature for Lice type *)
-module type T = sig
-  include S
-
-  val eq : t -> t -> bool
-
-  val add : t -> t -> t
-
-  val sub : t -> t -> t
-
-  val mul : t -> t -> t
-
-  val div : t -> t -> t
-
-  val neg : t -> t
-
-  val md : t -> t -> t
-
-  val band : t -> t -> t
-
-  val bor : t -> t -> t
-
-  val bxor : t -> t -> t
-
-  val to_string : t -> string
-end
-
-(* Functor to create a Lice type *)
-module Make (Ty : S) : T with type t = Ty.t
+include Type.T

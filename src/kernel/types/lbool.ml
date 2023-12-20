@@ -32,7 +32,7 @@ module S = struct
 
   let compare : t -> t -> int = Stdlib.compare
 
-  let from : t -> value = Fun.id
+  let from : value -> t = Fun.id
 end
 
 include Type.Make (S)
