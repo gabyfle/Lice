@@ -331,7 +331,7 @@ module Eval : EVAL = struct
                 else iterate_cases (List.tl cases)
             | None ->
                 iterate_cases (List.tl cases) )
-    | (List (Some Variable(id, _), Variable(id', _)), stmts) :: _ -> (
+      | (List (Some (Variable (id, _)), Variable (id', _)), stmts) :: _ -> (
           if not (val_to_typ eval_pattern = T_List) then
             iterate_cases (List.tl cases)
           else
@@ -341,12 +341,11 @@ module Eval : EVAL = struct
             | Some k ->
                 let tmp = Scope.push_scope n_env in
                 let tmp' =
-                  Scope.set tmp id
-                    (Expression (loc, k, val_to_typ eval_pattern))
+                  Scope.set tmp id (Expression (loc, k, val_to_typ eval_pattern))
                 in
                 let n_env =
-                    Scope.set tmp' id'
-                        (Expression (loc, tail, val_to_typ eval_pattern))
+                  Scope.set tmp' id'
+                    (Expression (loc, tail, val_to_typ eval_pattern))
                 in
                 eval_statement n_env (Block (loc, stmts))
             | None ->

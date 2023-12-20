@@ -105,4 +105,3 @@ let handle_type_exception f a b =
       let tb = typ_to_string b in
       let str = Formatting.typing_error loc ta tb in
       Logger.error "%s" str ; exit 1
-
