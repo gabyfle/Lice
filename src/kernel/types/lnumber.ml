@@ -20,76 +20,33 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module type S = sig
-  type t
+module S = struct
+  type t = float
 
-  val name : string
+  type value = float
 
-  val pretty : Format.formatter -> t -> unit
+  let name = "number"
 
-  val compare : t -> t -> int
+  let pretty : Format.formatter -> t -> unit =
+   fun fmt x -> Format.fprintf fmt "%f" x
+
+  let compare : t -> t -> int = Stdlib.compare
+
+  let from : value -> t = Fun.id
 end
 
-module type T = sig
-  type t
+include Type.Make (S)
 
-  val name : string
+let to_string : t -> string = string_of_float
 
-  val pretty : Format.formatter -> t -> unit
+let add : t -> t -> t = ( +. )
 
-  val compare : t -> t -> int
+let sub : t -> t -> t = ( -. )
 
-  val eq : t -> t -> bool
+let mul : t -> t -> t = ( *. )
 
-  val add : t -> t -> t
+let div : t -> t -> t = ( /. )
 
-  val sub : t -> t -> t
+let neg : t -> t = ( ~-. )
 
-  val mul : t -> t -> t
-
-  val div : t -> t -> t
-
-  val neg : t -> t
-
-  val md : t -> t -> t
-
-  val band : t -> t -> t
-
-  val bor : t -> t -> t
-
-  val bxor : t -> t -> t
-
-  val to_string : t -> string
-end
-
-module Make (Ty : S) : T with type t = Ty.t = struct
-  type t = Ty.t
-
-  let name = Ty.name
-
-  let pretty = Ty.pretty
-
-  let compare = Ty.compare
-
-  let eq : t -> t -> bool = fun x y -> compare x y = 0
-
-  let add : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let sub : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let mul : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let div : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let neg : t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let md : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let band : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let bor : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let bxor : t -> t -> t = raise (Stdlib.Failure "Not implemented")
-
-  let to_string : t -> string = raise (Stdlib.Failure "Not implemented")
-end
+let md : t -> t -> t = Stdlib.mod_float
