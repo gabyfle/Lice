@@ -23,7 +23,7 @@
 module S = struct
   type t = float
 
-  type value = float
+  type value = t
 
   let name = "number"
 

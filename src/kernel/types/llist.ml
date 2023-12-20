@@ -20,46 +20,59 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module type S = sig
-  type t
+module S = struct
+  type t = value list
 
-  type value
+  and value = LNumber of Lnumber.t | LString of Lstring.t | LBool of Lbool.t | LList of t
+  [@@ocaml.warning "-37"]
 
-  val name : string
+  let name = "list"
 
-  val pretty : Format.formatter -> t -> unit
+  let rec pretty : Format.formatter -> t -> unit =
+   fun ppf l ->
+    let rec aux ppf = function
+      | [] ->
+          ()
+      | x :: [] ->
+          Format.fprintf ppf "%a" pretty_value x
+      | x :: xs ->
+          Format.fprintf ppf "%a, %a" pretty_value x aux xs
+    and pretty_value ppf = function
+      | LNumber n ->
+          Lnumber.pretty ppf n
+      | LString s ->
+          Lstring.pretty ppf s
+      | LBool b ->
+          Lbool.pretty ppf b
+      | LList l -> pretty ppf l
+    in
+    Format.fprintf ppf "[%a]" aux l
 
-  val compare : t -> t -> int
+  let compare : t -> t -> int =
+   fun l1 l2 ->
+    let rec aux = function
+      | [], [] ->
+          0
+      | [], _ ->
+          -1
+      | _, [] ->
+          1
+      | x :: xs, y :: ys ->
+          compare_value x y + aux (xs, ys)
+    and compare_value v1 v2 =
+      match (v1, v2) with
+      | LNumber n1, LNumber n2 ->
+          Lnumber.compare n1 n2
+      | LString s1, LString s2 ->
+          Lstring.compare s1 s2
+      | LBool b1, LBool b2 ->
+          Lbool.compare b1 b2
+      | _ ->
+          0
+    in
+    aux (l1, l2)
 
-  val from : value -> t
+  let from : value -> t = fun v -> [v]
 end
 
-(* Type signature for Lice type *)
-module type T = sig
-  include S
-
-  val eq : t -> t -> bool
-
-  val add : t -> t -> t
-
-  val sub : t -> t -> t
-
-  val mul : t -> t -> t
-
-  val div : t -> t -> t
-
-  val neg : t -> t
-
-  val md : t -> t -> t
-
-  val band : t -> t -> t
-
-  val bor : t -> t -> t
-
-  val bxor : t -> t -> t
-
-  val to_string : t -> string
-end
-
-(* Functor to create a Lice type *)
-module Make (Ty : S) : T with type t = Ty.t
+include Type.Make (S)
