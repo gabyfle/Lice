@@ -95,3 +95,95 @@ module Make (Ty : S) : T with type t = Ty.t and type value = Ty.value = struct
 
   let to_string : t -> string = raise (Stdlib.Failure "Not implemented")
 end
+
+module Generic = struct
+  let name (type a) (module M : T with type t = a) : string = M.name
+
+  let pretty (type a) (module M : T with type t = a) (fmt : Format.formatter)
+      (x : a) : unit =
+    M.pretty fmt x
+
+  let compare (type a) (module M : T with type t = a) (x : a) (y : a) : int =
+    M.compare x y
+
+  let from (type a b) (module M : T with type t = a and type value = b)
+      (x : M.value) : a =
+    M.from x
+
+  let eq (type a) (module M : T with type t = a) (x : a) (y : a) : bool =
+    M.eq x y
+
+  let add (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.add x y
+
+  let sub (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.sub x y
+
+  let mul (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.mul x y
+
+  let div (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.div x y
+
+  let neg (type a) (module M : T with type t = a) (x : a) : a = M.neg x
+
+  let md (type a) (module M : T with type t = a) (x : a) (y : a) : a = M.md x y
+
+  let band (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.band x y
+
+  let bor (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.bor x y
+
+  let bxor (type a) (module M : T with type t = a) (x : a) (y : a) : a =
+    M.bxor x y
+
+  let to_string (type a) (module M : T with type t = a) (x : a) : string =
+    M.to_string x
+end
+
+type _ terminal =
+  | Number : Lnumber.t -> Lnumber.t terminal
+  | String : Lstring.t -> Lstring.t terminal
+  | Bool : Lbool.t -> Lbool.t terminal
+  | List : Llist.t -> Llist.t terminal
+
+let get_type : type a. a terminal -> a =
+ fun x ->
+  match x with
+  | Number x ->
+      (x :> a)
+  | String x ->
+      (x :> a)
+  | Bool x ->
+      (x :> a)
+  | List x ->
+      (x :> a)
+
+let get_module : type a. a terminal -> (module T with type t = a) = function
+  | Number _ ->
+      (module Lnumber : T with type t = a)
+  | String _ ->
+      (module Lstring : T with type t = a)
+  | Bool _ ->
+      (module Lbool : T with type t = a)
+  | List _ ->
+      (module Llist : T with type t = a)
+
+let filter :
+    type a b. a terminal -> b terminal -> (a * b) * (module T with type t = a) =
+ fun x y ->
+  let module M = (val get_module x) in
+  let module N = (val get_module y) in
+  if M.name = N.name then ((get_type x, get_type y), (module M))
+  else raise (Stdlib.Failure "Not the same type")
+
+let compare : type a. a terminal -> a terminal -> int =
+ fun x y ->
+  let (x, y), (module M) = filter x y in
+  Generic.compare (module M) x y
+
+let eq : type a. a terminal -> a terminal -> bool =
+ fun x y ->
+  let (x, y), (module M) = filter x y in
+  Generic.eq (module M) x y

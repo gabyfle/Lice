@@ -23,7 +23,11 @@
 module S = struct
   type t = value list
 
-  and value = LNumber of Lnumber.t | LString of Lstring.t | LBool of Lbool.t | LList of t
+  and value =
+    | LNumber of Lnumber.t
+    | LString of Lstring.t
+    | LBool of Lbool.t
+    | LList of t
   [@@ocaml.warning "-37"]
 
   let name = "list"
@@ -44,7 +48,8 @@ module S = struct
           Lstring.pretty ppf s
       | LBool b ->
           Lbool.pretty ppf b
-      | LList l -> pretty ppf l
+      | LList l ->
+          pretty ppf l
     in
     Format.fprintf ppf "[%a]" aux l
 
