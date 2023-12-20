@@ -1,4 +1,4 @@
-<center><img src="https://github.com/gabyfle/Lice/blob/main/lice_frame.png?raw=true" width="150px" style="margin: auto; border-radius: 200px;"></center>
+<p align="center"><img src="https://github.com/gabyfle/Lice/blob/main/lice_frame.png?raw=true" width="150px" style="margin: auto; border-radius: 200px;"></p>
 
 # Lice
 Lice language interpreter
