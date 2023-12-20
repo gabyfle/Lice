@@ -21,28 +21,24 @@
 (*****************************************************************************)
 
 module S = struct
-  type t = float
+  type t = string
 
-  let name = "number"
+  type value = t
+
+  let name = "string"
 
   let pretty : Format.formatter -> t -> unit =
-   fun fmt x -> Format.fprintf fmt "%f" x
+   fun fmt x -> Format.fprintf fmt "%s" x
 
   let compare : t -> t -> int = Stdlib.compare
+
+  let from : value -> t = Fun.id
 end
 
 include Type.Make (S)
 
-let to_string : t -> string = string_of_float
+let to_string = Fun.id
 
-let add : t -> t -> t = ( +. )
+let add = ( ^ )
 
-let sub : t -> t -> t = ( -. )
-
-let mul : t -> t -> t = ( *. )
-
-let div : t -> t -> t = ( /. )
-
-let neg : t -> t = ( ~-. )
-
-let md : t -> t -> t = Stdlib.mod_float
+let length = String.length

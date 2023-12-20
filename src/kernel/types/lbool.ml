@@ -20,47 +20,29 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module type S = sig
-  type t
+module S = struct
+  type t = bool
 
-  val name : string
+  type value = t
 
-  val pretty : Format.formatter -> t -> unit
+  let name = "bool"
 
-  val compare : t -> t -> int
+  let pretty : Format.formatter -> t -> unit =
+   fun fmt x -> Format.fprintf fmt "%b" x
+
+  let compare : t -> t -> int = Stdlib.compare
+
+  let from : t -> value = Fun.id
 end
 
-(* Type signature for Lice type *)
-module type T = sig
-  type t
+include Type.Make (S)
 
-  val name : string
+let to_string : t -> string = string_of_bool
 
-  val pretty : Format.formatter -> t -> unit
+let neg : t -> t = Stdlib.not
 
-  val compare : t -> t -> int
+let band : t -> t -> t = ( && )
 
-  val eq : t -> t -> bool
+let bor : t -> t -> t = ( || )
 
-  val add : t -> t -> t
-
-  val sub : t -> t -> t
-
-  val mul : t -> t -> t
-
-  val div : t -> t -> t
-
-  val neg : t -> t
-
-  val md : t -> t -> t
-
-  val band : t -> t -> t
-
-  val bor : t -> t -> t
-
-  val bxor : t -> t -> t
-
-  val to_string : t -> string
-end
-
-module Make (Ty : S) : T with type t = Ty.t
+let bxor : t -> t -> t = ( <> )

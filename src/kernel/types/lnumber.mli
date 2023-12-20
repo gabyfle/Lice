@@ -20,21 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module S = struct
-  type t = string
-
-  let name = "string"
-
-  let pretty : Format.formatter -> t -> unit =
-   fun fmt x -> Format.fprintf fmt "%s" x
-
-  let compare : t -> t -> int = Stdlib.compare
-end
-
-include Type.Make(S)
-
-let to_string = Fun.id
-
-let add = (^)
-
-let length = String.length
+include Type.T
