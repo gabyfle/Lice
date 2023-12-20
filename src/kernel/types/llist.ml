@@ -76,3 +76,5 @@ module S = struct
 end
 
 include Type.Make (S)
+
+let add : t -> t -> t = ( @ )
