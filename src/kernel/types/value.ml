@@ -23,15 +23,14 @@
 (* The value type represent values inside a Lice code. It's basically a wrapper
    around all the functions defined inside Types.Type *)
 
-open Typing
-
 type typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 
 type t =
   | V_Number of Lnumber.t
   | V_String of Lstring.t
-  | V_List of Llist.t
   | V_Boolean of Lbool.t
+
+type value = Empty | Val of t | Variable of typed_ident
 
 let to_typ = function
   | V_Number _ ->

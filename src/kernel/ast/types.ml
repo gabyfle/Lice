@@ -33,9 +33,7 @@ type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
 type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
 
 type expr =
-  | Empty
-  | Terminal of Value.t
-  | Variable of typed_ident
+  | Terminal of Value.value
   | BinOp of binop_type * expr * expr
   | FuncCall of identificator * expr list
 

@@ -20,4 +20,6 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Type.T
+open Ast
+
+include Type.T with type value = Value.value

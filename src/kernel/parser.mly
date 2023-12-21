@@ -125,19 +125,19 @@ let binop ==
 let list_terminals :=
   | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
   {
-    Terminal(V_List(Llist.from []))
+    Terminal(V_List(Llist.from (List_val.LList [])))
   }
   | h = terminal; DOUBLE_COLON; t = IDENT;
-  { Terminal(V_List(Llist.from [])) }
+  { Terminal(V_List(Llist.from (List_val.LList []))) }
   | h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
-  { Terminal(V_List(Llist.from [])) }
+  { Terminal(V_List(Llist.from (List_val.LList []))) }
 
 let terminal ==
   | i = INT; { Terminal(V_Number (Lnumber.from(float_of_int i))) }
   | i = FLOAT; { Terminal(V_Number (Lnumber.from i)) }
   | i = IDENT; { Variable (i, T_Auto) }
   | b = BOOLEAN; { Terminal(V_Boolean (Lbool.from b)) }
-  | s = STRING_VALUE; { Terminal(V_String(Lstring.from (Lstring.value s))) }
+  | s = STRING_VALUE; { Terminal(V_String(Lstring.from (s))) }
   | l = list_terminals; { l }
 
 let block ==
@@ -165,10 +165,10 @@ let assign ==
   { Assign ($startpos, (p, T_Auto), e) }
 
 let pattern ==
-  | b = BOOLEAN; { Terminal(V_Boolean (b)) }
-  | n = INT; { Terminal(V_Number (float_of_int n)) }
-  | n = FLOAT; { Terminal(V_Number (n)) }
-  | s = STRING_VALUE; { Terminal(V_String(s)) }
+  | b = BOOLEAN; { Terminal(V_Boolean (Lbool.from b)) }
+  | n = INT; { Terminal(V_Number (Lnumber.from (float_of_int n))) }
+  | n = FLOAT; { Terminal(V_Number (Lnumber.from n)) }
+  | s = STRING_VALUE; { Terminal(V_String(Lstring.from s)) }
   | l = list_terminals; { l }
   | WILDCARD; { Empty }
 

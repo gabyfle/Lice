@@ -20,6 +20,6 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Type.T
+include Type.T with type value = string
 
 val length : t -> int

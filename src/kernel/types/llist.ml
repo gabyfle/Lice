@@ -21,14 +21,9 @@
 (*****************************************************************************)
 
 module S = struct
-  type t = value list
+  type t = Value.value list
 
-  and value =
-    | LNumber of Lnumber.t
-    | LString of Lstring.t
-    | LBool of Lbool.t
-    | LList of t
-  [@@ocaml.warning "-37"]
+  type value = Value.value
 
   let name = "list"
 
