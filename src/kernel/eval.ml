@@ -24,6 +24,7 @@ open Ast.Tree
 open Types
 open Env
 open Located_error
+open Utils.Logger
 
 module type EVAL = sig
   val exec : program -> unit
@@ -62,6 +63,7 @@ module Eval : EVAL = struct
           raise (Located_error (`Language_Error str, loc)) )
 
   let rec binop_helper env loc v v' =
+    Logger.debug "binop_helper" ;
     let aux a b op =
       let value =
         match op with
@@ -108,10 +110,11 @@ module Eval : EVAL = struct
           aux value k
         else raise (Located_error (`Not_Number, loc))
     | Terminal (V_Var (id, _)), Terminal (V_Var (id', _)) ->
+        let same_id = id = id' in
         let same_type = get_type env loc id = get_type env loc id' in
         if same_type then
           let v = get_value env loc id in
-          let v' = get_value env loc id' in
+          let v' = if same_id then v else get_value env loc id' in
           match (v, v') with
           | `Expression (Terminal (Const k)), `Expression (Terminal (Const k'))
             ->
@@ -125,39 +128,54 @@ module Eval : EVAL = struct
         binop_helper tmp' loc v_a v_b
 
   and bincomp_helper env loc v v' =
-    let aux a b = function
-      | Equal ->
-          Boolean (a = b)
-      | NotEqual ->
-          Boolean (a <> b)
-      | GEQ ->
-          Boolean (a >= b)
-      | LEQ ->
-          Boolean (a <= b)
-      | Greater ->
-          Boolean (a > b)
-      | Lesser ->
-          Boolean (a < b)
+    let aux a b op =
+      let value =
+        match op with
+        | Equal ->
+            Value.eq a b
+        | NotEqual ->
+            Value.eq a b |> not
+        | GEQ ->
+            Value.compare a b >= 0
+        | LEQ ->
+            Value.compare a b <= 0
+        | Greater ->
+            Value.compare a b > 0
+        | Lesser ->
+            Value.compare a b < 0
+      in
+      Terminal (Const (V_Boolean value))
     in
     match (v, v') with
-    | Number k, Number k' ->
+    | Terminal (Const k), Terminal (Const k') ->
         aux k k'
-    | String k, String k' ->
-        aux k k'
-    | Boolean k, Boolean k' ->
-        aux k k'
-    | (Variable (id, _) as v), ((Number _ | String _ | Boolean _) as e)
-    | ((Number _ | String _ | Boolean _) as e), (Variable (id, _) as v) ->
-        let e_typ = val_to_typ e in
-        let same_typ = is_variable_type env loc id e_typ in
-        if same_typ then
-          let v_val = get_value env loc id in
-          match v_val with
-          | `Expression v_val ->
-              aux v_val e
+    | Terminal (V_Var (id, _)), Terminal (Const k)
+    | Terminal (Const k), Terminal (V_Var (id, _)) ->
+        let t_typ = Value.to_typ (Base.Const k) in
+        let same_type = is_variable_type env loc id t_typ in
+        if same_type then
+          let value =
+            match get_value env loc id with
+            | `Expression (Terminal (Const k')) ->
+                k'
+            | _ ->
+                raise (Located_error (`Not_Number, loc))
+          in
+          aux value k
+        else raise (Located_error (`Not_Number, loc))
+    | Terminal (V_Var (id, _)), Terminal (V_Var (id', _)) ->
+        let same_id = id = id' in
+        let same_type = get_type env loc id = get_type env loc id' in
+        if same_type then
+          let v = get_value env loc id in
+          let v' = if same_id then v else get_value env loc id' in
+          match (v, v') with
+          | `Expression (Terminal (Const k)), `Expression (Terminal (Const k'))
+            ->
+              aux k k'
           | _ ->
-              raise (Located_error (`Function_Value, loc))
-        else raise (Located_error (`Wrong_Type (val_to_typ v, e_typ), loc))
+              raise (Located_error (`Not_Number, loc))
+        else raise (Located_error (`Not_Number, loc))
     | a, b ->
         let tmp, v_a = eval_expr env loc (env, a) in
         let tmp', v_b = eval_expr tmp loc (tmp, b) in
@@ -167,14 +185,14 @@ module Eval : EVAL = struct
      the current environement in which we're doing this [loc] is the location of
      the statement that asked to create that list [head] is the head of the list
      we want to create (the h in h :: t) [tail] is an identificator for the list
-     tail we want to create *)
+     tail we want to create 
   and compute_list env loc head (tail : identificator) =
     let v = get_value env loc tail in
     match v with
     | `Expression (List (h, t)) -> (
       match h with None -> List (head, t) | Some _ -> List (head, List (h, t)) )
     | _ ->
-        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc)) *)
 
   (* eval_function evaluates a function call inside the AST to remplace it by
      the actual value returned (or not) by the function. this function processes
@@ -260,13 +278,11 @@ module Eval : EVAL = struct
                    "An error occurred while trying to get the variable"
                , loc ) ) )
     | env, BinOp (op, a, b) -> (
-        let env', a' = eval_expr env loc (env, a) in
-        let env'', b' = eval_expr env' loc (env', b) in
         match op with
         | `Compare bincomp ->
-            (env'', bincomp_helper env loc a' b' bincomp)
+            (env, bincomp_helper env loc a b bincomp)
         | `Operator binop ->
-            (env'', binop_helper env loc a b binop) )
+            (env, binop_helper env loc a b binop) )
     | env, FuncCall (id, expr_list) ->
         let rec exprs acc = function
           | [] ->
@@ -280,58 +296,19 @@ module Eval : EVAL = struct
     let n_env, eval_pattern = eval_expr env loc pattern in
     let rec iterate_cases = function
       | [] ->
-          (n_env, Expression (loc, Empty, T_Void))
+          (n_env, Expression (loc, Terminal (Const V_Void), T_Void))
       (* if we find a wildcard then we can stop analysis of the match
          statement *)
-      | (Empty, stmts) :: _ ->
+      | (Terminal (Const V_Void), stmts) :: _ ->
           eval_statement n_env (Block (loc, stmts))
-      (* same if we find a corresponding pattern *)
-      | ( List
-            (Some ((Number _ | String _ | Boolean _) as term), Variable (id, _))
-        , stmts )
-        :: _ -> (
-          if not (val_to_typ eval_pattern = T_List) then
-            iterate_cases (List.tl cases)
-          else
-            let hd = get_list_head loc eval_pattern in
-            match hd with
-            | Some k ->
-                if compare_expr k term then
-                  let n_env =
-                    Scope.set n_env id
-                      (Expression
-                         ( loc
-                         , get_list_tail loc eval_pattern
-                         , val_to_typ eval_pattern ) )
-                  in
-                  eval_statement n_env (Block (loc, stmts))
-                else iterate_cases (List.tl cases)
-            | None ->
-                iterate_cases (List.tl cases) )
-      | (List (Some (Variable (id, _)), Variable (id', _)), stmts) :: _ -> (
-          if not (val_to_typ eval_pattern = T_List) then
-            iterate_cases (List.tl cases)
-          else
-            let hd = get_list_head loc eval_pattern in
-            let tail = get_list_tail loc eval_pattern in
-            match hd with
-            | Some k ->
-                let tmp = Scope.push_scope n_env in
-                let tmp' =
-                  Scope.set tmp id (Expression (loc, k, val_to_typ eval_pattern))
-                in
-                let n_env =
-                  Scope.set tmp' id'
-                    (Expression (loc, tail, val_to_typ eval_pattern))
-                in
-                eval_statement n_env (Block (loc, stmts))
-            | None ->
-                iterate_cases (List.tl cases) )
-      | (case, stmts) :: _ ->
+      | (case, stmts) :: _ -> (
           let n_env, eval_case = eval_expr n_env loc (n_env, case) in
-          if compare_expr eval_pattern eval_case then
-            eval_statement n_env (Block (loc, stmts))
-          else iterate_cases (List.tl cases)
+          match (eval_case, eval_pattern) with
+          | Terminal (Const k), Terminal (Const k') ->
+              if Value.eq k k' then eval_statement n_env (Block (loc, stmts))
+              else iterate_cases (List.tl cases)
+          | _ ->
+              raise (Located_error (`Wrong_Type (T_Auto, T_Auto), loc)) )
     in
     iterate_cases cases
 

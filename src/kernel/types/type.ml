@@ -75,23 +75,23 @@ module Make (Ty : S) : T with type t = Ty.t and type value = Ty.value = struct
 
   let eq : t -> t -> bool = fun x y -> compare x y = 0
 
-  let add : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let add : t -> t -> t = fun x _ -> x
 
-  let sub : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let sub : t -> t -> t = fun x _ -> x
 
-  let mul : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let mul : t -> t -> t = fun x _ -> x
 
-  let div : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let div : t -> t -> t = fun x _ -> x
 
-  let neg : t -> t = raise (Stdlib.Failure "Not implemented")
+  let neg : t -> t = fun x -> x
 
-  let md : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let md : t -> t -> t = fun x _ -> x
 
-  let band : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let band : t -> t -> t = fun x _ -> x
 
-  let bor : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let bor : t -> t -> t = fun x _ -> x
 
-  let bxor : t -> t -> t = raise (Stdlib.Failure "Not implemented")
+  let bxor : t -> t -> t = fun x _ -> x
 
-  let to_string : t -> string = raise (Stdlib.Failure "Not implemented")
+  let to_string : t -> string = fun _ -> "not implemented"
 end
