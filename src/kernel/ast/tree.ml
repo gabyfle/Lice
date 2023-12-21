@@ -20,11 +20,13 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Typing
+
 type location = Lexing.position
 
 type identificator = string
 
-and typed_ident = identificator * Value.typ
+and typed_ident = identificator * Base.typ
 
 type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
@@ -33,13 +35,13 @@ type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
 type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
 
 type expr =
-  | Terminal of Value.value
+  | Terminal of Base.value
   | BinOp of binop_type * expr * expr
   | FuncCall of identificator * expr list
 
 and statement =
   | Return of location * expr
-  | Expression of location * expr * Value.typ
+  | Expression of location * expr * Base.typ
   | Block of location * statement list
   | Assign of location * typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement
@@ -51,14 +53,10 @@ and program = statement list
 let val_to_typ = function
   | Terminal t ->
       Value.to_typ t
-  | Variable (_, t) ->
-      t
   | BinOp (_, _, _) ->
       T_Number
   | FuncCall (_, _) ->
       T_Auto
-  | Empty ->
-      T_Void
 
 let stmt_to_string = function
   | Return (_, _) ->

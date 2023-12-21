@@ -25,17 +25,21 @@ open Base
 (* The value type represent values inside a Lice code. It's basically a wrapper
    around all the functions defined inside Types.Type *)
 
-let to_typ = function
-  | V_Number _ ->
-      T_Number
-  | V_String _ ->
-      T_String
-  | V_List _ ->
-      T_List
-  | V_Boolean _ ->
-      T_Boolean
-  | V_Void ->
-      T_Void
+let to_typ v =
+  let from_t = function
+    | V_Number _ ->
+        T_Number
+    | V_String _ ->
+        T_String
+    | V_List _ ->
+        T_List
+    | V_Boolean _ ->
+        T_Boolean
+    | V_Void ->
+        T_Void
+  in
+  let from_val = function Const c -> from_t c | V_Var (_, c) -> c in
+  from_val v
 
 let typ_to_string = function
   | T_Number ->

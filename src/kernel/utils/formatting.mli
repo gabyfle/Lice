@@ -20,7 +20,7 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Types
+open Ast.Tree
 
 val typing_error : Lexing.position -> string -> string -> string
 
