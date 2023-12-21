@@ -23,7 +23,7 @@
 module S = struct
   type t = string
 
-  type value = t
+  type value = string
 
   let name = "string"
 

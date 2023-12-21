@@ -125,31 +125,20 @@ let binop ==
 let list_terminals :=
   | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
   {
-    let rec print = function
-      | [] -> ()
-      | h :: t -> Printf.printf "%s\n" (Formatting.expr_format h); print t
-    in
-    print elems;
-
-    let rec aux acc = function
-      | [] -> acc
-      | h :: t -> aux (List(Some h, acc)) t
-    in
-    aux (List(None, Empty)) (List.rev elems)
+    Terminal(V_List(Llist.from []))
   }
   | h = terminal; DOUBLE_COLON; t = IDENT;
-  { List(Some h, Variable(t, T_Auto))}
+  { Terminal(V_List(Llist.from [])) }
   | h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
-  { List(Some h, List(None, Empty))}
+  { Terminal(V_List(Llist.from [])) }
 
 let terminal ==
-  | i = INT; { Number (float_of_int i) }
-  | i = FLOAT; { Number i }
+  | i = INT; { Terminal(V_Number (Lnumber.from(float_of_int i))) }
+  | i = FLOAT; { Terminal(V_Number (Lnumber.from i)) }
   | i = IDENT; { Variable (i, T_Auto) }
-  | b = BOOLEAN; { Boolean (b) }
-  | s = STRING_VALUE; { String(s) }
+  | b = BOOLEAN; { Terminal(V_Boolean (Lbool.from b)) }
+  | s = STRING_VALUE; { Terminal(V_String(Lstring.from (Lstring.value s))) }
   | l = list_terminals; { l }
-
 
 let block ==
   | LBRACE; stmts = list(statement); RBRACE;
@@ -176,10 +165,10 @@ let assign ==
   { Assign ($startpos, (p, T_Auto), e) }
 
 let pattern ==
-  | b = BOOLEAN; { Boolean (b) }
-  | n = INT; { Number (float_of_int n) }
-  | n = FLOAT; { Number (n) }
-  | s = STRING_VALUE; { String(s) }
+  | b = BOOLEAN; { Terminal(V_Boolean (b)) }
+  | n = INT; { Terminal(V_Number (float_of_int n)) }
+  | n = FLOAT; { Terminal(V_Number (n)) }
+  | s = STRING_VALUE; { Terminal(V_String(s)) }
   | l = list_terminals; { l }
   | WILDCARD; { Empty }
 

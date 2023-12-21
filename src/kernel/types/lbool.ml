@@ -23,7 +23,7 @@
 module S = struct
   type t = bool
 
-  type value = t
+  type value = bool
 
   let name = "bool"
 
