@@ -21,9 +21,9 @@
 (*****************************************************************************)
 
 module S = struct
-  type t = Value.value list
+  type t = Base.t list
 
-  type value = Value.value
+  type value = Base.value
 
   let name = "list"
 

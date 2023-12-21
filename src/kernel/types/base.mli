@@ -20,38 +20,16 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Base
+type ident = string
 
-type typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
+type typed_ident = ident * typ
 
-val to_typ : t -> typ
+and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 
-val typ_to_string : typ -> string
+type value = Empty | Val of t | Variable of typed_ident
 
-val name : t -> string
-
-val pretty : t -> Format.formatter -> unit
-
-val compare : t -> t -> int
-
-val eq : t -> t -> bool
-
-val to_string : t -> string
-
-val add : t -> t -> t
-
-val sub : t -> t -> t
-
-val mul : t -> t -> t
-
-val div : t -> t -> t
-
-val neg : t -> t
-
-val md : t -> t -> t
-
-val band : t -> t -> t
-
-val bor : t -> t -> t
-
-val bxor : t -> t -> t
+and t =
+  | V_Number of Lnumber.t
+  | V_String of Lstring.t
+  | V_List of value list
+  | V_Boolean of Lbool.t
