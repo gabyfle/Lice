@@ -20,7 +20,7 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Types
+open Ast.Tree
 open Utils
 open Utils.Logger
 

@@ -21,9 +21,9 @@
 (*****************************************************************************)
 
 %{
-  open Ast.Types  (* Include the AST module *)
-  open Ast.Value
-  open Typing
+  open Ast.Tree  (* Include the AST module *)
+  open Types.Value
+  open Types
   open Utils
 %}
 

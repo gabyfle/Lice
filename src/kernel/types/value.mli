@@ -28,7 +28,7 @@ val typ_to_string : typ -> string
 
 val name : t -> string
 
-val pretty : t -> Format.formatter -> unit
+val pretty : Format.formatter -> t -> unit
 
 val compare : t -> t -> int
 

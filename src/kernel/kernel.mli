@@ -20,4 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-val parse_code : string -> Ast.Types.program
+val parse_code : string -> Ast.Tree.program
