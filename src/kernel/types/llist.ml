@@ -21,35 +21,42 @@
 (*****************************************************************************)
 
 module S = struct
-  type t = Base.t list
+  type t = Base.value list
 
   type value = Base.value
 
   let name = "list"
 
-  let rec pretty : Format.formatter -> t -> unit =
+  let pretty : Format.formatter -> value list -> unit =
    fun ppf l ->
     let rec aux ppf = function
       | [] ->
           ()
       | x :: [] ->
-          Format.fprintf ppf "%a" pretty_value x
+          Format.fprintf ppf "%a" pretty_val x
       | x :: xs ->
-          Format.fprintf ppf "%a, %a" pretty_value x aux xs
-    and pretty_value ppf = function
-      | LNumber n ->
+          Format.fprintf ppf "%a, %a" pretty_val x aux xs
+    and pretty_val ppf = function
+      | Base.Const t ->
+          pretty_base ppf t
+      | Base.V_Var (id, _) ->
+          Format.fprintf ppf "%s" id
+    and pretty_base ppf = function
+      | Base.V_Number n ->
           Lnumber.pretty ppf n
-      | LString s ->
+      | Base.V_String s ->
           Lstring.pretty ppf s
-      | LBool b ->
+      | Base.V_Boolean b ->
           Lbool.pretty ppf b
-      | LList l ->
-          pretty ppf l
+      | Base.V_List l ->
+          Format.fprintf ppf "[" ; aux ppf l ; Format.fprintf ppf "]"
+      | Base.V_Void ->
+          Format.fprintf ppf ""
     in
     Format.fprintf ppf "[%a]" aux l
 
-  let compare : t -> t -> int =
-   fun l1 l2 ->
+  let compare : value list -> value list -> int =
+   fun l l' ->
     let rec aux = function
       | [], [] ->
           0
@@ -58,19 +65,27 @@ module S = struct
       | _, [] ->
           1
       | x :: xs, y :: ys ->
-          compare_value x y + aux (xs, ys)
-    and compare_value v1 v2 =
-      match (v1, v2) with
-      | LNumber n1, LNumber n2 ->
-          Lnumber.compare n1 n2
-      | LString s1, LString s2 ->
-          Lstring.compare s1 s2
-      | LBool b1, LBool b2 ->
-          Lbool.compare b1 b2
+          compare_val x y + aux (xs, ys)
+    and compare_val v v' =
+      match (v, v') with
+      | Base.Const t, Base.Const t' ->
+          compare_base t t'
+      | Base.V_Var (id, _), Base.V_Var (id', _) ->
+          String.compare id id'
       | _ ->
           0
+    and compare_base v v' =
+      match (v, v') with
+      | Base.V_Number n, Base.V_Number n' ->
+          Lnumber.compare n n'
+      | Base.V_String s, Base.V_String s' ->
+          Lstring.compare s s'
+      | Base.V_Boolean b, Base.V_Boolean b' ->
+          Lbool.compare b b'
+      | _ ->
+          failwith "Invalid comparison"
     in
-    aux (l1, l2)
+    aux (l, l')
 
   let from : value -> t = fun v -> [v]
 end
