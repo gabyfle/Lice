@@ -34,6 +34,8 @@ let to_typ = function
       T_List
   | V_Boolean _ ->
       T_Boolean
+  | V_Void ->
+      T_Void
 
 let typ_to_string = function
   | T_Number ->
@@ -58,6 +60,8 @@ let name = function
       Llist.name
   | V_Boolean _ ->
       Lbool.name
+  | V_Void ->
+      "void"
 
 let pretty = function
   | V_Number n ->
@@ -68,6 +72,8 @@ let pretty = function
       fun fmt -> Format.fprintf fmt "%a" Llist.pretty l
   | V_Boolean b ->
       fun fmt -> Format.fprintf fmt "%a" Lbool.pretty b
+  | V_Void ->
+      fun fmt -> Format.fprintf fmt "void"
 
 let compare v v' =
   match (v, v') with
@@ -104,6 +110,8 @@ let to_string = function
       Llist.to_string l
   | V_Boolean b ->
       Lbool.to_string b
+  | V_Void ->
+      ""
 
 let add v v' =
   match (v, v') with
@@ -115,6 +123,8 @@ let add v v' =
       V_List (Llist.add l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.add b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot add values of different types"
 
@@ -128,6 +138,8 @@ let sub v v' =
       V_List (Llist.sub l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.sub b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot sub values of different types"
 
@@ -141,6 +153,8 @@ let mul v v' =
       V_List (Llist.mul l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.mul b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot mul values of different types"
 
@@ -154,6 +168,8 @@ let div v v' =
       V_List (Llist.div l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.div b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot div values of different types"
 
@@ -166,6 +182,8 @@ let neg = function
       V_List (Llist.neg l)
   | V_Boolean b ->
       V_Boolean (Lbool.neg b)
+  | V_Void ->
+      V_Void
 
 let md v v' =
   match (v, v') with
@@ -177,6 +195,8 @@ let md v v' =
       V_List (Llist.md l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.md b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot md values of different types"
 
@@ -190,6 +210,8 @@ let band v v' =
       V_List (Llist.band l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.band b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot band values of different types"
 
@@ -203,6 +225,8 @@ let bor v v' =
       V_List (Llist.bor l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.bor b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot bor values of different types"
 
@@ -216,5 +240,7 @@ let bxor v v' =
       V_List (Llist.bxor l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.bxor b b')
+  | V_Void, V_Void ->
+      V_Void
   | _ ->
       failwith "Cannot bxor values of different types"

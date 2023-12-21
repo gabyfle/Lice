@@ -22,8 +22,6 @@
 
 open Base
 
-type typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
-
 val to_typ : t -> typ
 
 val typ_to_string : typ -> string

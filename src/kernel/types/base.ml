@@ -26,10 +26,11 @@ type typed_ident = ident * typ
 
 and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 
-type value = Empty | Val of t | Variable of typed_ident
+type value = Const of t | V_Var of typed_ident
 
 and t =
   | V_Number of Lnumber.t
   | V_String of Lstring.t
   | V_List of value list
   | V_Boolean of Lbool.t
+  | V_Void

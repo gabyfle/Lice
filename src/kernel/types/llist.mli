@@ -20,4 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Type.T with type value = Base.value
+include Type.T with type t = Base.value list and type value = Base.value
