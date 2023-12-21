@@ -20,6 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast
-
-include Type.T with type value = Value.value
+include Type.T with type value = Base.value
