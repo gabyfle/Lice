@@ -20,7 +20,8 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Types
+open Ast.Tree
+open Types.Base
 
 type exception_type =
   [ `Language_Error of string

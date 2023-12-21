@@ -67,17 +67,17 @@ let name = function
   | V_Void ->
       "void"
 
-let pretty = function
+let pretty fmt = function
   | V_Number n ->
-      fun fmt -> Format.fprintf fmt "%a" Lnumber.pretty n
+      Format.fprintf fmt "%a" Lnumber.pretty n
   | V_String s ->
-      fun fmt -> Format.fprintf fmt "%a" Lstring.pretty s
+      Format.fprintf fmt "%a" Lstring.pretty s
   | V_List l ->
-      fun fmt -> Format.fprintf fmt "%a" Llist.pretty l
+      Format.fprintf fmt "%a" Llist.pretty l
   | V_Boolean b ->
-      fun fmt -> Format.fprintf fmt "%a" Lbool.pretty b
+      Format.fprintf fmt "%a" Lbool.pretty b
   | V_Void ->
-      fun fmt -> Format.fprintf fmt "void"
+      ()
 
 let compare v v' =
   match (v, v') with

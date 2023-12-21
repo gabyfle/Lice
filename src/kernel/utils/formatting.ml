@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Ast.Tree
+open Types
 
 let typing_error (loc : Lexing.position) expected actual =
   let char = loc.pos_cnum - loc.pos_bol in
@@ -44,25 +45,12 @@ let misc_error (loc : Lexing.position) str =
 
 let expr_format expr =
   let rec aux = function
-    | Empty ->
-        "Empty expression \n"
-    | Number num ->
-        Printf.sprintf "Number expression value : %f" num
-    | String str ->
-        Printf.sprintf "String expression value: %s" str
-    | Boolean b ->
-        Printf.sprintf "Boolean expression value %b" b
-    | List (None, tail) ->
-        let tail_str = aux tail in
-        Printf.sprintf "List expression: [%s]" tail_str
-    | List (Some head, tail) ->
-        let head_str = aux head in
-        let tail_str = aux tail in
-        Printf.sprintf "List expression: [\nHEAD: %s; \nTAIL: %s\n]" head_str
-          tail_str
-    | Variable (id, t) ->
-        let str_t = typ_to_string t in
-        Printf.sprintf "Variable name %s of type %s" id str_t
+    | Terminal t -> (
+      match t with
+      | Const c ->
+          Format.asprintf "%a" Value.pretty c
+      | V_Var (id, _) ->
+          Printf.sprintf "Variable: %s\n" id )
     | BinOp (binop_t, e, e') ->
         let bin =
           match binop_t with
@@ -89,7 +77,7 @@ let stmt_format stmt =
         Printf.sprintf "Return statement: %s\n\n" (expr_format e)
     | Expression (_, e, t) ->
         Printf.sprintf "Expression statement of type %s: %s\n\n "
-          (typ_to_string t) (expr_format e)
+          (Value.typ_to_string t) (expr_format e)
     | Block (_, stmt_list) ->
         let t = ref "" in
         (* bad functionnal code *)
