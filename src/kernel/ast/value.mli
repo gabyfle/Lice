@@ -20,40 +20,44 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type location = Lexing.position
+open Typing
 
-type identificator = string
+type typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 
-and typed_ident = identificator * Value.typ
+type t =
+  | V_Number of Lnumber.t
+  | V_String of Lstring.t
+  | V_List of Llist.t
+  | V_Boolean of Lbool.t
 
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
+val to_typ : t -> typ
 
-type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+val typ_to_string : typ -> string
 
-type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
+val name : t -> string
 
-type expr =
-  | Empty
-  | Terminal of Value.t
-  | Variable of typed_ident
-  | BinOp of binop_type * expr * expr
-  | FuncCall of identificator * expr list
+val pretty : t -> Format.formatter -> unit
 
-and statement =
-  | Return of location * expr
-  | Expression of location * expr * Value.typ
-  | Block of location * statement list
-  | Assign of location * typed_ident * expr
-  | FuncDef of location * typed_ident * typed_ident list * statement
-  | Match of location * expr * (expr * statement list) list
-  | If of location * expr * statement * statement
+val compare : t -> t -> int
 
-and program = statement list
+val eq : t -> t -> bool
 
-val val_to_typ : expr -> Value.typ
+val to_string : t -> string
 
-val stmt_to_string : statement -> string
+val add : t -> t -> t
 
-val bincomp_to_string : binary_comp -> string
+val sub : t -> t -> t
 
-val binop_to_string : binary_operator -> string
+val mul : t -> t -> t
+
+val div : t -> t -> t
+
+val neg : t -> t
+
+val md : t -> t -> t
+
+val band : t -> t -> t
+
+val bor : t -> t -> t
+
+val bxor : t -> t -> t
