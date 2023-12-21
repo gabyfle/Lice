@@ -21,3 +21,17 @@
 (*****************************************************************************)
 
 include Type.T with type value = float
+
+val to_string : t -> string
+
+val add : t -> t -> t
+
+val sub : t -> t -> t
+
+val mul : t -> t -> t
+
+val div : t -> t -> t
+
+val neg : t -> t
+
+val md : t -> t -> t

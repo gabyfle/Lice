@@ -22,9 +22,8 @@
 
 %{
   open Ast.Tree  (* Include the AST module *)
-  open Types.Value
   open Types
-  open Utils
+  open Types.Base
 %}
 
 %token <string> IDENT
@@ -123,21 +122,26 @@ let binop ==
   | LESSER; { `Compare(Lesser) }
 
 let list_terminals :=
-  | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
+  | LBRACKET; _elems=separated_list(SEMICOLON, expr); RBRACKET;
   {
-    Terminal(V_List(Llist.from (List_val.LList [])))
+    Terminal(Const(V_List(Llist.from (Const V_Void))))
   }
-  | h = terminal; DOUBLE_COLON; t = IDENT;
-  { Terminal(V_List(Llist.from (List_val.LList []))) }
-  | h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
-  { Terminal(V_List(Llist.from (List_val.LList []))) }
+  | h = terminal; DOUBLE_COLON; _t = IDENT;
+  { 
+    match h with
+      | Terminal(k) ->
+        Terminal(Const(V_List(Llist.from k)))
+      | _ -> raise (Failure "Invalid list")
+  }
+  | _h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
+  { Terminal(Const(V_List(Llist.from (Const V_Void)))) }
 
 let terminal ==
-  | i = INT; { Terminal(V_Number (Lnumber.from(float_of_int i))) }
-  | i = FLOAT; { Terminal(V_Number (Lnumber.from i)) }
-  | i = IDENT; { Variable (i, T_Auto) }
-  | b = BOOLEAN; { Terminal(V_Boolean (Lbool.from b)) }
-  | s = STRING_VALUE; { Terminal(V_String(Lstring.from (s))) }
+  | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }
+  | i = FLOAT; { Terminal(Const (V_Number (Lnumber.from i))) }
+  | i = IDENT; { Terminal(V_Var((i, T_Auto))) }
+  | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
+  | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
   | l = list_terminals; { l }
 
 let block ==
@@ -165,12 +169,12 @@ let assign ==
   { Assign ($startpos, (p, T_Auto), e) }
 
 let pattern ==
-  | b = BOOLEAN; { Terminal(V_Boolean (Lbool.from b)) }
-  | n = INT; { Terminal(V_Number (Lnumber.from (float_of_int n))) }
-  | n = FLOAT; { Terminal(V_Number (Lnumber.from n)) }
-  | s = STRING_VALUE; { Terminal(V_String(Lstring.from s)) }
+  | b = BOOLEAN; { Terminal(Const(V_Boolean (Lbool.from b))) }
+  | n = INT; { Terminal(Const(V_Number (Lnumber.from (float_of_int n)))) }
+  | n = FLOAT; { Terminal(Const(V_Number (Lnumber.from n))) }
+  | s = STRING_VALUE; { Terminal(Const(V_String(Lstring.from s))) }
   | l = list_terminals; { l }
-  | WILDCARD; { Empty }
+  | WILDCARD; { Terminal(Const(V_Void)) }
 
 let match_expr ==
   | MATCH; e = expr; WITH; LBRACE; m = match_cases; RBRACE;
@@ -213,7 +217,7 @@ let func_call ==
 
 let return_call ==
   | RETURN;
-    { Return($startpos, Empty) }
+    { Return($startpos, Terminal(Const(V_Void))) }
   | RETURN; r = expr;
     { Return($startpos, r) }
 
@@ -221,7 +225,7 @@ let if_stmt :=
   | IF; LPAREN; e = expr; RPAREN; b1 = statement; ELSE; b2 = statement;
   { If ($startpos, e, b1, b2) }
   | IF; LPAREN; e = expr; RPAREN; b1 = statement;
-  { If ($startpos, e, b1, Expression($startpos, Empty, T_Void)) }
+  { If ($startpos, e, b1, Expression($startpos, Terminal(Const(V_Void)), T_Void)) }
 
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }

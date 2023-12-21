@@ -8,3 +8,5 @@ let d = a / b;
 let e = a * b;
 
 let f = b % a;
+
+let r = "hello " + " world";
