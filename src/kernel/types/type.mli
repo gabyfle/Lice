@@ -62,4 +62,10 @@ module type T = sig
 end
 
 (* Functor to create a Lice type *)
-module Make (Ty : S) : T with type t = Ty.t
+module Make (Ty : S) : T with type t = Ty.t and type value = Ty.value
+
+type t =
+  | V_Number of Lnumber.t
+  | V_String of Lstring.t
+  | V_List of Llist.t
+  | V_Boolean of Lbool.t
