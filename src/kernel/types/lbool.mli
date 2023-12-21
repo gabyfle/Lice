@@ -20,4 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Type.T with type value = bool
+include Type.T with type t = bool and type value = bool

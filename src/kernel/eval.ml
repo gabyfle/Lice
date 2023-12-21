@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Ast.Tree
+open Types
 open Env
 open Located_error
 
@@ -60,81 +61,61 @@ module Eval : EVAL = struct
           let str = Printf.sprintf "Variable %s definition error." ident in
           raise (Located_error (`Language_Error str, loc)) )
 
-  let rec get_list_head loc = function
-    | List (Some h, _) ->
-        Some h
-    | List (None, Empty) ->
-        None
-    | List (None, t) ->
-        get_list_head loc t
-    | _ ->
-        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
-
-  let get_list_tail loc = function
-    | List (_, t) ->
-        t
-    | _ ->
-        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
-
   let rec binop_helper env loc v v' =
-    Utils.Logger.Logger.debug "Binop helper" ;
-    let aux (k, k') = function
-      | Plus ->
-          Number (k +. k')
-      | Minus ->
-          Number (k -. k')
-      | Multiply ->
-          Number (k *. k')
-      | Divide ->
-          if k' = 0. then raise Division_by_zero else Number (k /. k')
-      | Mod ->
-          if not (Float.is_integer k') then raise Division_by_zero
-          else if k' = 0. then raise Division_by_zero
-          else
-            let int_k = Int.of_float k in
-            let int_k' = Int.of_float k' in
-            Number (Float.of_int (int_k mod int_k'))
+    let aux a b op =
+      let value =
+        match op with
+        | Plus ->
+            Value.add a b
+        | Minus ->
+            Value.sub a b
+        | Multiply ->
+            Value.mul a b
+        | Divide ->
+            Value.div a b
+        | Mod ->
+            Value.md a b
+      in
+      Terminal (Base.Const value)
     in
     match (v, v') with
-    | Number k, Number k' ->
-        aux (k, k')
-    | Number k, Variable (id, _) ->
-        let is_number = is_variable_type env loc id T_Number in
-        if is_number then
+    | Terminal (Const k), Terminal (Const k') ->
+        aux k k'
+    | Terminal (Const k), Terminal (V_Var (id, _)) ->
+        let t_typ = Value.to_typ (Base.Const k) in
+        let same_type = is_variable_type env loc id t_typ in
+        if same_type then
           let value =
             match get_value env loc id with
-            | `Expression (Number k') ->
+            | `Expression (Terminal (Const k')) ->
                 k'
-            | `Expression _ ->
-                raise (Located_error (`Not_Number, loc))
             | _ ->
                 raise (Located_error (`Not_Number, loc))
           in
-          aux (k, value)
+          aux k value
         else raise (Located_error (`Not_Number, loc))
-    | Variable (id, _), Number k ->
-        let is_number = is_variable_type env loc id T_Number in
-        if is_number then
+    | Terminal (V_Var (id, _)), Terminal (Const k) ->
+        let t_typ = Value.to_typ (Base.Const k) in
+        let same_type = is_variable_type env loc id t_typ in
+        if same_type then
           let value =
             match get_value env loc id with
-            | `Expression (Number k') ->
+            | `Expression (Terminal (Const k')) ->
                 k'
-            | `Expression _ ->
-                raise (Located_error (`Not_Number, loc))
             | _ ->
                 raise (Located_error (`Not_Number, loc))
           in
-          aux (value, k)
+          aux value k
         else raise (Located_error (`Not_Number, loc))
-    | Variable (id, _), Variable (id', _) ->
-        let is_number = is_variable_type env loc id T_Number in
-        let is_number' = is_variable_type env loc id' T_Number in
-        if is_number && is_number' then
+    | Terminal (V_Var (id, _)), Terminal (V_Var (id', _)) ->
+        let same_type = get_type env loc id = get_type env loc id' in
+        if same_type then
           let v = get_value env loc id in
           let v' = get_value env loc id' in
           match (v, v') with
-          | `Expression (Number k), `Expression (Number k') ->
-              aux (k, k')
+          | `Expression (Terminal (Const k)), `Expression (Terminal (Const k'))
+            ->
+              aux k k'
           | _ ->
               raise (Located_error (`Not_Number, loc))
         else raise (Located_error (`Not_Number, loc))
@@ -263,16 +244,12 @@ module Eval : EVAL = struct
     aux f_env stmts
 
   and eval_expr _env loc = function
-    | env, Empty ->
-        (env, Empty)
-    | (_, (Number _ | String _ | Boolean _)) as v ->
+    | env, Terminal (Const V_Void) ->
+        (env, Terminal (Const V_Void))
+    | (_, Terminal (Const (V_Number _ | V_String _ | V_Boolean _ | V_List _)))
+      as v ->
         v
-    | env, List (h, Variable (id, _)) ->
-        let l' = compute_list env loc h id in
-        (env, l')
-    | env, (List (_, _) as l) ->
-        (env, l)
-    | env, Variable (id, _) -> (
+    | env, Terminal (V_Var (id, _)) -> (
       match get_value env loc id with
       | `Expression e ->
           (env, e)
@@ -370,7 +347,8 @@ module Eval : EVAL = struct
         let blck_env = Scope.push_scope env in
         let rec aux env = function
           | [] ->
-              (Scope.pop_scope env, Expression (loc, Empty, T_Void))
+              ( Scope.pop_scope env
+              , Expression (loc, Terminal (Const V_Void), T_Void) )
           | stmt :: t -> (
               let nenv, stmt = eval_statement env stmt in
               match stmt with
@@ -390,7 +368,7 @@ module Eval : EVAL = struct
           let n_env =
             Scope.set tmp id (Expression (loc, processed, val_to_typ processed))
           in
-          (n_env, Expression (loc, Empty, T_Void))
+          (n_env, Expression (loc, Terminal (Const V_Void), T_Void))
     | FuncDef (_, (id, _), _, _) as f ->
         (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
@@ -400,7 +378,7 @@ module Eval : EVAL = struct
     | If (loc, cond, t, f) -> (
         let n_env, eval_cond = eval_expr env loc (env, cond) in
         match eval_cond with
-        | Boolean b ->
+        | Terminal (Const (V_Boolean b)) ->
             if b then (
               Utils.Logger.Logger.debug "True statement found" ;
               eval_statement n_env t )
