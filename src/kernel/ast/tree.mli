@@ -20,19 +20,28 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Typing
+
+type location = Lexing.position
+
+type identificator = string
+
+and typed_ident = identificator * Base.typ
+
+type binary_operator = Plus | Minus | Divide | Multiply | Mod
+
+type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+
+type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
+
 type expr =
-  | Empty
-  | Number of float
-  | String of string
-  | Boolean of bool
-  | List of expr option * expr
-  | Variable of typed_ident
+  | Terminal of Base.value
   | BinOp of binop_type * expr * expr
   | FuncCall of identificator * expr list
 
 and statement =
   | Return of location * expr
-  | Expression of location * expr * typ
+  | Expression of location * expr * Base.typ
   | Block of location * statement list
   | Assign of location * typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement
@@ -40,3 +49,11 @@ and statement =
   | If of location * expr * statement * statement
 
 and program = statement list
+
+val val_to_typ : expr -> Base.typ
+
+val stmt_to_string : statement -> string
+
+val bincomp_to_string : binary_comp -> string
+
+val binop_to_string : binary_operator -> string

@@ -20,7 +20,7 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Types
+open Ast.Tree
 
 let typing_error (loc : Lexing.position) expected actual =
   let char = loc.pos_cnum - loc.pos_bol in

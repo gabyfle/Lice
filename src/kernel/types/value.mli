@@ -22,7 +22,7 @@
 
 open Base
 
-val to_typ : t -> typ
+val to_typ : value -> typ
 
 val typ_to_string : typ -> string
 
