@@ -20,7 +20,7 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Typing
+open Types
 
 type location = Lexing.position
 
