@@ -1,2 +1,3 @@
 (library
- (name ast))
+ (name ast)
+ (libraries typing))

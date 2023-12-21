@@ -22,6 +22,8 @@
 
 %{
   open Ast.Types  (* Include the AST module *)
+  open Ast.Value
+  open Typing
   open Utils
 %}
 
