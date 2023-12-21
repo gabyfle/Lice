@@ -21,3 +21,7 @@
 (*****************************************************************************)
 
 include Type.T with type t = Base.value list and type value = Base.value
+
+val hd : t -> value option
+
+val tl : t -> t
