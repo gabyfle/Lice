@@ -135,11 +135,11 @@ let lists :=
   }
   | h = IDENT; DOUBLE_COLON; t = IDENT;
   {
-    BinOp(`Operator(Plus), Terminal(V_Var((h, T_Auto))), Terminal(V_Var((t, T_Auto))))
+    BinOp(`Cons, Terminal(V_Var((h, T_Auto))), Terminal(V_Var((t, T_Auto))))
   }
   | h = list_terminals; DOUBLE_COLON; t = IDENT;
   { 
-    BinOp(`Operator(Plus), Terminal(Const(V_List(Llist.from h))), Terminal(V_Var((t, T_Auto))))
+    BinOp(`Cons, Terminal(Const(V_List(Llist.from h))), Terminal(V_Var((t, T_Auto))))
   }
   | h = list_terminals; DOUBLE_COLON; LBRACKET; RBRACKET;
   {

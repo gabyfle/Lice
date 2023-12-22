@@ -26,7 +26,8 @@ type binary_operator = Plus | Minus | Divide | Multiply | Mod
 
 type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
 
-type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
+type binop_type =
+  [`Compare of binary_comp | `Operator of binary_operator | `Cons]
 
 type typed_ident = ident * typ
 
