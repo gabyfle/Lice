@@ -299,6 +299,74 @@ module Eval : EVAL = struct
          statement *)
       | (Terminal (Const V_Void), stmts) :: _ ->
           eval_statement n_env (Block (loc, stmts))
+      (* when encountering list destructuring, we need to bind muted variables
+         into their actual values, then execute the code *)
+      | ( BinOp
+            ( `Operator Plus
+            , (Terminal (Const (V_List _)) as hd)
+            , Terminal (V_Var (id, _)) )
+        , stmts )
+        :: _ ->
+          let hd' =
+            match eval_pattern with
+            | Terminal (Const (V_List k)) -> (
+              match Llist.hd k with
+              | None ->
+                  Terminal (Const V_Void)
+              | Some k ->
+                  k )
+            | _ ->
+                raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+          in
+          if Value.expr_eq hd hd' then
+            (* we ensure that both heads are equal before doing anything *)
+            let tl =
+              match eval_pattern with
+              | Terminal (Const (V_List k)) -> (
+                match Llist.tl k with None -> V_List [] | Some k -> V_List k )
+              | _ ->
+                  raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+            in
+            let value = Terminal (Const tl) in
+            let tmp = Scope.push_scope n_env in
+            let n_env = Scope.set tmp id (Expression (loc, value, T_Auto)) in
+            eval_statement n_env (Block (loc, stmts))
+          else iterate_cases (List.tl cases)
+      (* we encountered a case where it's destructuring the list like this: h ::
+         t *)
+      | ( BinOp
+            (`Operator Plus, Terminal (V_Var (id, _)), Terminal (V_Var (id', _)))
+        , stmts )
+        :: _ -> (
+          let hd =
+            match eval_pattern with
+            | Terminal (Const (V_List k)) -> (
+              match Llist.hd k with
+              | None ->
+                  Terminal (Const V_Void)
+              | Some k ->
+                  k )
+            | _ ->
+                raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+          in
+          match hd with
+          | Terminal (Const V_Void) ->
+              iterate_cases (List.tl cases)
+          | _ ->
+              let tl =
+                match eval_pattern with
+                | Terminal (Const (V_List k)) -> (
+                  match Llist.tl k with None -> V_List [] | Some k -> V_List k )
+                | _ ->
+                    raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+              in
+              let value = Terminal (Const tl) in
+              let tmp = Scope.push_scope n_env in
+              let n_env = Scope.set tmp id (Expression (loc, hd, T_Auto)) in
+              let n_env =
+                Scope.set n_env id' (Expression (loc, value, T_Auto))
+              in
+              eval_statement n_env (Block (loc, stmts)) )
       | (case, stmts) :: _ -> (
           let n_env, eval_case = eval_expr n_env loc (n_env, case) in
           match (eval_case, eval_pattern) with
@@ -348,14 +416,13 @@ module Eval : EVAL = struct
         (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
         let env, stmt = eval_match env loc (env, pattern) cases in
-        (env, stmt)
-        (* Return the match statement *)
+        (* clean up local variables used inside the match *)
+        (Scope.pop_scope env, stmt)
     | If (loc, cond, t, f) -> (
         let n_env, eval_cond = eval_expr env loc (env, cond) in
         match eval_cond with
         | Terminal (Const (V_Boolean b)) ->
             if b then (
-              Utils.Logger.Logger.debug "True statement found" ;
               eval_statement n_env t )
             else eval_statement n_env f
         | _ ->

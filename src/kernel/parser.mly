@@ -122,15 +122,26 @@ let binop ==
   | LESSER; { `Compare(Lesser) }
 
 let list_terminals :=
+  | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }
+  | i = FLOAT; { Terminal(Const (V_Number (Lnumber.from i))) }
+  | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
+  | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
+  | l = lists; { l }
+
+let lists :=
   | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
   {
     Terminal(Const(V_List(Llist.from_list elems)))
   }
-  | h = terminal; DOUBLE_COLON; t = IDENT;
+  | h = IDENT; DOUBLE_COLON; t = IDENT;
+  {
+    BinOp(`Operator(Plus), Terminal(V_Var((h, T_Auto))), Terminal(V_Var((t, T_Auto))))
+  }
+  | h = list_terminals; DOUBLE_COLON; t = IDENT;
   { 
     BinOp(`Operator(Plus), Terminal(Const(V_List(Llist.from h))), Terminal(V_Var((t, T_Auto))))
   }
-  | h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
+  | h = list_terminals; DOUBLE_COLON; LBRACKET; RBRACKET;
   {
     Terminal(Const(V_List(Llist.from h)))
   }
@@ -141,7 +152,7 @@ let terminal ==
   | i = IDENT; { Terminal(V_Var((i, T_Auto))) }
   | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
   | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
-  | l = list_terminals; { l }
+  | l = lists; { l }
 
 let block ==
   | LBRACE; stmts = list(statement); RBRACE;
@@ -168,11 +179,7 @@ let assign ==
   { Assign ($startpos, (p, T_Auto), e) }
 
 let pattern ==
-  | b = BOOLEAN; { Terminal(Const(V_Boolean (Lbool.from b))) }
-  | n = INT; { Terminal(Const(V_Number (Lnumber.from (float_of_int n)))) }
-  | n = FLOAT; { Terminal(Const(V_Number (Lnumber.from n))) }
-  | s = STRING_VALUE; { Terminal(Const(V_String(Lstring.from s))) }
-  | l = list_terminals; { l }
+  | t = terminal; { t }
   | WILDCARD; { Terminal(Const(V_Void)) }
 
 let match_expr ==
