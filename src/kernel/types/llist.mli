@@ -26,4 +26,4 @@ val from_list : value list -> t
 
 val hd : t -> value option
 
-val tl : t -> t
+val tl : t -> t option

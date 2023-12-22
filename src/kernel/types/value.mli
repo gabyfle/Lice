@@ -22,6 +22,8 @@
 
 open Base
 
+val expr_eq : expr -> expr -> bool
+
 val to_typ : value -> typ
 
 val typ_to_string : typ -> string

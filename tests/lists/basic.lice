@@ -3,3 +3,5 @@ let list l = ["b"; "o"; "n"; "j"; "o"; "u"; "r"];
 let list b = "a" :: l;
 
 let list bb = [] :: l;
+
+let list c = [1 + 2; 4 + 5; 6 + 6];

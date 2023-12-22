@@ -1,0 +1,11 @@
+
+function head(l) {
+    match l with {
+        | [] -> return "";
+        | h :: t -> return h;
+    }
+}
+
+let list l = ["t"; "e"; "s"; "t"];
+
+let e = head(l);

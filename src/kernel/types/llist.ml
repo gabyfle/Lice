@@ -124,4 +124,4 @@ let add : t -> t -> t = ( @ )
 
 let hd : t -> value option = function [] -> None | x :: _ -> Some x
 
-let tl : t -> t = function [] -> failwith "tl: empty list" | _ :: xs -> xs
+let tl : t -> t option = function [] -> None | _ :: xs -> Some xs

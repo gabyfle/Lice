@@ -30,6 +30,7 @@ type exception_type =
   | `Division_by_zero
   | `Undefined_Function
   | `Undefined_Variable of identificator
+  | `Op_Mismatch of string * typ * typ
   | `Not_A_Callable
   | `Function_Value
   | `Wrong_Parameters_Number of identificator * int * int

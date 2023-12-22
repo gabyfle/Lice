@@ -63,7 +63,7 @@ module Eval : EVAL = struct
           let str = Printf.sprintf "Variable %s definition error." ident in
           raise (Located_error (`Language_Error str, loc)) )
 
-  let rec binop_helper env loc v v' =
+  let rec binop_helper env loc v v' op =
     Logger.debug "binop_helper" ;
     let aux a b op =
       let value =
@@ -83,7 +83,7 @@ module Eval : EVAL = struct
     in
     match (v, v') with
     | Terminal (Const k), Terminal (Const k') ->
-        aux k k'
+        aux k k' op
     | Terminal (Const k), Terminal (V_Var (id, _)) ->
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
@@ -93,10 +93,14 @@ module Eval : EVAL = struct
             | `Expression (Terminal (Const k')) ->
                 k'
             | _ ->
-                raise (Located_error (`Not_Number, loc))
+                raise (Located_error (`Function_Value, loc))
           in
-          aux k value
-        else raise (Located_error (`Not_Number, loc))
+          aux k value op
+        else
+          raise
+            (Located_error
+               ( `Op_Mismatch (binop_to_string op, t_typ, get_type env loc id)
+               , loc ) )
     | Terminal (V_Var (id, _)), Terminal (Const k) ->
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
@@ -108,25 +112,31 @@ module Eval : EVAL = struct
             | _ ->
                 raise (Located_error (`Not_Number, loc))
           in
-          aux value k
+          aux value k op
         else raise (Located_error (`Not_Number, loc))
+    (* as a quick fix for the moment (maybe we will be able to do this
+       differently in near future) we need a special canse to handle h :: t
+       operator *)
     | Terminal (V_Var (id, _)), Terminal (V_Var (id', _)) ->
         let same_id = id = id' in
-        let same_type = get_type env loc id = get_type env loc id' in
+        let t = get_type env loc id in
+        let t' = get_type env loc id' in
+        let same_type = t = t' in
         if same_type then
           let v = get_value env loc id in
           let v' = if same_id then v else get_value env loc id' in
           match (v, v') with
           | `Expression (Terminal (Const k)), `Expression (Terminal (Const k'))
             ->
-              aux k k'
+              aux k k' op
           | _ ->
-              raise (Located_error (`Not_Number, loc))
-        else raise (Located_error (`Not_Number, loc))
+              raise (Located_error (`Function_Value, loc))
+        else
+          raise (Located_error (`Op_Mismatch (binop_to_string op, t, t'), loc))
     | a, b ->
         let tmp, v_a = eval_expr env loc (env, a) in
         let tmp', v_b = eval_expr tmp loc (tmp, b) in
-        binop_helper tmp' loc v_a v_b
+        binop_helper tmp' loc v_a v_b op
 
   and bincomp_helper env loc v v' =
     let aux a b op =
@@ -182,15 +192,19 @@ module Eval : EVAL = struct
         let tmp', v_b = eval_expr tmp loc (tmp, b) in
         bincomp_helper tmp' loc v_a v_b
 
-  (* compute_list recreates a list object from a syntax like h :: t. [env] is
-     the current environement in which we're doing this [loc] is the location of
-     the statement that asked to create that list [head] is the head of the list
-     we want to create (the h in h :: t) [tail] is an identificator for the list
-     tail we want to create and compute_list env loc head (tail : identificator)
-     = let v = get_value env loc tail in match v with | `Expression (List (h,
-     t)) -> ( match h with None -> List (head, t) | Some _ -> List (head, List
-     (h, t)) ) | _ -> raise (Located_error (`Wrong_Type (T_List, T_Auto),
-     loc)) *)
+  and cons_helper env loc a b =
+    match (a, b) with
+    | Terminal (V_Var (id, _)), (Terminal (V_Var (_, _)) as k') -> (
+        let value = get_value env loc id in
+        match value with
+        | `Expression k ->
+            binop_helper env loc
+              (Terminal (Const (V_List (Llist.from k))))
+              k' Plus
+        | _ ->
+            raise (Located_error (`Not_Number, loc)) )
+    | _ ->
+        binop_helper env loc a b Plus
 
   (* eval_function evaluates a function call inside the AST to remplace it by
      the actual value returned (or not) by the function. this function processes
@@ -280,7 +294,9 @@ module Eval : EVAL = struct
       | `Compare bincomp ->
           (env, bincomp_helper env loc a b bincomp)
       | `Operator binop ->
-          (env, binop_helper env loc a b binop) )
+          (env, binop_helper env loc a b binop)
+      | `Cons ->
+          (env, cons_helper env loc a b) )
     | env, FuncCall (id, expr_list) ->
         let rec exprs acc = function
           | [] ->
@@ -299,6 +315,73 @@ module Eval : EVAL = struct
          statement *)
       | (Terminal (Const V_Void), stmts) :: _ ->
           eval_statement n_env (Block (loc, stmts))
+      (* when encountering list destructuring, we need to bind muted variables
+         into their actual values, then execute the code *)
+      | ( BinOp
+            ( `Cons
+            , (Terminal (Const (V_List _)) as hd)
+            , Terminal (V_Var (id, _)) )
+        , stmts )
+        :: _ ->
+          let hd' =
+            match eval_pattern with
+            | Terminal (Const (V_List k)) -> (
+              match Llist.hd k with
+              | None ->
+                  Terminal (Const V_Void)
+              | Some k ->
+                  k )
+            | _ ->
+                raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+          in
+          if Value.expr_eq hd hd' then
+            (* we ensure that both heads are equal before doing anything *)
+            let tl =
+              match eval_pattern with
+              | Terminal (Const (V_List k)) -> (
+                match Llist.tl k with None -> V_List [] | Some k -> V_List k )
+              | _ ->
+                  raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+            in
+            let value = Terminal (Const tl) in
+            let tmp = Scope.push_scope n_env in
+            let n_env = Scope.set tmp id (Expression (loc, value, T_Auto)) in
+            eval_statement n_env (Block (loc, stmts))
+          else iterate_cases (List.tl cases)
+      (* we encountered a case where it's destructuring the list like this: h ::
+         t *)
+      | ( BinOp (`Cons, Terminal (V_Var (id, _)), Terminal (V_Var (id', _)))
+        , stmts )
+        :: _ -> (
+          let hd =
+            match eval_pattern with
+            | Terminal (Const (V_List k)) -> (
+              match Llist.hd k with
+              | None ->
+                  Terminal (Const V_Void)
+              | Some k ->
+                  k )
+            | _ ->
+                raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+          in
+          match hd with
+          | Terminal (Const V_Void) ->
+              iterate_cases (List.tl cases)
+          | _ ->
+              let tl =
+                match eval_pattern with
+                | Terminal (Const (V_List k)) -> (
+                  match Llist.tl k with None -> V_List [] | Some k -> V_List k )
+                | _ ->
+                    raise (Located_error (`Wrong_Type (T_List, T_Auto), loc))
+              in
+              let value = Terminal (Const tl) in
+              let tmp = Scope.push_scope n_env in
+              let n_env = Scope.set tmp id (Expression (loc, hd, T_Auto)) in
+              let n_env =
+                Scope.set n_env id' (Expression (loc, value, T_Auto))
+              in
+              eval_statement n_env (Block (loc, stmts)) )
       | (case, stmts) :: _ -> (
           let n_env, eval_case = eval_expr n_env loc (n_env, case) in
           match (eval_case, eval_pattern) with
@@ -348,16 +431,13 @@ module Eval : EVAL = struct
         (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
         let env, stmt = eval_match env loc (env, pattern) cases in
-        (env, stmt)
-        (* Return the match statement *)
+        (* clean up local variables used inside the match *)
+        (Scope.pop_scope env, stmt)
     | If (loc, cond, t, f) -> (
         let n_env, eval_cond = eval_expr env loc (env, cond) in
         match eval_cond with
         | Terminal (Const (V_Boolean b)) ->
-            if b then (
-              Utils.Logger.Logger.debug "True statement found" ;
-              eval_statement n_env t )
-            else eval_statement n_env f
+            if b then eval_statement n_env t else eval_statement n_env f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
   (* for the moment we're not getting the type of the expression *)

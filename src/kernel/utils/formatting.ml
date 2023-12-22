@@ -59,6 +59,8 @@ let expr_format expr =
               bincomp_to_string comp
           | `Operator op ->
               binop_to_string op
+          | `Cons ->
+              "::"
         in
         let left = aux e in
         let right = aux e' in

@@ -33,6 +33,7 @@ type exception_type =
   | `Division_by_zero
   | `Undefined_Function
   | `Undefined_Variable of identificator
+  | `Op_Mismatch of string * typ * typ
   | `Not_A_Callable
   | `Function_Value
   | `Wrong_Parameters_Number of identificator * int * int
@@ -79,6 +80,13 @@ let handle_type_exception f a b =
       in
       Logger.error "%s %s" str id ;
       exit 1
+  | Located_error (`Op_Mismatch (op, a, b), loc) ->
+      let str =
+        Printf.sprintf "Operator %s is not defined for types %s and %s" op
+          (typ_to_string a) (typ_to_string b)
+      in
+      let str = Formatting.misc_error loc str in
+      Logger.error "%s" str ; exit 1
   | Located_error (`Not_A_Callable, loc) ->
       let str =
         Formatting.misc_error loc "Trying to call a non callable object"

@@ -105,6 +105,13 @@ let eq v v' =
   | _ ->
       false
 
+let expr_eq v v' =
+  match (v, v') with
+  | Terminal (Const k), Terminal (Const k') ->
+      eq k k'
+  | _ ->
+      false
+
 let to_string = function
   | V_Number n ->
       Lnumber.to_string n
