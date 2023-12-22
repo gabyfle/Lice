@@ -21,27 +21,17 @@
 (*****************************************************************************)
 
 open Types
+open Types.Base
 
 type location = Lexing.position
 
 type identificator = string
 
-and typed_ident = identificator * Base.typ
+and typed_ident = identificator * typ
 
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
-
-type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
-
-type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
-
-type expr =
-  | Terminal of Base.value
-  | BinOp of binop_type * expr * expr
-  | FuncCall of identificator * expr list
-
-and statement =
+type statement =
   | Return of location * expr
-  | Expression of location * expr * Base.typ
+  | Expression of location * expr * typ
   | Block of location * statement list
   | Assign of location * typed_ident * expr
   | FuncDef of location * typed_ident * typed_ident list * statement

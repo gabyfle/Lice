@@ -122,19 +122,18 @@ let binop ==
   | LESSER; { `Compare(Lesser) }
 
 let list_terminals :=
-  | LBRACKET; _elems=separated_list(SEMICOLON, expr); RBRACKET;
+  | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
   {
-    Terminal(Const(V_List(Llist.from (Const V_Void))))
+    Terminal(Const(V_List(Llist.from_list elems)))
   }
-  | h = terminal; DOUBLE_COLON; _t = IDENT;
+  | h = terminal; DOUBLE_COLON; t = IDENT;
   { 
-    match h with
-      | Terminal(k) ->
-        Terminal(Const(V_List(Llist.from k)))
-      | _ -> raise (Failure "Invalid list")
+    BinOp(`Operator(Plus), Terminal(Const(V_List(Llist.from h))), Terminal(V_Var((t, T_Auto))))
   }
-  | _h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
-  { Terminal(Const(V_List(Llist.from (Const V_Void)))) }
+  | h = terminal; DOUBLE_COLON; LBRACKET; RBRACKET;
+  {
+    Terminal(Const(V_List(Llist.from h)))
+  }
 
 let terminal ==
   | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }

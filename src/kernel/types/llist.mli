@@ -20,7 +20,9 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Type.T with type t = Base.value list and type value = Base.value
+include Type.T with type t = Base.expr list and type value = Base.expr
+
+val from_list : value list -> t
 
 val hd : t -> value option
 

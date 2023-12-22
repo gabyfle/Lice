@@ -28,7 +28,7 @@ module S = struct
   let name = "string"
 
   let pretty : Format.formatter -> t -> unit =
-   fun fmt x -> Format.fprintf fmt "%s" x
+   fun fmt x -> Format.fprintf fmt "\"%s\"" x
 
   let compare : t -> t -> int = Stdlib.compare
 

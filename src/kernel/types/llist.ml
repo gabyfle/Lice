@@ -21,9 +21,9 @@
 (*****************************************************************************)
 
 module S = struct
-  type t = Base.value list
+  type t = Base.expr list
 
-  type value = Base.value
+  type value = Base.expr
 
   let name = "list"
 
@@ -33,9 +33,29 @@ module S = struct
       | [] ->
           ()
       | x :: [] ->
-          Format.fprintf ppf "%a" pretty_val x
+          Format.fprintf ppf "%a" pretty_expr x
       | x :: xs ->
-          Format.fprintf ppf "%a, %a" pretty_val x aux xs
+          Format.fprintf ppf "%a, %a" pretty_expr x aux xs
+    and pretty_expr ppf = function
+      | Base.Terminal t ->
+          pretty_val ppf t
+      | Base.BinOp (op, l, r) ->
+          Format.fprintf ppf "(%a %s %a)" pretty_expr l
+            (Base.binop_type_to_string op)
+            pretty_expr r
+      | Base.FuncCall (id, l) ->
+          let pretty_list ppf l =
+            let rec aux ppf = function
+              | [] ->
+                  ()
+              | x :: [] ->
+                  Format.fprintf ppf "%a" pretty_expr x
+              | x :: xs ->
+                  Format.fprintf ppf "%a, %a" pretty_expr x aux xs
+            in
+            aux ppf l
+          in
+          Format.fprintf ppf "%s(%a)" id pretty_list l
     and pretty_val ppf = function
       | Base.Const t ->
           pretty_base ppf t
@@ -65,7 +85,13 @@ module S = struct
       | _, [] ->
           1
       | x :: xs, y :: ys ->
-          compare_val x y + aux (xs, ys)
+          compare_expr x y + aux (xs, ys)
+    and compare_expr v v' =
+      match (v, v') with
+      | Base.Terminal t, Base.Terminal t' ->
+          compare_val t t'
+      | _ ->
+          0
     and compare_val v v' =
       match (v, v') with
       | Base.Const t, Base.Const t' ->
@@ -91,6 +117,8 @@ module S = struct
 end
 
 include Type.Make (S)
+
+let from_list : value list -> t = fun l -> l
 
 let add : t -> t -> t = ( @ )
 
