@@ -22,6 +22,7 @@
 
 open Ast.Tree
 open Types
+open Types.Base
 open Env
 open Located_error
 open Utils.Logger
@@ -185,14 +186,11 @@ module Eval : EVAL = struct
      the current environement in which we're doing this [loc] is the location of
      the statement that asked to create that list [head] is the head of the list
      we want to create (the h in h :: t) [tail] is an identificator for the list
-     tail we want to create 
-  and compute_list env loc head (tail : identificator) =
-    let v = get_value env loc tail in
-    match v with
-    | `Expression (List (h, t)) -> (
-      match h with None -> List (head, t) | Some _ -> List (head, List (h, t)) )
-    | _ ->
-        raise (Located_error (`Wrong_Type (T_List, T_Auto), loc)) *)
+     tail we want to create and compute_list env loc head (tail : identificator)
+     = let v = get_value env loc tail in match v with | `Expression (List (h,
+     t)) -> ( match h with None -> List (head, t) | Some _ -> List (head, List
+     (h, t)) ) | _ -> raise (Located_error (`Wrong_Type (T_List, T_Auto),
+     loc)) *)
 
   (* eval_function evaluates a function call inside the AST to remplace it by
      the actual value returned (or not) by the function. this function processes
@@ -278,11 +276,11 @@ module Eval : EVAL = struct
                    "An error occurred while trying to get the variable"
                , loc ) ) )
     | env, BinOp (op, a, b) -> (
-        match op with
-        | `Compare bincomp ->
-            (env, bincomp_helper env loc a b bincomp)
-        | `Operator binop ->
-            (env, binop_helper env loc a b binop) )
+      match op with
+      | `Compare bincomp ->
+          (env, bincomp_helper env loc a b bincomp)
+      | `Operator binop ->
+          (env, binop_helper env loc a b binop) )
     | env, FuncCall (id, expr_list) ->
         let rec exprs acc = function
           | [] ->

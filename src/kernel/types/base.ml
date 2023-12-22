@@ -22,15 +22,58 @@
 
 type ident = string
 
+type binary_operator = Plus | Minus | Divide | Multiply | Mod
+
+type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+
+type binop_type = [`Compare of binary_comp | `Operator of binary_operator]
+
 type typed_ident = ident * typ
 
 and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 
-type value = Const of t | V_Var of typed_ident
+type expr =
+  | Terminal of value
+  | BinOp of binop_type * expr * expr
+  | FuncCall of ident * expr list
+
+and value = Const of t | V_Var of typed_ident
 
 and t =
   | V_Number of Lnumber.t
   | V_String of Lstring.t
-  | V_List of value list
+  | V_List of expr list
   | V_Boolean of Lbool.t
   | V_Void
+
+let bincomp_to_string = function
+  | Equal ->
+      "=="
+  | NotEqual ->
+      "!="
+  | GEQ ->
+      ">="
+  | LEQ ->
+      "<="
+  | Greater ->
+      ">"
+  | Lesser ->
+      "<"
+
+let binop_to_string = function
+  | Plus ->
+      "+"
+  | Minus ->
+      "-"
+  | Divide ->
+      "/"
+  | Multiply ->
+      "*"
+  | Mod ->
+      "%"
+
+let binop_type_to_string = function
+  | `Compare c ->
+      bincomp_to_string c
+  | `Operator o ->
+      binop_to_string o

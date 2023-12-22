@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Ast.Tree
+open Types.Base
 
 val typing_error : Lexing.position -> string -> string -> string
 
