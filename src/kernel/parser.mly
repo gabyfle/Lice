@@ -55,10 +55,15 @@
 %token IF
 %token ELSE
 
+(* Modules *)
+%token MODULE
+%token OPEN
+
 (* General syntax *)
 %token COMMA
 %token SEMICOLON
 %token COLON
+%token DOT
 %token DOUBLE_COLON
 %token LPAREN
 %token RPAREN
@@ -104,7 +109,7 @@
 
 let lprog :=
   | EOF; { [] }
-  | f = func_def; EOL*; sl = lprog; { f :: sl}
+  | f = func_def; EOL*; sl = lprog; { f :: sl }
   | s = statement; EOF; { [ s ] }
   | s = statement; EOL*;  sl = lprog; { s :: sl }
 
@@ -150,6 +155,7 @@ let terminal ==
   | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }
   | i = FLOAT; { Terminal(Const (V_Number (Lnumber.from i))) }
   | i = IDENT; { Terminal(V_Var((i, T_Auto))) }
+  | _i = IDENT; DOT; p = IDENT; { Terminal(V_Var((p, T_Auto))) }
   | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
   | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
   | l = lists; { l }
@@ -220,6 +226,8 @@ let func_call_param ==
 let func_call ==
   | p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
     { FuncCall(p, args) }
+  | _md = IDENT; DOT; p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
+    { FuncCall(p, args) }
 
 let return_call ==
   | RETURN;
@@ -233,6 +241,18 @@ let if_stmt :=
   | IF; LPAREN; e = expr; RPAREN; b1 = statement;
   { If ($startpos, e, b1, Expression($startpos, Terminal(Const(V_Void)), T_Void)) }
 
+let module_elems := 
+  | e = assign; SEMICOLON; EOL*; { e }
+  | f = func_def; EOL*; { f }  
+
+let module_body := 
+  | LBRACE; stmts = list(module_elems); RBRACE;
+  { stmts }
+
+let module_def := 
+  | MODULE; _p = IDENT; _b = module_body;
+  { (Expression($startpos, Terminal(Const(V_Void)), T_Void)) }
+
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
   | b = block; { b }
@@ -240,6 +260,7 @@ let statement ==
   | a = assign; SEMICOLON; { a }
   | m = match_expr; { m }
   | i = if_stmt; { i }
+  | m = module_def; { m }
 
 let expr :=
   | p = parenthesis; { p }

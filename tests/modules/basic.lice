@@ -1,0 +1,8 @@
+
+module Testing {
+    let string t = "this is a test";
+
+    function test() {
+        return test;
+    }
+}
