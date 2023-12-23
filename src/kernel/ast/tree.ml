@@ -37,6 +37,7 @@ type statement =
   | FuncDef of location * typed_ident * typed_ident list * statement
   | Match of location * expr * (expr * statement list) list
   | If of location * expr * statement * statement
+  | ModuleDef of location * identificator * statement list
 
 and program = statement list
 
@@ -63,6 +64,8 @@ let stmt_to_string = function
       "Pattern-matching"
   | If (_, _, _, _) ->
       "If statement"
+  | ModuleDef (_, _, _) ->
+      "Module definition"
 
 let bincomp_to_string = function
   | Equal ->

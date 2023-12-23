@@ -111,6 +111,12 @@ let stmt_format stmt =
     | If (_, e, t, f) ->
         Printf.sprintf "If statement on condition %s. If true: %s if false: %s"
           (expr_format e) (aux t) (aux f)
+    | ModuleDef (_, name, stmts) ->
+        let tmp = ref "" in
+        let iter s = tmp := !tmp ^ aux s in
+        List.iter iter stmts ;
+        Printf.sprintf "Module definition id: %s and definition: %s\n\n" name
+          !tmp
   in
   aux stmt
 

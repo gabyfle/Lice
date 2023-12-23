@@ -440,6 +440,8 @@ module Eval : EVAL = struct
             if b then eval_statement n_env t else eval_statement n_env f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
+    | ModuleDef (loc, _, _) ->
+        (env, Expression (loc, Terminal (Const V_Void), T_Void))
   (* for the moment we're not getting the type of the expression *)
 
   let exec (p : program) =

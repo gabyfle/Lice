@@ -37,6 +37,7 @@ type statement =
   | FuncDef of location * typed_ident * typed_ident list * statement
   | Match of location * expr * (expr * statement list) list
   | If of location * expr * statement * statement
+  | ModuleDef of location * identificator * statement list
 
 and program = statement list
 

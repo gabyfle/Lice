@@ -1,100 +1,44 @@
 <p align="center"><img src="https://github.com/gabyfle/Lice/blob/main/lice_frame.png?raw=true" width="150px" style="margin: auto; border-radius: 200px;"></p>
 
 # Lice
-Lice language interpreter
+Lice language main repository. Contains all the library code of the Lice language and everything you need to add Lice to your OCaml application.
 
 ## What is Lice ?
 
 Lice is a little general purpose interpreted language. It's meant to be easy-to-learn when you know OCaml, C-like languages, and to be as easy to use as Lua.
 
-The Lice language doesn't aim to be super-fast neither to have super-extensible standard library. It's primary goal is to be easy to extend for OCaml developer: creating a library written in OCaml for Lice should not be a pain in the ass.
-
-## Why Lice ?
-
-The first goal of Lice is to have something that is embeddable inside any OCaml project and that have a well defined and robust OCaml API. The main inspiration for this is, of course, the Lua programming language and it's very clean and easy-to-use C-API that enables C programmers to ship Lua into their C program easily.
-
-As a long-term Lua developer and a newbie OCaml developer, I wanted to give a shot to this project and having a Lua-like language built directly into the OCaml ecosystem.
-
-This project is also a way to learn more things about the way programming languages are crafted and built, as well as an opportunity to make a language that I know perfectly without even having to learn it, as all of it's syntax is inspired by C, OCaml and Lua, and that I'm familiar with these three languages.
-
-## State of the project
-
-For the moment, this is the very beginning of the project, the parser should work but hasn't been well tested yet, and the surrounding elements of what makes an interpreter aren't yet implemented/do not work yet. The project is still in the "WIP" stage.
-
-Of course the ultimate goal, and also the primary feature of the language will be it's interoperability with OCaml, as well as its module system, to make OCaml developers able to build libraries for Lice in OCaml, but since we do not have something working yet, this will be in the last stage of the development.
-
 ## Features of the language
-    - Type annotations
-    - Recursive functions
-    - OCaml-like pattern matching
-    - Native lists
-    - Embedabble withing any OCaml application
+- Type annotations
+- Recursive functions
+- OCaml-like pattern matching
+- Native lists
+- Deconstructing inside pattern matching
+- Embedabble withing any OCaml application
+- First-class values functions
+- OCaml bindings to write your own applications
 
-## Example programs
+## Documentation
 
-Here are some example programs. Note that since the current stage of the project is still "WIP", this syntax may be subject to slight changes.
+### Installing the Lice language library
 
-#### Recursive power function
+To install the Lice language library, you'll need to have the `opam` dependency manager installed in your local system.
 
-This little snippet shows how you can compute x^n when n is an integer. It uses a recursive function as well as pattern matching in order to achieve the computation.
+The first step is to clone locally the repository. You can use this command line to clone throught `https`:
 
-```lua
---[[---------------------------
---    Recursive power func   --
---                           --
---    (this is a comment)    --
------------------------------]]
-
-function power(x: number, n: number, acc: number): number {
-    if (n == 0) return acc;
-    if (n == 1) return acc * x;
-
-    if ((n % 2) ~= 0) return power(x * x, (n - 1) / 2, x * acc);
-    else return power(x * x, n / 2, acc);
-}
-
-function main(): void {
-    let number x = 2;
-    let number n = 8;
-
-    let number p = power(x, n, 1);
-
-    return;
-}
-
-main();
+```bash
+git clone https://github.com/gabyfle/Lice.git
 ```
 
-#### Reverse a list
+Then, navigate to your freshly created `Lice` folder and run the `opam install` command at the root of the project:
 
-As you can see in this example, lists constructions are heavily inspired from the OCaml way of building and deconstructing lists. Here is a little snippet to show how you can reverse a list inside the Lice language.
-
-```lua
-function reverse_aux(l: list, acc: list): list {
-    match l with {
-        | [] -> return acc;
-        | h :: t -> return reverse_aux(t, h :: acc);
-    }
-}
-
-function reverse(l: list): list {
-    return reverse_aux(l, []);
-}
+```bash
+cd Lice
+opam install .
 ```
 
-#### Count to ten
+The Lice language library is now installed into your system.
 
-This program demonstrate how to count to ten using a recursive function. Note: if we're using recursive functions for the moment, it's because we don't have any loop system in the language.
-
-```lua
-function main(x) {
-    if (x == 10) { return x; }
-    main(x + 1);
-}
-
-main(0);
-
-```
+### Learning the Lice language
 
 ## Licence
 

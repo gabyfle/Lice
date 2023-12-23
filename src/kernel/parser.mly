@@ -250,8 +250,8 @@ let module_body :=
   { stmts }
 
 let module_def := 
-  | MODULE; _p = IDENT; _b = module_body;
-  { (Expression($startpos, Terminal(Const(V_Void)), T_Void)) }
+  | MODULE; id = IDENT; b = module_body;
+  { ModuleDef($startpos, id, b) }
 
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
