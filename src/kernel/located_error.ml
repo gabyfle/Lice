@@ -78,7 +78,7 @@ let handle_type_exception f a b =
       let str =
         Formatting.misc_error loc "Using an undefined variable of name "
       in
-      Logger.error "%s %s" str id ;
+      Logger.error "%s %s" str (identificator_to_string id) ;
       exit 1
   | Located_error (`Op_Mismatch (op, a, b), loc) ->
       let str =
@@ -104,7 +104,9 @@ let handle_type_exception f a b =
       in
       Logger.error "%s" str ; exit 1
   | Located_error (`Wrong_Parameters_Number (fname, a, b), loc) ->
-      let str = Formatting.params_number_error loc fname a b in
+      let str =
+        Formatting.params_number_error loc (identificator_to_string fname) a b
+      in
       Logger.error "%s" str ; exit 1
   | Located_error (`Wrong_Parameter_Type (_, a, b), loc)
   | Located_error (`Wrong_Assign_Type (_, a, b), loc)

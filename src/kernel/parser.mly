@@ -140,11 +140,11 @@ let lists :=
   }
   | h = IDENT; DOUBLE_COLON; t = IDENT;
   {
-    BinOp(`Cons, Terminal(V_Var((h, T_Auto))), Terminal(V_Var((t, T_Auto))))
+    BinOp(`Cons, Terminal(V_Var(`Ident(h, T_Auto))), Terminal(V_Var(`Ident(t, T_Auto))))
   }
   | h = list_terminals; DOUBLE_COLON; t = IDENT;
   { 
-    BinOp(`Cons, Terminal(Const(V_List(Llist.from h))), Terminal(V_Var((t, T_Auto))))
+    BinOp(`Cons, Terminal(Const(V_List(Llist.from h))), Terminal(V_Var(`Ident(t, T_Auto))))
   }
   | h = list_terminals; DOUBLE_COLON; LBRACKET; RBRACKET;
   {
@@ -154,8 +154,8 @@ let lists :=
 let terminal ==
   | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }
   | i = FLOAT; { Terminal(Const (V_Number (Lnumber.from i))) }
-  | i = IDENT; { Terminal(V_Var((i, T_Auto))) }
-  | _i = IDENT; DOT; p = IDENT; { Terminal(V_Var((p, T_Auto))) }
+  | i = IDENT; { Terminal(V_Var(`Ident(i, T_Auto))) }
+  | i = IDENT; DOT; p = IDENT; { Terminal(V_Var(`Module(i, (p, T_Auto)))) }
   | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
   | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
   | l = lists; { l }
@@ -178,11 +178,11 @@ let typ ==
 
 let assign ==
   | LET; p = IDENT; COLON; ASSIGN; e = expr;
-  { Assign ($startpos, (p, T_Auto), e)}
+  { Assign ($startpos, `Ident(p, T_Auto), e)}
   | LET; t = typ; p = IDENT; ASSIGN; e = expr;
-  { Assign ($startpos, (p, t), e)}
+  { Assign ($startpos, `Ident(p, t), e)}
   | p = IDENT; ASSIGN; e = expr;
-  { Assign ($startpos, (p, T_Auto), e) }
+  { Assign ($startpos, `Ident(p, T_Auto), e) }
 
 let pattern ==
   | t = terminal; { t }
@@ -209,25 +209,27 @@ let binary_operator ==
 (* Parse the parameters of a function with the syntax for annotated types:
   function name(arg1: type ...) *)
 let func_def_param ==
+  | m = IDENT; DOT; a = IDENT; COLON; t = typ;
+    { `Module(m, (a, t)) }
   | a = IDENT; COLON; t = typ;
-    { (a, t) }
+    { `Ident (a, t) }
   | a = IDENT;
-    { (a, T_Auto) }
+    { `Ident (a, T_Auto) }
 
 let func_def ==
   | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; b = block;
-    { FuncDef($startpos, (p, t), args, b) }
+    { FuncDef($startpos, `Ident(p, t), args, b) }
   | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; b = block;
-    { FuncDef($startpos, (p, T_Auto), args, b) }
+    { FuncDef($startpos, `Ident(p, T_Auto), args, b) }
 
 let func_call_param ==
   | p = expr; { p }
 
 let func_call ==
   | p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
-    { FuncCall(p, args) }
-  | _md = IDENT; DOT; p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
-    { FuncCall(p, args) }
+    { FuncCall(`Ident(p, T_Auto), args) }
+  | md = IDENT; DOT; p = IDENT; LPAREN; args=separated_list(COMMA, func_call_param); RPAREN;
+    { FuncCall(`Module(md, (p, T_Auto)), args) }
 
 let return_call ==
   | RETURN;

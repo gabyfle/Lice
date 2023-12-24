@@ -59,7 +59,10 @@ module Eval : EVAL = struct
       | FuncDef (_, _, _, _) as f ->
           `Statement f
       | _ ->
-          let str = Printf.sprintf "Variable %s definition error." ident in
+          let str =
+            Printf.sprintf "Variable %s definition error."
+              (identificator_to_string ident)
+          in
           raise (Located_error (`Language_Error str, loc)) )
 
   let rec binop_helper env loc v v' op =
@@ -82,7 +85,7 @@ module Eval : EVAL = struct
     match (v, v') with
     | Terminal (Const k), Terminal (Const k') ->
         aux k k' op
-    | Terminal (Const k), Terminal (V_Var (id, _)) ->
+    | Terminal (Const k), Terminal (V_Var id) ->
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
         if same_type then
@@ -99,7 +102,7 @@ module Eval : EVAL = struct
             (Located_error
                ( `Op_Mismatch (binop_to_string op, t_typ, get_type env loc id)
                , loc ) )
-    | Terminal (V_Var (id, _)), Terminal (Const k) ->
+    | Terminal (V_Var id), Terminal (Const k) ->
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
         if same_type then
@@ -115,7 +118,7 @@ module Eval : EVAL = struct
     (* as a quick fix for the moment (maybe we will be able to do this
        differently in near future) we need a special canse to handle h :: t
        operator *)
-    | Terminal (V_Var (id, _)), Terminal (V_Var (id', _)) ->
+    | Terminal (V_Var id), Terminal (V_Var id') ->
         let same_id = id = id' in
         let t = get_type env loc id in
         let t' = get_type env loc id' in
@@ -158,8 +161,8 @@ module Eval : EVAL = struct
     match (v, v') with
     | Terminal (Const k), Terminal (Const k') ->
         aux k k'
-    | Terminal (V_Var (id, _)), Terminal (Const k)
-    | Terminal (Const k), Terminal (V_Var (id, _)) ->
+    | Terminal (V_Var id), Terminal (Const k)
+    | Terminal (Const k), Terminal (V_Var id) ->
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
         if same_type then
@@ -172,7 +175,7 @@ module Eval : EVAL = struct
           in
           aux value k
         else raise (Located_error (`Not_Number, loc))
-    | Terminal (V_Var (id, _)), Terminal (V_Var (id', _)) ->
+    | Terminal (V_Var id), Terminal (V_Var id') ->
         let same_id = id = id' in
         let same_type = get_type env loc id = get_type env loc id' in
         if same_type then
@@ -192,7 +195,7 @@ module Eval : EVAL = struct
 
   and cons_helper env loc a b =
     match (a, b) with
-    | Terminal (V_Var (id, _)), (Terminal (V_Var (_, _)) as k') -> (
+    | Terminal (V_Var id), (Terminal (V_Var _) as k') -> (
         let value = get_value env loc id in
         match value with
         | `Expression k ->
@@ -239,8 +242,8 @@ module Eval : EVAL = struct
                ( `Wrong_Parameters_Number
                    (id, List.length params, List.length processed_args)
                , loc ) )
-      | (id, _) :: t, (_, h) :: t' ->
-          add_to_scope (Scope.set acc id (Expression (loc, h, T_Auto))) t t'
+      | id :: t, (_, e) :: t' ->
+          add_to_scope (Scope.set acc id (Expression (loc, e, T_Auto))) t t'
     in
     let f_env = add_to_scope (Scope.push_scope env) params processed_args in
     (* now we can evaluate the function statements *)
@@ -254,8 +257,8 @@ module Eval : EVAL = struct
               let expected_ret =
                 Scope.get env id
                 |> function
-                | Some (FuncDef (_, (_, t), _, _)) ->
-                    t
+                | Some (FuncDef (_, id, _, _)) -> (
+                  match id with `Ident (_, t) -> t | `Module (_, (_, t)) -> t )
                 | _ ->
                     raise (Located_error (`Not_A_Callable, loc))
               in
@@ -277,7 +280,7 @@ module Eval : EVAL = struct
     | (_, Terminal (Const (V_Number _ | V_String _ | V_Boolean _ | V_List _)))
       as v ->
         v
-    | env, Terminal (V_Var (id, _)) -> (
+    | env, Terminal (V_Var id) -> (
       match get_value env loc id with
       | `Expression e ->
           (env, e)
@@ -318,7 +321,7 @@ module Eval : EVAL = struct
       | ( BinOp
             ( `Cons
             , (Terminal (Const (V_List _)) as hd)
-            , Terminal (V_Var (id, _)) )
+            , Terminal (V_Var id) )
         , stmts )
         :: _ ->
           let hd' =
@@ -348,7 +351,7 @@ module Eval : EVAL = struct
           else iterate_cases (List.tl cases)
       (* we encountered a case where it's destructuring the list like this: h ::
          t *)
-      | ( BinOp (`Cons, Terminal (V_Var (id, _)), Terminal (V_Var (id', _)))
+      | ( BinOp (`Cons, Terminal (V_Var id), Terminal (V_Var id'))
         , stmts )
         :: _ -> (
           let hd =
@@ -415,16 +418,17 @@ module Eval : EVAL = struct
                   aux nenv t (* Otherwise, continue with the next statement *) )
         in
         aux blck_env stmts
-    | Assign (loc, (id, _t), e) ->
+    | Assign (loc, id, e) ->
+        let t = Value.get_typ_from_id id in
         let tmp, processed = eval_expr env loc (env, e) in
-        if _t <> T_Auto && _t <> val_to_typ processed then
-          raise (Located_error (`Wrong_Type (_t, val_to_typ processed), loc))
+        if t <> T_Auto && t <> val_to_typ processed then
+          raise (Located_error (`Wrong_Type (t, val_to_typ processed), loc))
         else
           let n_env =
             Scope.set tmp id (Expression (loc, processed, val_to_typ processed))
           in
           (n_env, Expression (loc, Terminal (Const V_Void), T_Void))
-    | FuncDef (_, (id, _), _, _) as f ->
+    | FuncDef (_, id, _, _) as f ->
         (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
         let env, stmt = eval_match env loc (env, pattern) cases in

@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Ast.Tree
+open Types.Base
 open Utils
 open Utils.Logger
 
@@ -29,13 +30,15 @@ module type SCOPE = sig
 
   val create : unit -> t
 
-  val get : t -> string -> statement option
+  val get : t -> identificator -> statement option
 
-  val set : t -> string -> statement -> t
+  val set : t -> identificator -> statement -> t
 
   val push_scope : t -> t
 
   val pop_scope : t -> t
+
+  val add_module : t -> string -> t
 
   val dump : t -> unit
 end
@@ -48,54 +51,122 @@ end
 
 module Table = Map.Make (Identificator)
 
-module Scope = struct
-  type tbl = statement Table.t
+let get_name (n : identificator) =
+  match n with `Ident s -> s | `Module (_, s) -> s
 
-  type t = tbl list
+let get_module (n : identificator) =
+  match n with `Ident _ -> None | `Module (m, _) -> Some m
+
+module Scope = struct
+  type scp = statement Table.t
+
+  type md = statement Table.t Table.t
+
+  and t = (scp * md) list
 
   let create () : t = []
 
   let dump (env : t) =
+    let display_modules e =
+      let iter k s =
+        Printf.printf "Module: %s\n" k ;
+        Table.iter
+          (fun k s ->
+            Printf.printf "Key: %s \nValue: %s \n\n" k
+              (Formatting.stmt_format s) )
+          s
+      in
+      Table.iter iter e
+    in
     let rec aux = function
       | [] ->
           ()
-      | h :: t ->
+      | (scp, md) :: t ->
           let iter k s =
             Printf.printf "Key: %s \nValue: %s \n\n" k
               (Formatting.stmt_format s)
           in
-          Table.iter iter h ; aux t
+          Table.iter iter scp ; display_modules md ; aux t
     in
     Printf.printf "Scope DUMP: \n" ;
     aux env
 
   let get (env : t) (name : identificator) : statement option =
-    (*Logger.debug "Getting %s\n" name ;*)
-    let rec find_opt name = function
-      | [] ->
-          None
-      | h :: _ when Table.mem name h ->
-          Table.find_opt name h
-      | _ :: t ->
-          find_opt name t
-    in
-    find_opt name env
+    let md = get_module name in
+    let n = get_name name in
+    match md with
+    | Some m ->
+        let rec find_opt name = function
+          | [] ->
+              None
+          | (_, h) :: _ when Table.mem m h -> (
+              let md = Table.find_opt m h in
+              match md with Some m -> Table.find_opt name m | None -> None )
+          | _ :: t ->
+              find_opt name t
+        in
+        find_opt (fst n) env
+    | None ->
+        let rec find_opt name = function
+          | [] ->
+              None
+          | (h, _) :: _ when Table.mem name h ->
+              Table.find_opt name h
+          | _ :: t ->
+              find_opt name t
+        in
+        find_opt (fst n) env
 
-  let set (env : t) (name : string) (v : statement) : t =
-    Logger.debug "Setting %s to %s\n" name (Formatting.stmt_format v) ;
-    match env with
-    | [] ->
-        [Table.add name v Table.empty]
-    | h :: t ->
-        if Table.mem name h then
-          let updated = Table.add name v h in
-          updated :: t
-        else
-          let n = Table.add name v h in
-          n :: t
+  let add_module (env : t) (md_name : string) : t =
+    let exists = List.exists (fun (_, md) -> Table.mem md_name md) env in
+    if exists then
+      raise (Failure (Printf.sprintf "Module %s already exists" md_name))
+    else
+      let md = Table.add md_name Table.empty Table.empty in
+      (Table.empty, md) :: env
+
+  (* sets a variable inside a given module *)
+  let set_module (env : t) (md_name : string) (name : string) (v : statement) :
+      t =
+    let rec aux = function
+      | [] ->
+          []
+      | (scp, md) :: t when Table.mem md_name md ->
+          (* we found the correct module so we can set the correct value for the
+             variable *)
+          let new_md = Table.add name v (Table.find md_name md) in
+          let md = Table.add md_name new_md md in
+          (scp, md) :: t
+      | h :: t ->
+          h :: aux t
+    in
+    aux env
+
+  let set (env : t) (name : identificator) (v : statement) : t =
+    let md = get_module name in
+    let n = get_name name in
+    Logger.debug "Setting %s to %s\n" (fst n) (Formatting.stmt_format v) ;
+    match md with
+    | Some m ->
+        (* the varible we're trying to set is inside a module *)
+        (* let's gets its name and call set_module *)
+        set_module env m (fst n) v
+    | None ->
+        (* the variable we're trying to set is not inside a module *)
+        (* let's find the correct scope and set the variable there *)
+        let rec aux = function
+          | [] ->
+              []
+          | (scp, md) :: t when Table.mem (fst n) scp ->
+              let new_scp = Table.add (fst n) v scp in
+              (new_scp, md) :: t
+          | h :: t ->
+              h :: aux t
+        in
+        aux env
 
   let push_scope (env : t) : t =
-    match env with [] -> [Table.empty] | h :: _ -> h :: env
+    match env with [] -> [(Table.empty, Table.empty)] | h :: _ -> h :: env
 
   let pop_scope (env : t) : t = match env with [] -> env | _ :: t -> t
 end

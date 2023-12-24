@@ -21,19 +21,22 @@
 (*****************************************************************************)
 
 open Ast.Tree
+open Types.Base
 
 module type SCOPE = sig
   type t
 
   val create : unit -> t
 
-  val get : t -> string -> statement option
+  val get : t -> identificator -> statement option
 
-  val set : t -> string -> statement -> t
+  val set : t -> identificator -> statement -> t
 
   val push_scope : t -> t
 
   val pop_scope : t -> t
+
+  val add_module : t -> string -> t
 
   val dump : t -> unit
 end

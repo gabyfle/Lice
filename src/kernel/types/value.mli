@@ -28,6 +28,10 @@ val to_typ : value -> typ
 
 val typ_to_string : typ -> string
 
+val get_typ_from_id : identificator -> typ
+
+val typed_ident_list_to_id : typed_ident list -> identificator list
+
 val name : t -> string
 
 val pretty : Format.formatter -> t -> unit

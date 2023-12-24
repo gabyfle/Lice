@@ -50,8 +50,8 @@ let expr_format expr =
       match t with
       | Const c ->
           Format.asprintf "%a" Value.pretty c
-      | V_Var (id, _) ->
-          Printf.sprintf "Variable: %s\n" id )
+      | V_Var id ->
+          Printf.sprintf "Variable: %s\n" (Base.identificator_to_string id) )
     | BinOp (binop_t, e, e') ->
         let bin =
           match binop_t with
@@ -70,7 +70,9 @@ let expr_format expr =
         (* bad functionnal code *)
         let iter e = t := !t ^ ";" ^ aux e in
         List.iter iter expr_list ;
-        Printf.sprintf "Function call ID: %s; Expression list: %s\n" id !t
+        Printf.sprintf "Function call ID: %s; Expression list: %s\n"
+          (Base.identificator_to_string id)
+          !t
   in
   aux expr
 
@@ -87,12 +89,14 @@ let stmt_format stmt =
         let iter e = t := !t ^ aux e in
         List.iter iter stmt_list ;
         Printf.sprintf "Block statement with statements: %s\n\n" !t
-    | Assign (_, (id, _), e) ->
-        Printf.sprintf "Assign statement id %s with expression %s\n\n" id
+    | Assign (_, id, e) ->
+        Printf.sprintf "Assign statement id %s with expression %s\n\n"
+          (Base.identificator_to_string id)
           (expr_format e)
-    | FuncDef (_, (name, _), _, def) ->
+    | FuncDef (_, id, _, def) ->
         let t = aux def in
-        Printf.sprintf "Function definition id: %s and definition: %s\n\n" name
+        Printf.sprintf "Function definition id: %s and definition: %s\n\n"
+          (Base.identificator_to_string id)
           t
     | Match (_, to_match, patterns) ->
         let str_match = expr_format to_match in
