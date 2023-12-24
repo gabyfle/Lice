@@ -25,7 +25,6 @@ open Types
 open Types.Base
 open Env
 open Located_error
-open Utils.Logger
 
 module type EVAL = sig
   val exec : program -> unit
@@ -64,7 +63,6 @@ module Eval : EVAL = struct
           raise (Located_error (`Language_Error str, loc)) )
 
   let rec binop_helper env loc v v' op =
-    Logger.debug "binop_helper" ;
     let aux a b op =
       let value =
         match op with
@@ -395,7 +393,6 @@ module Eval : EVAL = struct
 
   and eval_statement env = function
     | Return (loc, e) ->
-        Utils.Logger.Logger.debug "Return statement found" ;
         (env, Return (loc, e)) (* Wrap the expression in a Return statement *)
     | Expression (loc, e, _typ) ->
         let env, expr = eval_expr env loc (env, e) in

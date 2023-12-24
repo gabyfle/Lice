@@ -31,7 +31,7 @@ let () =
         (* Get the directory containing the executable *)
         let exec_dir = Filename.dirname exec_path in
         (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/modules/basic.lice"
+        Filename.concat exec_dir "tests/perf/exp.lice"
     | _ ->
         failwith "Invalid command line arguments"
   in
@@ -45,7 +45,7 @@ let () =
   let code_lines = read_code [] in
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
-  Logger.set_level ["Debug"; "Info"; "Error"] ;
+  Logger.set_level ["Info"; "Error"] ;
   let ast = parse_code code in
   try
     let t r = r in

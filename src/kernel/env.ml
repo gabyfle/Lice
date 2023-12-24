@@ -70,7 +70,7 @@ module Scope = struct
     aux env
 
   let get (env : t) (name : identificator) : statement option =
-    Logger.debug "Getting %s\n" name ;
+    (*Logger.debug "Getting %s\n" name ;*)
     let rec find_opt name = function
       | [] ->
           None
