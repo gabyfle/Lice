@@ -69,7 +69,7 @@ module Scope = struct
   let dump (env : t) =
     let display_modules e =
       let iter k s =
-        Printf.printf "Module: %s\n" k ;
+        Logger.debug "Module: %s\n" k ;
         Table.iter
           (fun k s ->
             Printf.printf "Key: %s \nValue: %s \n\n" k
@@ -83,12 +83,12 @@ module Scope = struct
           ()
       | (scp, md) :: t ->
           let iter k s =
-            Printf.printf "Key: %s \nValue: %s \n\n" k
+            Logger.debug "Key: %s \nValue: %s \n\n" k
               (Formatting.stmt_format s)
           in
           Table.iter iter scp ; display_modules md ; aux t
     in
-    Printf.printf "Scope DUMP: \n" ;
+    Logger.debug "Scope DUMP: \n" ;
     aux env
 
   let get (env : t) (name : identificator) : statement option =
@@ -143,9 +143,9 @@ module Scope = struct
     aux env
 
   let set (env : t) (name : identificator) (v : statement) : t =
+    Logger.debug "Setting %s\n to %s" (identificator_to_string name) (Formatting.stmt_format v);
     let md = get_module name in
     let n = get_name name in
-    Logger.debug "Setting %s to %s\n" (fst n) (Formatting.stmt_format v) ;
     match md with
     | Some m ->
         (* the varible we're trying to set is inside a module *)
@@ -156,7 +156,7 @@ module Scope = struct
         (* let's find the correct scope and set the variable there *)
         let rec aux = function
           | [] ->
-              []
+              [Table.add (fst n) v Table.empty, Table.empty]
           | (scp, md) :: t when Table.mem (fst n) scp ->
               let new_scp = Table.add (fst n) v scp in
               (new_scp, md) :: t

@@ -429,6 +429,7 @@ module Eval : EVAL = struct
           in
           (n_env, Expression (loc, Terminal (Const V_Void), T_Void))
     | FuncDef (_, id, _, _) as f ->
+        Scope.dump env;
         (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
         let env, stmt = eval_match env loc (env, pattern) cases in
