@@ -222,7 +222,8 @@ module Eval : EVAL = struct
      the given arguments first, then populates a new scope made out of the
      current one but with the new local variables defined in the function
      definition *)
-  and eval_function env loc id expr_list =
+  and eval_function env ?(in_mod = None) loc id expr_list =
+    let id = update_name_module in_mod id in
     let params, stmts =
       match get_value env loc id with
       | `Statement (FuncDef (_, _, p, Block (_, s))) ->
@@ -261,13 +262,14 @@ module Eval : EVAL = struct
       | [] ->
           raise (Located_error (`Expected_Return_Statement, loc))
       | stmt :: t -> (
-          let n_env, stmt = eval_statement env stmt in
+          let n_env, stmt = eval_statement env ~in_mod stmt in
           match stmt with
           | Return (_, e) ->
               let expected_ret =
                 Scope.get env id
                 |> function
                 | Some (FuncDef (_, id, _, _)) -> (
+                  let id = update_name_module in_mod id in
                   match id with `Ident (_, t) -> t | `Module (_, (_, t)) -> t )
                 | _ ->
                     raise (Located_error (`Not_A_Callable, loc))
@@ -284,13 +286,14 @@ module Eval : EVAL = struct
     in
     aux f_env stmts
 
-  and eval_expr _env loc = function
+  and eval_expr _env loc ?(in_mod = None) = function
     | env, Terminal (Const V_Void) ->
         (env, Terminal (Const V_Void))
     | (_, Terminal (Const (V_Number _ | V_String _ | V_Boolean _ | V_List _)))
       as v ->
         v
     | env, Terminal (V_Var id) -> (
+      let id = update_name_module in_mod id in
       match get_value env loc id with
       | `Expression e ->
           (env, e)
@@ -309,15 +312,16 @@ module Eval : EVAL = struct
       | `Cons ->
           (env, cons_helper env loc a b) )
     | env, FuncCall (id, expr_list) ->
+        let id = update_name_module in_mod id in
         let rec exprs acc = function
           | [] ->
               List.rev acc
           | h :: t ->
               exprs ((env, h) :: acc) t
         in
-        eval_function env loc id (exprs [] expr_list)
+        eval_function env ~in_mod loc id (exprs [] expr_list)
 
-  and eval_match env loc pattern cases =
+  and eval_match env ?(in_mod = None) loc pattern cases =
     let n_env, eval_pattern = eval_expr env loc pattern in
     let rec iterate_cases = function
       | [] ->
@@ -331,6 +335,7 @@ module Eval : EVAL = struct
       | ( BinOp (`Cons, (Terminal (Const (V_List _)) as hd), Terminal (V_Var id))
         , stmts )
         :: _ ->
+          let id = update_name_module in_mod id in
           let hd' =
             match eval_pattern with
             | Terminal (Const (V_List k)) -> (
@@ -360,6 +365,8 @@ module Eval : EVAL = struct
          t *)
       | (BinOp (`Cons, Terminal (V_Var id), Terminal (V_Var id')), stmts) :: _
         -> (
+          let id = update_name_module in_mod id in
+          let id' = update_name_module in_mod id' in
           let hd =
             match eval_pattern with
             | Terminal (Const (V_List k)) -> (
@@ -404,7 +411,7 @@ module Eval : EVAL = struct
     | Return (loc, e) ->
         (env, Return (loc, e)) (* Wrap the expression in a Return statement *)
     | Expression (loc, e, _typ) ->
-        let env, expr = eval_expr env loc (env, e) in
+        let env, expr = eval_expr env ~in_mod loc (env, e) in
         (env, Expression (loc, expr, _typ))
         (* Wrap the expression in an Expression statement *)
     | Block (loc, stmts) ->
@@ -426,7 +433,7 @@ module Eval : EVAL = struct
         aux blck_env stmts
     | Assign (loc, id, e) ->
         let t = Value.get_typ_from_id id in
-        let tmp, processed = eval_expr env loc (env, e) in
+        let tmp, processed = eval_expr env ~in_mod loc (env, e) in
         if t <> T_Auto && t <> val_to_typ processed then
           raise (Located_error (`Wrong_Type (t, val_to_typ processed), loc))
         else
@@ -437,25 +444,37 @@ module Eval : EVAL = struct
           (n_env, Expression (loc, Terminal (Const V_Void), T_Void))
     | FuncDef (_, id, _, _) as f ->
         let id = update_name_module in_mod id in
-        (Scope.set env id f, f) (* Return the function definition statement *)
+        (Scope.set env id f, f)
+        (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
-        let env, stmt = eval_match env loc (env, pattern) cases in
+        let env, stmt = eval_match env loc (env, pattern) cases ~in_mod in
         (* clean up local variables used inside the match *)
         (Scope.pop_scope env, stmt)
     | If (loc, cond, t, f) -> (
-        let n_env, eval_cond = eval_expr env loc (env, cond) in
+        let n_env, eval_cond = eval_expr env ~in_mod loc (env, cond) in
         match eval_cond with
         | Terminal (Const (V_Boolean b)) ->
-            if b then eval_statement n_env t else eval_statement n_env f
+            if b then eval_statement n_env ~in_mod t else eval_statement n_env ~in_mod f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
     | ModuleDef (loc, n, stmts) ->
         (* we can add this module into the current environnement *)
         let n_env = Scope.add_module env n in
         let in_mod = Some n in
-        let n_env, _stmt = eval_statement n_env (Block (loc, stmts)) ~in_mod in
-        ( Scope.pop_scope n_env
-        , Expression (loc, Terminal (Const V_Void), T_Void) )
+        let rec aux menv = function
+          | [] ->
+              (menv, Expression (loc, Terminal (Const V_Void), T_Void))
+          | stmt :: t -> (
+              let nenv, stmt = eval_statement menv ~in_mod stmt in
+              match stmt with
+              | Return _ ->
+                  (nenv, stmt)
+                  (* If the statement is a Return statement, immediately return
+                     it *)
+              | _ ->
+                  aux nenv t (* Otherwise, continue with the next statement *) )
+        in
+        aux n_env stmts
   (* for the moment we're not getting the type of the expression *)
 
   let exec (p : program) =
