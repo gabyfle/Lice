@@ -83,8 +83,7 @@ module Scope = struct
           ()
       | (scp, md) :: t ->
           let iter k s =
-            Logger.debug "Key: %s \nValue: %s \n\n" k
-              (Formatting.stmt_format s)
+            Logger.debug "Key: %s \nValue: %s \n\n" k (Formatting.stmt_format s)
           in
           Table.iter iter scp ; display_modules md ; aux t
     in
@@ -92,16 +91,25 @@ module Scope = struct
     aux env
 
   let get (env : t) (name : identificator) : statement option =
+    Logger.debug "Getting %s\n" (identificator_to_string name) ;
     let md = get_module name in
     let n = get_name name in
+    Logger.debug "Module: %s\n" (Option.value ~default:"None" md) ;
+    Logger.debug "Name: %s\n" (fst n) ;
+    Logger.debug "DUMPING EVERYTHING\n" ;
+    dump env ;
+    Logger.debug "DUMPING EVERYTHING\n" ;
     match md with
     | Some m ->
+        (* the varible we're trying to get is inside a module *)
+        (* let's gets its name and call set_module *)
         let rec find_opt name = function
           | [] ->
               None
           | (_, h) :: _ when Table.mem m h -> (
+              Printf.printf "found_module akjhbfdaiezjhfgaezijhofg" ;
               let md = Table.find_opt m h in
-              match md with Some m -> Table.find_opt name m | None -> None )
+              match md with Some m -> Printf.printf "found_module"; Table.find_opt name m | None -> None )
           | _ :: t ->
               find_opt name t
         in
@@ -130,7 +138,8 @@ module Scope = struct
       t =
     let rec aux = function
       | [] ->
-          []
+          [ ( Table.empty
+            , Table.add md_name (Table.add name v Table.empty) Table.empty ) ]
       | (scp, md) :: t when Table.mem md_name md ->
           (* we found the correct module so we can set the correct value for the
              variable *)
@@ -143,20 +152,28 @@ module Scope = struct
     aux env
 
   let set (env : t) (name : identificator) (v : statement) : t =
-    Logger.debug "Setting %s\n to %s" (identificator_to_string name) (Formatting.stmt_format v);
+    Logger.debug "Setting %s\n to %s"
+      (identificator_to_string name)
+      (Formatting.stmt_format v) ;
     let md = get_module name in
     let n = get_name name in
     match md with
     | Some m ->
+        Logger.warning "Setting %s\n to %s"
+          (identificator_to_string name)
+          (Formatting.stmt_format v) ;
         (* the varible we're trying to set is inside a module *)
         (* let's gets its name and call set_module *)
         set_module env m (fst n) v
     | None ->
+        Logger.error "Setting %s\n to %s"
+          (identificator_to_string name)
+          (Formatting.stmt_format v) ;
         (* the variable we're trying to set is not inside a module *)
         (* let's find the correct scope and set the variable there *)
         let rec aux = function
           | [] ->
-              [Table.add (fst n) v Table.empty, Table.empty]
+              [(Table.add (fst n) v Table.empty, Table.empty)]
           | (scp, md) :: t when Table.mem (fst n) scp ->
               let new_scp = Table.add (fst n) v scp in
               (new_scp, md) :: t

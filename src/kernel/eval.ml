@@ -65,6 +65,16 @@ module Eval : EVAL = struct
           in
           raise (Located_error (`Language_Error str, loc)) )
 
+  (* from a module name and an id of a variable, returns the correct version of
+     the naming this is used to add the variable inside the correct
+     environnement when accessing it *)
+  let update_name_module in_mod id =
+    match in_mod with
+    | None ->
+        id
+    | Some m -> (
+      match id with `Ident ((_, _) as id) -> `Module (m, id) | `Module _ -> id )
+
   let rec binop_helper env loc v v' op =
     let aux a b op =
       let value =
@@ -318,10 +328,7 @@ module Eval : EVAL = struct
           eval_statement n_env (Block (loc, stmts))
       (* when encountering list destructuring, we need to bind muted variables
          into their actual values, then execute the code *)
-      | ( BinOp
-            ( `Cons
-            , (Terminal (Const (V_List _)) as hd)
-            , Terminal (V_Var id) )
+      | ( BinOp (`Cons, (Terminal (Const (V_List _)) as hd), Terminal (V_Var id))
         , stmts )
         :: _ ->
           let hd' =
@@ -351,9 +358,8 @@ module Eval : EVAL = struct
           else iterate_cases (List.tl cases)
       (* we encountered a case where it's destructuring the list like this: h ::
          t *)
-      | ( BinOp (`Cons, Terminal (V_Var id), Terminal (V_Var id'))
-        , stmts )
-        :: _ -> (
+      | (BinOp (`Cons, Terminal (V_Var id), Terminal (V_Var id')), stmts) :: _
+        -> (
           let hd =
             match eval_pattern with
             | Terminal (Const (V_List k)) -> (
@@ -394,7 +400,7 @@ module Eval : EVAL = struct
     in
     iterate_cases cases
 
-  and eval_statement env = function
+  and eval_statement env ?(in_mod = None) = function
     | Return (loc, e) ->
         (env, Return (loc, e)) (* Wrap the expression in a Return statement *)
     | Expression (loc, e, _typ) ->
@@ -408,7 +414,7 @@ module Eval : EVAL = struct
               ( Scope.pop_scope env
               , Expression (loc, Terminal (Const V_Void), T_Void) )
           | stmt :: t -> (
-              let nenv, stmt = eval_statement env stmt in
+              let nenv, stmt = eval_statement env ~in_mod stmt in
               match stmt with
               | Return _ ->
                   (nenv, stmt)
@@ -424,12 +430,13 @@ module Eval : EVAL = struct
         if t <> T_Auto && t <> val_to_typ processed then
           raise (Located_error (`Wrong_Type (t, val_to_typ processed), loc))
         else
+          let id' = update_name_module in_mod id in
           let n_env =
-            Scope.set tmp id (Expression (loc, processed, val_to_typ processed))
+            Scope.set tmp id' (Expression (loc, processed, val_to_typ processed))
           in
           (n_env, Expression (loc, Terminal (Const V_Void), T_Void))
     | FuncDef (_, id, _, _) as f ->
-        Scope.dump env;
+        let id = update_name_module in_mod id in
         (Scope.set env id f, f) (* Return the function definition statement *)
     | Match (loc, pattern, cases) ->
         let env, stmt = eval_match env loc (env, pattern) cases in
@@ -442,8 +449,13 @@ module Eval : EVAL = struct
             if b then eval_statement n_env t else eval_statement n_env f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
-    | ModuleDef (loc, _, _) ->
-        (env, Expression (loc, Terminal (Const V_Void), T_Void))
+    | ModuleDef (loc, n, stmts) ->
+        (* we can add this module into the current environnement *)
+        let n_env = Scope.add_module env n in
+        let in_mod = Some n in
+        let n_env, _stmt = eval_statement n_env (Block (loc, stmts)) ~in_mod in
+        ( Scope.pop_scope n_env
+        , Expression (loc, Terminal (Const V_Void), T_Void) )
   (* for the moment we're not getting the type of the expression *)
 
   let exec (p : program) =

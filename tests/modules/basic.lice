@@ -3,6 +3,9 @@ module Testing {
     let string t = "this is a test";
 
     function test() {
-        return test;
+        return "test";
     }
 }
+
+let testing_d = Testing.t;
+let md = Testing.test();

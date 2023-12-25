@@ -67,7 +67,7 @@ let get_typ_from_id = function
       t
 
 let typed_ident_list_to_id : typed_ident list -> identificator list =
-    List.map (fun ((name, typ)) -> `Ident ((name, typ)))
+  List.map (fun (name, typ) -> `Ident (name, typ))
 
 let name = function
   | V_Number _ ->
