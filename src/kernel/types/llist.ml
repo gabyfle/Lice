@@ -55,12 +55,14 @@ module S = struct
             in
             aux ppf l
           in
-          Format.fprintf ppf "%s(%a)" id pretty_list l
+          Format.fprintf ppf "%s(%a)"
+            (Base.identificator_to_string id)
+            pretty_list l
     and pretty_val ppf = function
       | Base.Const t ->
           pretty_base ppf t
-      | Base.V_Var (id, _) ->
-          Format.fprintf ppf "%s" id
+      | Base.V_Var id ->
+          Format.fprintf ppf "%s" (Base.identificator_to_string id)
     and pretty_base ppf = function
       | Base.V_Number n ->
           Lnumber.pretty ppf n
@@ -96,8 +98,12 @@ module S = struct
       match (v, v') with
       | Base.Const t, Base.Const t' ->
           compare_base t t'
-      | Base.V_Var (id, _), Base.V_Var (id', _) ->
+      | Base.V_Var id, Base.V_Var id' ->
+          let id = Base.identificator_to_string id in
+          let id' = Base.identificator_to_string id' in
           String.compare id id'
+          (* we're just checking if we're talking about the same variables
+             here *)
       | _ ->
           0
     and compare_base v v' =

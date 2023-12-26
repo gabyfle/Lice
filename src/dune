@@ -1,4 +1,5 @@
 (executable
  (name lice)
  (public_name lice)
- (libraries kernel))
+ (libraries kernel)
+ (ocamlc_flags (-g)))

@@ -1,0 +1,15 @@
+module Testing {
+    let string t = "this is a test";
+
+    function testing() {
+        let a = "hello";
+
+        return a;
+    }
+
+    function test2() {
+        return testing() + t;
+    }
+}
+
+let d = Testing.test2();

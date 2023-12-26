@@ -38,6 +38,8 @@
               "with", WITH;
               "if", IF;
               "else", ELSE;
+              "open", OPEN;
+              "module", MODULE;
               "true", BOOLEAN(true);
               "false", BOOLEAN(false);]
 
@@ -77,6 +79,7 @@ rule token = parse
   | '}'             { RBRACE }
   | ';'             { SEMICOLON }
   | ':'             { COLON }
+  | '.'             { DOT }
   | '|'             { PIPE }
   | '_'             { WILDCARD }
   | "->"            { ARROW }

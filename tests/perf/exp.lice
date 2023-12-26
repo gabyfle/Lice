@@ -1,0 +1,16 @@
+function factorial(n) {
+    if (n == 0) return 1;
+
+    return n * factorial(n - 1);
+}
+
+function exp_aux(n, acc) {
+    if (n == 0) return acc;
+    return exp_aux(n - 1, acc + (1  / factorial(n)));
+}
+
+function exp(n) {
+    return exp_aux(n, 1);    
+}
+
+let number f = exp(300);

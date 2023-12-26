@@ -25,18 +25,15 @@ open Types.Base
 
 type location = Lexing.position
 
-type identificator = string
-
-and typed_ident = identificator * typ
-
 type statement =
   | Return of location * expr
   | Expression of location * expr * typ
   | Block of location * statement list
-  | Assign of location * typed_ident * expr
-  | FuncDef of location * typed_ident * typed_ident list * statement
+  | Assign of location * identificator * expr
+  | FuncDef of location * identificator * identificator list * statement
   | Match of location * expr * (expr * statement list) list
   | If of location * expr * statement * statement
+  | ModuleDef of location * ident * statement list
 
 and program = statement list
 

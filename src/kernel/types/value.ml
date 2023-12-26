@@ -38,7 +38,12 @@ let to_typ v =
     | V_Void ->
         T_Void
   in
-  let from_val = function Const c -> from_t c | V_Var (_, c) -> c in
+  let from_val = function
+    | Const c ->
+        from_t c
+    | V_Var id -> (
+      match id with `Ident (_n, t) -> t | `Module (_id, (_n, t)) -> t )
+  in
   from_val v
 
 let typ_to_string = function
@@ -54,6 +59,15 @@ let typ_to_string = function
       "auto"
   | T_Void ->
       "void"
+
+let get_typ_from_id = function
+  | `Ident (_n, t) ->
+      t
+  | `Module (_id, (_n, t)) ->
+      t
+
+let typed_ident_list_to_id : typed_ident list -> identificator list =
+  List.map (fun (name, typ) -> `Ident (name, typ))
 
 let name = function
   | V_Number _ ->
