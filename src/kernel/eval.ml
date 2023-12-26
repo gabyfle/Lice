@@ -75,7 +75,7 @@ module Eval : EVAL = struct
     | Some m -> (
       match id with `Ident ((_, _) as id) -> `Module (m, id) | `Module _ -> id )
 
-  let rec binop_helper env loc v v' op =
+  let rec binop_helper env loc ?(in_mod = None) v v' op =
     let aux a b op =
       let value =
         match op with
@@ -96,6 +96,7 @@ module Eval : EVAL = struct
     | Terminal (Const k), Terminal (Const k') ->
         aux k k' op
     | Terminal (Const k), Terminal (V_Var id) ->
+        let id = update_name_module in_mod id in
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
         if same_type then
@@ -113,6 +114,7 @@ module Eval : EVAL = struct
                ( `Op_Mismatch (binop_to_string op, t_typ, get_type env loc id)
                , loc ) )
     | Terminal (V_Var id), Terminal (Const k) ->
+        let id = update_name_module in_mod id in
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
         if same_type then
@@ -129,6 +131,8 @@ module Eval : EVAL = struct
        differently in near future) we need a special canse to handle h :: t
        operator *)
     | Terminal (V_Var id), Terminal (V_Var id') ->
+        let id = update_name_module in_mod id in
+        let id' = update_name_module in_mod id' in
         let same_id = id = id' in
         let t = get_type env loc id in
         let t' = get_type env loc id' in
@@ -145,11 +149,11 @@ module Eval : EVAL = struct
         else
           raise (Located_error (`Op_Mismatch (binop_to_string op, t, t'), loc))
     | a, b ->
-        let tmp, v_a = eval_expr env loc (env, a) in
-        let tmp', v_b = eval_expr tmp loc (tmp, b) in
-        binop_helper tmp' loc v_a v_b op
+        let tmp, v_a = eval_expr env loc ~in_mod (env, a) in
+        let tmp', v_b = eval_expr tmp loc ~in_mod (tmp, b) in
+        binop_helper tmp' loc ~in_mod v_a v_b op
 
-  and bincomp_helper env loc v v' =
+  and bincomp_helper env loc ?(in_mod = None) v v' =
     let aux a b op =
       let value =
         match op with
@@ -173,6 +177,7 @@ module Eval : EVAL = struct
         aux k k'
     | Terminal (V_Var id), Terminal (Const k)
     | Terminal (Const k), Terminal (V_Var id) ->
+        let id = update_name_module in_mod id in
         let t_typ = Value.to_typ (Base.Const k) in
         let same_type = is_variable_type env loc id t_typ in
         if same_type then
@@ -186,6 +191,8 @@ module Eval : EVAL = struct
           aux value k
         else raise (Located_error (`Not_Number, loc))
     | Terminal (V_Var id), Terminal (V_Var id') ->
+        let id = update_name_module in_mod id in
+        let id' = update_name_module in_mod id' in
         let same_id = id = id' in
         let same_type = get_type env loc id = get_type env loc id' in
         if same_type then
@@ -199,23 +206,23 @@ module Eval : EVAL = struct
               raise (Located_error (`Not_Number, loc))
         else raise (Located_error (`Not_Number, loc))
     | a, b ->
-        let tmp, v_a = eval_expr env loc (env, a) in
-        let tmp', v_b = eval_expr tmp loc (tmp, b) in
-        bincomp_helper tmp' loc v_a v_b
+        let tmp, v_a = eval_expr env loc ~in_mod (env, a) in
+        let tmp', v_b = eval_expr tmp loc ~in_mod (tmp, b) in
+        bincomp_helper tmp' loc ~in_mod v_a v_b
 
-  and cons_helper env loc a b =
+  and cons_helper env loc ?(in_mod=None) a b =
     match (a, b) with
     | Terminal (V_Var id), (Terminal (V_Var _) as k') -> (
         let value = get_value env loc id in
         match value with
         | `Expression k ->
-            binop_helper env loc
+            binop_helper env loc ~in_mod
               (Terminal (Const (V_List (Llist.from k))))
               k' Plus
         | _ ->
             raise (Located_error (`Not_Number, loc)) )
     | _ ->
-        binop_helper env loc a b Plus
+        binop_helper env loc ~in_mod a b Plus
 
   (* eval_function evaluates a function call inside the AST to remplace it by
      the actual value returned (or not) by the function. this function processes
@@ -224,6 +231,9 @@ module Eval : EVAL = struct
      definition *)
   and eval_function env ?(in_mod = None) loc id expr_list =
     let id = update_name_module in_mod id in
+    let in_mod =
+      match id with `Ident _ -> in_mod | `Module (n, (_, _)) -> Some n
+    in
     let params, stmts =
       match get_value env loc id with
       | `Statement (FuncDef (_, _, p, Block (_, s))) ->
@@ -237,7 +247,7 @@ module Eval : EVAL = struct
       | [] ->
           acc
       | h :: t ->
-          process_args (eval_expr env loc h :: acc) t
+          process_args (eval_expr env loc ~in_mod h :: acc) t
     in
     let processed_args = List.rev (process_args [] expr_list) in
     (* f_env is a copy of our current env *)
@@ -269,12 +279,16 @@ module Eval : EVAL = struct
                 Scope.get env id
                 |> function
                 | Some (FuncDef (_, id, _, _)) -> (
-                  let id = update_name_module in_mod id in
-                  match id with `Ident (_, t) -> t | `Module (_, (_, t)) -> t )
+                    let id = update_name_module in_mod id in
+                    match id with
+                    | `Ident (_, t) ->
+                        t
+                    | `Module (_, (_, t)) ->
+                        t )
                 | _ ->
                     raise (Located_error (`Not_A_Callable, loc))
               in
-              let scp, processed = eval_expr n_env loc (n_env, e) in
+              let scp, processed = eval_expr n_env loc ~in_mod (n_env, e) in
               (* check the return type of the processed return expression *)
               let return_type = val_to_typ processed in
               if expected_ret <> T_Auto && return_type <> expected_ret then
@@ -293,24 +307,24 @@ module Eval : EVAL = struct
       as v ->
         v
     | env, Terminal (V_Var id) -> (
-      let id = update_name_module in_mod id in
-      match get_value env loc id with
-      | `Expression e ->
-          (env, e)
-      | `Statement _ ->
-          raise
-            (Located_error
-               ( `Language_Error
-                   "An error occurred while trying to get the variable"
-               , loc ) ) )
+        let id = update_name_module in_mod id in
+        match get_value env loc id with
+        | `Expression e ->
+            (env, e)
+        | `Statement _ ->
+            raise
+              (Located_error
+                 ( `Language_Error
+                     "An error occurred while trying to get the variable"
+                 , loc ) ) )
     | env, BinOp (op, a, b) -> (
       match op with
       | `Compare bincomp ->
-          (env, bincomp_helper env loc a b bincomp)
+          (env, bincomp_helper env loc ~in_mod a b bincomp)
       | `Operator binop ->
-          (env, binop_helper env loc a b binop)
+          (env, binop_helper env loc ~in_mod a b binop)
       | `Cons ->
-          (env, cons_helper env loc a b) )
+          (env, cons_helper env loc ~in_mod a b) )
     | env, FuncCall (id, expr_list) ->
         let id = update_name_module in_mod id in
         let rec exprs acc = function
@@ -409,7 +423,9 @@ module Eval : EVAL = struct
 
   and eval_statement env ?(in_mod = None) = function
     | Return (loc, e) ->
-        (env, Return (loc, e)) (* Wrap the expression in a Return statement *)
+        let env, e = eval_expr env ~in_mod loc (env, e) in
+        (env, Return (loc, e))
+        (* Wrap the expression in a Return statement *)
     | Expression (loc, e, _typ) ->
         let env, expr = eval_expr env ~in_mod loc (env, e) in
         (env, Expression (loc, expr, _typ))
@@ -454,25 +470,22 @@ module Eval : EVAL = struct
         let n_env, eval_cond = eval_expr env ~in_mod loc (env, cond) in
         match eval_cond with
         | Terminal (Const (V_Boolean b)) ->
-            if b then eval_statement n_env ~in_mod t else eval_statement n_env ~in_mod f
+            if b then eval_statement n_env ~in_mod t
+            else eval_statement n_env ~in_mod f
         | _ ->
             raise (Located_error (`Wrong_Type (T_Boolean, T_Auto), loc)) )
     | ModuleDef (loc, n, stmts) ->
         (* we can add this module into the current environnement *)
         let n_env = Scope.add_module env n in
-        let in_mod = Some n in
+        let mod_name = Some n in
         let rec aux menv = function
           | [] ->
               (menv, Expression (loc, Terminal (Const V_Void), T_Void))
-          | stmt :: t -> (
-              let nenv, stmt = eval_statement menv ~in_mod stmt in
-              match stmt with
-              | Return _ ->
-                  (nenv, stmt)
-                  (* If the statement is a Return statement, immediately return
-                     it *)
-              | _ ->
-                  aux nenv t (* Otherwise, continue with the next statement *) )
+          | stmt :: t ->
+              Printf.printf "Inside module: %s\n"
+                (Option.value ~default:"None" mod_name) ;
+              let nenv, _ = eval_statement menv ~in_mod:mod_name stmt in
+              aux nenv t (* Otherwise, continue with the next statement *)
         in
         aux n_env stmts
   (* for the moment we're not getting the type of the expression *)

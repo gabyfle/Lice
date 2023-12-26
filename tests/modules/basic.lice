@@ -2,11 +2,13 @@ module Testing {
     let string t = "this is a test";
 
     function testing() {
-        return Testing.t;
+        let a = "hello";
+
+        return a;
     }
 
     function test2() {
-        return Testing.testing();
+        return testing() + t;
     }
 }
 
