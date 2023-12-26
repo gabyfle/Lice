@@ -210,7 +210,7 @@ module Eval : EVAL = struct
         let tmp', v_b = eval_expr tmp loc ~in_mod (tmp, b) in
         bincomp_helper tmp' loc ~in_mod v_a v_b
 
-  and cons_helper env loc ?(in_mod=None) a b =
+  and cons_helper env loc ?(in_mod = None) a b =
     match (a, b) with
     | Terminal (V_Var id), (Terminal (V_Var _) as k') -> (
         let value = get_value env loc id in
