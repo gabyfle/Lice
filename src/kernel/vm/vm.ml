@@ -47,3 +47,11 @@ type opcodes =
   (* Memory operators *)
   | LOAD
   | STORE
+
+  (* Modules *)
+  | OPEN
+  | MODULE
+
+
+
+let 
