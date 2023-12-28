@@ -1,0 +1,12 @@
+[package]
+name = "lvm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib", "cdylib"]
+path = "lib.rs"
+
+[dependencies]
+ocaml-boxroot-sys = { git = "https://gitlab.com/ocaml-rust/ocaml-boxroot.git", rev="652d92b1" }
+ocaml = {git = "https://github.com/gabyfle/ocaml-rs.git", branch = "patch-1"}

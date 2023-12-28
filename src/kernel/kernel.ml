@@ -30,3 +30,6 @@ let parse_code code =
   with Parser.Error ->
     Logger.error "%s" "An error occurred while trying to parse the file" ;
     exit 1
+
+let greet () =
+  Printf.printf "%s" (Lvm.hello_world ());

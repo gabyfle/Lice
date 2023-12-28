@@ -157,10 +157,20 @@ module Eval : EVAL = struct
     let aux a b op =
       let value =
         match op with
-        | Equal ->
-            Value.eq a b
-        | NotEqual ->
-            Value.eq a b |> not
+        | Equal -> (
+            let res = Value.eq a b in
+            match res with
+            | V_Boolean b ->
+                b
+            | _ ->
+                raise (Located_error (`Not_Number, loc)) )
+        | NotEqual -> (
+            let res = Value.eq a b in
+            match res with
+            | V_Boolean b ->
+                not b
+            | _ ->
+                raise (Located_error (`Not_Number, loc)) )
         | GEQ ->
             Value.compare a b >= 0
         | LEQ ->
@@ -414,7 +424,10 @@ module Eval : EVAL = struct
           let n_env, eval_case = eval_expr n_env loc (n_env, case) in
           match (eval_case, eval_pattern) with
           | Terminal (Const k), Terminal (Const k') ->
-              if Value.eq k k' then eval_statement n_env (Block (loc, stmts))
+              let eq =
+                match Value.eq k k' with V_Boolean b -> b | _ -> false
+              in
+              if eq then eval_statement n_env (Block (loc, stmts))
               else iterate_cases (List.tl cases)
           | _ ->
               raise (Located_error (`Wrong_Type (T_Auto, T_Auto), loc)) )
