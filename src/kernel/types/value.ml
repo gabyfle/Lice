@@ -109,20 +109,23 @@ let compare v v' =
 let eq v v' =
   match (v, v') with
   | V_Number n, V_Number n' ->
-      Lnumber.eq n n'
+      V_Boolean (Lnumber.eq n n')
   | V_String s, V_String s' ->
-      Lstring.eq s s'
+      V_Boolean (Lstring.eq s s')
   | V_List l, V_List l' ->
-      Llist.eq l l'
+      V_Boolean (Llist.eq l l')
   | V_Boolean b, V_Boolean b' ->
-      Lbool.eq b b'
+      V_Boolean (Lbool.eq b b')
   | _ ->
-      false
+      V_Boolean false
+
+let neq v v' =
+  match eq v v' with V_Boolean b -> V_Boolean (not b) | _ -> failwith "neq"
 
 let expr_eq v v' =
   match (v, v') with
-  | Terminal (Const k), Terminal (Const k') ->
-      eq k k'
+  | Terminal (Const k), Terminal (Const k') -> (
+    match eq k k' with V_Boolean b -> b | _ -> failwith "expr_eq" )
   | _ ->
       false
 

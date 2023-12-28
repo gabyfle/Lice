@@ -38,7 +38,9 @@ val pretty : Format.formatter -> t -> unit
 
 val compare : t -> t -> int
 
-val eq : t -> t -> bool
+val eq : t -> t -> t
+
+val neq : t -> t -> t
 
 val to_string : t -> string
 

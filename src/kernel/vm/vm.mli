@@ -20,30 +20,36 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type registers =
-  {mutable r0: int64; mutable r1: int64; mutable r2: int64; mutable r3: int64}
+open Types
+
+type registers = {r0: Base.t; r1: Base.t; r2: Base.t; r3: Base.t}
 
 type opcodes =
   (* Arithmetic operators *)
-  | ADD
-  | SUB
-  | MUL
-  | DIV
-  | MOD
+  | ADD of int * int * int
+  | SUB of int * int * int
+  | MUL of int * int * int
+  | DIV of int * int * int
+  | MOD of int * int * int
   (* Comparison operators *)
-  | EQ
-  | NEQ
-  | LT
-  | GT
-  | LTE
-  | GTE
+  | EQ of int * int * int
+  | NEQ of int * int * int
+  | LT of int * int * int
+  | GT of int * int * int
+  | LTE of int * int * int
+  | GTE of int * int * int
   (* Logical operators *)
-  | AND
-  | OR
-  | NOT
+  | AND of int * int * int
+  | OR of int * int * int
+  | NOT of int * int
+  | XOR of int * int * int
   (* Modules and functions operators *)
   | CALL
   | RET
   (* Memory operators *)
   | LOAD
   | STORE
+  (* Modules *)
+  | OPEN
+  | MODULE
+  | HALT
