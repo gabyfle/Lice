@@ -20,4 +20,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-external hello_world: unit -> string = "hello_world"
+external hello_world : unit -> string = "hello_world"

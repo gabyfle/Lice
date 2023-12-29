@@ -31,5 +31,4 @@ let parse_code code =
     Logger.error "%s" "An error occurred while trying to parse the file" ;
     exit 1
 
-let greet () =
-  Printf.printf "%s" (Lvm.hello_world ());
+let greet () = Printf.printf "%s" (Lvm.hello_world ())

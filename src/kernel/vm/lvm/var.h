@@ -20,21 +20,9 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <caml/alloc.h>
-#include <caml/callback.h>
-#include <caml/custom.h>
-#include <caml/memory.h>
-#include <caml/mlvalues.h>
-
-value hello_world(value n) {
-  CAMLparam0();
-  CAMLlocal1(result);
-
-  /* set result to the string "hello_world "*/
-
-  result = caml_alloc_string(11);
-
-  result = caml_copy_string("hello world");
-
-  CAMLreturn(result);
-}
+typedef enum {
+  MODULE,
+  CLOSURE,
+  FUNCTION,
+  STRING
+} type;
