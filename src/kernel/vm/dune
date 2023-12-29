@@ -5,7 +5,9 @@
     (targets liblvm.a)
     (action
             (progn
-                (chdir lvm (run cmake --build .))
+                (chdir lvm (run cmake .))
+                (chdir lvm (run cmake --build . --target lvm))
+                (run cp lvm/liblvm.a .)
 )))
 
 (library

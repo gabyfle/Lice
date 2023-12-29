@@ -21,7 +21,6 @@
 (*****************************************************************************)
 
 open Utils.Logger
-open Vm
 
 let parse_code code =
   let lexbuf = Lexing.from_string code in

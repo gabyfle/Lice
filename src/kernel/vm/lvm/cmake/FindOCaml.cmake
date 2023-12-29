@@ -20,28 +20,21 @@
 ##                                                                           ##
 ###############################################################################
 
-cmake_minimum_required(VERSION 3.16.3)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+## This file is used to find the OCaml compiler and its include directory.
 
-project(lvm)
+find_program(OCAMLC ocamlc)
+if(NOT OCAMLC)
+  message(FATAL_ERROR "Looks like ocamlc is not installed on your system.")
+endif()
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_BUILD_SHARED ON)
-
-set(SOURCE_FILES lib.c)
-
-find_package(OCaml REQUIRED)
-
-add_library(
-    lvm
-    STATIC
-    ${SOURCE_FILES}
+execute_process(
+  COMMAND ${OCAMLC} -where
+  OUTPUT_VARIABLE OCAML_INCLUDE_DIRS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-target_include_directories(lvm PRIVATE ${OCAML_INCLUDE_DIRS})
 
-add_library(
-    lvmsh
-    SHARED
-    ${SOURCE_FILES}
-)
-target_include_directories(lvmsh PRIVATE ${OCAML_INCLUDE_DIRS})
+if(NOT OCAML_INCLUDE_DIRS)
+  message(FATAL_ERROR "We couldn't find the OCaml include directory.")
+endif()
+
+mark_as_advanced(OCAMLC OCAML_INCLUDE_DIRS)
