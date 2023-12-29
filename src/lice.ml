@@ -25,6 +25,7 @@ open Utils.Logger
 open Eval
 
 let () =
+  greet ();
   let executable_dir =
     match Sys.argv with
     | [|_; exec_path|] ->
