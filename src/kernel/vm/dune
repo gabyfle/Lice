@@ -1,0 +1,14 @@
+(data_only_dirs lvm)
+
+(rule
+    (deps (source_tree lvm))
+    (targets liblvm.a)
+    (action
+            (progn
+                (chdir lvm (run cmake --build .))
+)))
+
+(library
+ (name vm)
+ (foreign_archives lvm)
+ (wrapped false))
