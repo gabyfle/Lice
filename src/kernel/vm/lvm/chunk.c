@@ -19,5 +19,3 @@
 //  limitations under the License.                                           //
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
-
-typedef enum { MODULE, CLOSURE, FUNCTION, STRING } type;

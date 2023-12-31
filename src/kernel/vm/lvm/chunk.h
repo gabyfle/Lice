@@ -20,4 +20,20 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef enum { MODULE, CLOSURE, FUNCTION, STRING } type;
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifndef _LVM_CHUNK_H
+#define _LVM_CHUNK_H
+typedef enum {
+  RETURN,
+} opcode_t;
+
+typedef struct {
+  uint8_t* code;
+} chunk_t;
+
+
+
+#endif

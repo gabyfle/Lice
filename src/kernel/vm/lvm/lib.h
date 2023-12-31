@@ -20,17 +20,15 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-
 #ifndef _LVM_LIB_H
-    #define _LVM_LIB_H
+#define _LVM_LIB_H
 
-    #include <caml/mlvalues.h>
-    #include <caml/memory.h>
-    #include <caml/alloc.h>
-    #include <caml/callback.h>
-    #include <caml/custom.h>
+#include <caml/alloc.h>
+#include <caml/callback.h>
+#include <caml/custom.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
 
-
-    value hello_world (value n);
+value hello_world(value n);
 
 #endif
