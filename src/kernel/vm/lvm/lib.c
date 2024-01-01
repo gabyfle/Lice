@@ -28,7 +28,7 @@
 
 value hello_world(value n) {
   CAMLparam0();
-  CAMLlocal1(result);
+      CAMLlocal1(result);
 
   /* set result to the string "hello_world "*/
 

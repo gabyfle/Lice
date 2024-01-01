@@ -20,20 +20,14 @@
  (deps
   (source_tree lvm))
  (mode promote)
- (alias fmt)
+ (alias cfmt)
  (action
   (progn
    (bash
-    "for file in lvm/*.c; do clang-format $file > ${file%.c}.cfmt; done")
+    "for file in lvm/*.c; do clang-format -i $file; done")
    (bash
-    "for file in lvm/*.h; do clang-format $file > ${file%.h}.hfmt; done")
-   ; Now diff over the files and replace the original if there are changes
-   (diff? lvm/lib.c lvm/lib.cfmt)
-   (diff? lvm/lib.h lvm/lib.hfmt)
-   (diff? lvm/var.c lvm/var.cfmt)
-   (diff? lvm/var.h lvm/var.hfmt)
-   (diff? lvm/chunk.h lvm/chunk.hfmt)
-   (diff? lvm/chunk.c lvm/chunk.cfmt))))
+    "for file in lvm/*.h; do clang-format -i $file; done")
+    )))
 
 (library
  (name vm)

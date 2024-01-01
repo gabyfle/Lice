@@ -28,6 +28,11 @@
 #define _LVM_CHUNK_H
 typedef enum {
   RETURN,
+  ADD,
+  SUB,
+  MUL,
+  DIV,
+  NEG
 } opcode_t;
 
 typedef struct {
