@@ -20,8 +20,10 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _LVM_LIB_H
-#define _LVM_LIB_H
+#ifndef _LVM_VM_H
+#define _LVM_VM_H
+
+#define REGISTERS_NUMBER 4 // Number of registers in the VM
 
 #include <caml/alloc.h>
 #include <caml/callback.h>
@@ -29,6 +31,12 @@
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 
-value hello_world(value n);
+#include "chunk.h"
+
+typedef struct VM {
+  value registers[REGISTERS_NUMBER];
+
+  chunk_t *chunk;
+} VM;
 
 #endif

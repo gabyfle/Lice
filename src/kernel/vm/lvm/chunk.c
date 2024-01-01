@@ -19,3 +19,11 @@
 //  limitations under the License.                                           //
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
+
+#include "chunk.h"
+
+void init_chunk(chunk_t *chunk) {
+  chunk->code = NULL;
+  chunk->size = 0;
+  chunk->capacity = 0;
+}

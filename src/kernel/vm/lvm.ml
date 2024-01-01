@@ -19,5 +19,3 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
-
-external hello_world : unit -> string = "hello_world"

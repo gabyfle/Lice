@@ -26,19 +26,13 @@
 
 #ifndef _LVM_CHUNK_H
 #define _LVM_CHUNK_H
-typedef enum {
-  RETURN,
-  ADD,
-  SUB,
-  MUL,
-  DIV,
-  NEG
-} opcode_t;
+typedef enum { HALT, RETURN, ADD, SUB, MUL, DIV, NEG } opcode_t;
 
 typedef struct {
-  uint8_t* code;
+  uint8_t *code;
+
+  size_t size;
+  size_t capacity;
 } chunk_t;
-
-
 
 #endif
