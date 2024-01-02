@@ -20,30 +20,36 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Kernel
-open Utils.Logger
-
-let () =
-  let executable_dir =
-    match Sys.argv with
-    | [|_; exec_path|] ->
-        (* Get the directory containing the executable *)
-        let exec_dir = Filename.dirname exec_path in
-        (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/modules/basic.lice"
-    | _ ->
-        failwith "Invalid command line arguments"
-  in
-  let in_channel = open_in executable_dir in
-  let rec read_code lines =
-    try
-      let line = input_line in_channel in
-      read_code (line :: lines)
-    with End_of_file -> List.rev lines
-  in
-  let code_lines = read_code [] in
-  close_in in_channel ;
-  let code = String.concat "\n" code_lines in
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
-  let _ast = parse_code code in
-  ()
+type opcode =
+  | HALT
+  (* Arithmetic operators *)
+  | ADD of int * int * int
+  | SUB of int * int * int
+  | MUL of int * int * int
+  | DIV of int * int * int
+  | MOD of int * int * int
+  | NEG of int * int
+  (* Comparision operators *)
+  | LT of int * int * int
+  | GT of int * int * int
+  | LE of int * int * int
+  | GE of int * int * int
+  | EQ of int * int * int
+  | NE of int * int * int
+  (* Logical operators *)
+  | AND of int * int * int
+  | OR of int * int * int
+  | NOT of int * int
+  (* Memory operators *)
+  | LOAD of int * int
+  | STORE of int * int
+  | MOVE of int * int
+  (* Control flow operators *)
+  | JMP of int
+  | JZ of int * int
+  | JNZ of int * int
+  | CALL of int
+  | RET
+  (* Stack operators *)
+  | PUSH of int
+  | POP of int
