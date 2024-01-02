@@ -11,4 +11,5 @@ Here is the list of instructions available to the bytecode interpreter for the L
 | SUB A B C   | Subs C to B and put result into A |
 | MUL A B C   | Multiplies B and C and put result into A |
 | DIV A B C   | Divides B by C and put result into A |
+| NEG A B     | Puts -B inside A
 | 

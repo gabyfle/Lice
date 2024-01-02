@@ -28,7 +28,7 @@ project(lvm)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_BUILD_SHARED ON)
 
-set(SOURCE_FILES lib.c)
+set(SOURCE_FILES vm.c)
 
 find_package(OCaml REQUIRED)
 
