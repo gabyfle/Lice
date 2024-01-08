@@ -1,0 +1,41 @@
+(data_only_dirs lvm)
+
+(rule
+ (deps
+  (source_tree lvm))
+ (targets liblvm.a)
+ (action
+  (progn
+   (chdir
+    lvm
+    (run cmake .))
+   (chdir
+    lvm
+    (run cmake --build . --target lvm))
+   (run cp lvm/liblvm.a .))))
+
+; Format C code with clang-format
+
+(rule
+ (deps
+  (source_tree lvm))
+ (mode promote)
+ (alias fmt)
+ (action
+  (progn
+   (bash
+    "for file in lvm/*.c; do clang-format $file > ${file%.c}.cfmt; done")
+   (bash
+    "for file in lvm/*.h; do clang-format $file > ${file%.h}.hfmt; done")
+   ; Now diff over the files and replace the original if there are changes
+   (diff? lvm/vm.c lvm/vm.cfmt)
+   (diff? lvm/vm.h lvm/vm.hfmt)
+   (diff? lvm/var.c lvm/var.cfmt)
+   (diff? lvm/var.h lvm/var.hfmt)
+   (diff? lvm/chunk.h lvm/chunk.hfmt)
+   (diff? lvm/chunk.c lvm/chunk.cfmt))))
+
+(library
+ (name vm)
+ (foreign_archives lvm)
+ (wrapped false))

@@ -20,30 +20,44 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Kernel
-open Utils.Logger
+open Base
 
-let () =
-  let executable_dir =
-    match Sys.argv with
-    | [|_; exec_path|] ->
-        (* Get the directory containing the executable *)
-        let exec_dir = Filename.dirname exec_path in
-        (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/modules/basic.lice"
-    | _ ->
-        failwith "Invalid command line arguments"
-  in
-  let in_channel = open_in executable_dir in
-  let rec read_code lines =
-    try
-      let line = input_line in_channel in
-      read_code (line :: lines)
-    with End_of_file -> List.rev lines
-  in
-  let code_lines = read_code [] in
-  close_in in_channel ;
-  let code = String.concat "\n" code_lines in
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
-  let _ast = parse_code code in
-  ()
+val expr_eq : expr -> expr -> bool
+
+val to_typ : value -> typ
+
+val typ_to_string : typ -> string
+
+val get_typ_from_id : identificator -> typ
+
+val typed_ident_list_to_id : typed_ident list -> identificator list
+
+val name : t -> string
+
+val pretty : Format.formatter -> t -> unit
+
+val compare : t -> t -> int
+
+val eq : t -> t -> t
+
+val neq : t -> t -> t
+
+val to_string : t -> string
+
+val add : t -> t -> t
+
+val sub : t -> t -> t
+
+val mul : t -> t -> t
+
+val div : t -> t -> t
+
+val neg : t -> t
+
+val md : t -> t -> t
+
+val band : t -> t -> t
+
+val bor : t -> t -> t
+
+val bxor : t -> t -> t
