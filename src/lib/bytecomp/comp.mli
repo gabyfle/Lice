@@ -20,40 +20,6 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type opcode =
-  | HALT
-  (* Arithmetic operators *)
-  | ADD of int * int * int
-  | SUB of int * int * int
-  | MUL of int * int * int
-  | DIV of int * int * int
-  | MOD of int * int * int
-  | NEG of int * int
-  (* Comparision operators *)
-  | LT of int * int * int
-  | GT of int * int * int
-  | LE of int * int * int
-  | GE of int * int * int
-  | EQ of int * int * int
-  | NE of int * int * int
-  (* Logical operators *)
-  | AND of int * int * int
-  | OR of int * int * int
-  | NOT of int * int
-  (* Memory operators *)
-  | LOAD of int * int
-  | STORE of int * int
-  | MOVE of int * int
-  (* Control flow operators *)
-  | JMP of int
-  | JZ of int * int
-  | JNZ of int * int
-  | CALL of int
-  | RET
-  (* Stack operators *)
-  | PUSH of int
-  | POP of int
+open Ast
 
-type t = opcode list
-
-val empty : t
+val bytecomp : Tree.program -> Opcode.t

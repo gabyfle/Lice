@@ -53,3 +53,7 @@ type opcode =
   (* Stack operators *)
   | PUSH of int
   | POP of int
+
+type t = opcode list
+
+let empty = []
