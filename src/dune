@@ -1,5 +1,5 @@
 (executable
  (name lice)
  (public_name lice)
- (libraries kernel)
+ (libraries kernel bytecomp)
  (ocamlc_flags (-g)))

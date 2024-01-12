@@ -62,3 +62,72 @@ type opcode =
 type t = opcode list
 
 let empty = []
+
+let pp (ppf : Format.formatter) (code : t) =
+  let pp_opcode ppf = function
+    | HALT ->
+        Format.fprintf ppf "HALT"
+    | VALUE v -> (
+      match v with
+      | Base.Const c ->
+          Format.fprintf ppf "VALUE %a" Value.pretty c
+      | Base.V_Var v ->
+          Format.fprintf ppf "VAR %s" (Base.identificator_to_string v) )
+    | ADD (a, b, c) ->
+        Format.fprintf ppf "ADD %d %d %d" a b c
+    | SUB (a, b, c) ->
+        Format.fprintf ppf "SUB %d %d %d" a b c
+    | MUL (a, b, c) ->
+        Format.fprintf ppf "MUL %d %d %d" a b c
+    | DIV (a, b, c) ->
+        Format.fprintf ppf "DIV %d %d %d" a b c
+    | MOD (a, b, c) ->
+        Format.fprintf ppf "MOD %d %d %d" a b c
+    | NEG (a, b) ->
+        Format.fprintf ppf "NEG %d %d" a b
+    | LT (a, b, c) ->
+        Format.fprintf ppf "LT %d %d %d" a b c
+    | GT (a, b, c) ->
+        Format.fprintf ppf "GT %d %d %d" a b c
+    | LE (a, b, c) ->
+        Format.fprintf ppf "LE %d %d %d" a b c
+    | GE (a, b, c) ->
+        Format.fprintf ppf "GE %d %d %d" a b c
+    | EQ (a, b, c) ->
+        Format.fprintf ppf "EQ %d %d %d" a b c
+    | NE (a, b, c) ->
+        Format.fprintf ppf "NE %d %d %d" a b c
+    | AND (a, b, c) ->
+        Format.fprintf ppf "AND %d %d %d" a b c
+    | OR (a, b, c) ->
+        Format.fprintf ppf "OR %d %d %d" a b c
+    | NOT (a, b) ->
+        Format.fprintf ppf "NOT %d %d" a b
+    | LOAD (a, b) ->
+        Format.fprintf ppf "LOAD %d %d" a b
+    | STORE (a, b) ->
+        Format.fprintf ppf "STORE %d %d" a b
+    | MOVE (a, b) ->
+        Format.fprintf ppf "MOVE %d %d" a b
+    | JMP a ->
+        Format.fprintf ppf "JMP %d" a
+    | JZ (a, b) ->
+        Format.fprintf ppf "JZ %d %d" a b
+    | JNZ (a, b) ->
+        Format.fprintf ppf "JNZ %d %d" a b
+    | CALL a ->
+        Format.fprintf ppf "CALL %d" a
+    | RET ->
+        Format.fprintf ppf "RET"
+    | SCP_DUPLICATE ->
+        Format.fprintf ppf "SCP_DUPLICATE"
+    | SCP_CLEAR ->
+        Format.fprintf ppf "SCP_CLEAR"
+    | PUSH a ->
+        Format.fprintf ppf "PUSH %d" a
+    | POP a ->
+        Format.fprintf ppf "POP %d" a
+  in
+  Format.fprintf ppf "@[<v 2>@[<v 2>Generated code:@,%a@]@,@]"
+    (Format.pp_print_list pp_opcode)
+    code

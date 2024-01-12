@@ -62,3 +62,5 @@ type opcode =
 type t = opcode list
 
 val empty : t
+
+val pp : Format.formatter -> t -> unit

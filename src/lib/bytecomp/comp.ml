@@ -23,48 +23,85 @@
 open Ast
 open Types
 
-let binop_comp : Base.binop_type -> Opcode.t = function _ -> Opcode.empty
+(* 
+
+   let number a = 12; let number b = 15;
+
+   let number c = a + b;
+
+   This should compile to, accordingly to the register-based structure of the
+   virtual machine to:
+
+   STORE 0 12 STORE 1 15 ADD 2 0 1 *)
+
+let binop_comp : Base.binop_type -> Opcode.t =
+  let open Base in
+  let bin_operator : binary_operator -> Opcode.t = function
+    | Plus ->
+        [Opcode.HALT]
+    | Minus ->
+        [Opcode.HALT]
+    | Multiply ->
+        [Opcode.HALT]
+    | Divide ->
+        [Opcode.HALT]
+    | Mod ->
+        [Opcode.HALT]
+  in
+  let bin_comparison : binary_comp -> Opcode.t = function
+    | Equal | NotEqual | GEQ | LEQ | Greater | Lesser ->
+        [Opcode.HALT]
+  in
+  function
+  | `Operator op ->
+      bin_operator op
+  | `Compare op ->
+      bin_comparison op
+  | `Cons ->
+      [Opcode.HALT]
 
 let const_comp : Base.value -> Opcode.t = fun v -> [Opcode.VALUE v]
 
 let var_comp : Base.value -> Opcode.t = function _ -> Opcode.empty
 
-let rec expr_comp : Base.expr -> Opcode.t = function
-  | Base.BinOp (op, left, right) ->
+let rec expr_comp : Base.expr -> Opcode.t =
+  let open Base in
+  function
+  | BinOp (op, left, right) ->
       let left = expr_comp left in
       let right = expr_comp right in
       let op = binop_comp op in
       left @ right @ op
-  | Base.Terminal (Base.Const _ as v) ->
+  | Terminal (Const _ as v) ->
       const_comp v
-  | Base.Terminal (Base.V_Var _ as v) ->
+  | Terminal (V_Var _ as v) ->
       var_comp v
   | _ ->
       Opcode.empty (* TODO: Function call *)
 
-let rec stmt_comp : Tree.statement -> Opcode.t = function
-  | Tree.Return (_, e) ->
+let rec stmt_comp : Tree.statement -> Opcode.t =
+  let open Tree in
+  function
+  | Return (_, e) ->
       let e = expr_comp e in
       e @ [Opcode.RET]
-  | Tree.Assign (_, v, e) ->
+  | Assign (_, v, e) ->
       let e = expr_comp e in
       let v = var_comp (Base.V_Var v) in
       e @ v @ [Opcode.STORE (0, 0)]
-  | Tree.Block (_, stmts) ->
+  | Block (_, stmts) ->
       let encapsulate l = [Opcode.SCP_DUPLICATE] @ l @ [Opcode.SCP_CLEAR] in
       let stmts = List.map stmt_comp stmts in
       encapsulate (List.concat stmts)
-  | Tree.Expression (_, e, _) ->
+  | If (_, _, _, _) ->
+      Opcode.empty
+  | Expression (_, e, _) ->
       expr_comp e
   | _ ->
       Opcode.empty
 
 let bytecomp (prog : Tree.program) : Opcode.t =
   let rec aux (prog : Tree.program) (acc : Opcode.t) : Opcode.t =
-    match prog with
-    | [] ->
-        Opcode.empty
-    | stmt :: t ->
-        aux t (acc @ stmt_comp stmt)
+    match prog with [] -> acc | stmt :: t -> aux t (acc @ stmt_comp stmt)
   in
   aux prog Opcode.empty
