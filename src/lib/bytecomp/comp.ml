@@ -25,7 +25,7 @@ open Types
 
 let binop_comp : Base.binop_type -> Opcode.t = function _ -> Opcode.empty
 
-let const_comp : Base.t -> Opcode.t = function _ -> Opcode.empty
+let const_comp : Base.value -> Opcode.t = fun v -> [Opcode.VALUE v]
 
 let var_comp : Base.value -> Opcode.t = function _ -> Opcode.empty
 
@@ -35,14 +35,14 @@ let rec expr_comp : Base.expr -> Opcode.t = function
       let right = expr_comp right in
       let op = binop_comp op in
       left @ right @ op
-  | Base.Terminal (Base.Const c) ->
-      const_comp c
+  | Base.Terminal (Base.Const _ as v) ->
+      const_comp v
   | Base.Terminal (Base.V_Var _ as v) ->
       var_comp v
   | _ ->
       Opcode.empty (* TODO: Function call *)
 
-let stmt_comp : Tree.statement -> Opcode.t = function
+let rec stmt_comp : Tree.statement -> Opcode.t = function
   | Tree.Return (_, e) ->
       let e = expr_comp e in
       e @ [Opcode.RET]
@@ -50,6 +50,10 @@ let stmt_comp : Tree.statement -> Opcode.t = function
       let e = expr_comp e in
       let v = var_comp (Base.V_Var v) in
       e @ v @ [Opcode.STORE (0, 0)]
+  | Tree.Block (_, stmts) ->
+      let encapsulate l = [Opcode.SCP_DUPLICATE] @ l @ [Opcode.SCP_CLEAR] in
+      let stmts = List.map stmt_comp stmts in
+      encapsulate (List.concat stmts)
   | _ ->
       Opcode.empty
 

@@ -20,8 +20,11 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Types
+
 type opcode =
   | HALT
+  | VALUE of Base.value
   (* Arithmetic operators *)
   | ADD of int * int * int
   | SUB of int * int * int
@@ -51,6 +54,8 @@ type opcode =
   | CALL of int
   | RET
   (* Stack operators *)
+  | SCP_DUPLICATE
+  | SCP_CLEAR
   | PUSH of int
   | POP of int
 
