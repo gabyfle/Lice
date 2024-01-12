@@ -54,11 +54,17 @@ let rec stmt_comp : Tree.statement -> Opcode.t = function
       let encapsulate l = [Opcode.SCP_DUPLICATE] @ l @ [Opcode.SCP_CLEAR] in
       let stmts = List.map stmt_comp stmts in
       encapsulate (List.concat stmts)
+  | Tree.Expression (_, e, _) ->
+      expr_comp e
   | _ ->
       Opcode.empty
 
 let bytecomp (prog : Tree.program) : Opcode.t =
-  let rec aux (prog : Tree.program) : Opcode.t =
-    match prog with [] -> Opcode.empty | _ :: _ -> Opcode.empty
+  let rec aux (prog : Tree.program) (acc : Opcode.t) : Opcode.t =
+    match prog with
+    | [] ->
+        Opcode.empty
+    | stmt :: t ->
+        aux t (acc @ stmt_comp stmt)
   in
-  aux prog
+  aux prog Opcode.empty
