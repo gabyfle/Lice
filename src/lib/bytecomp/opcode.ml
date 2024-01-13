@@ -44,6 +44,7 @@ type opcode =
   | OR of int * int * int
   | NOT of int * int
   (* Memory operators *)
+  | LOADI of int * Base.value
   | LOAD of int * int
   | STORE of int * int
   | MOVE of int * int
@@ -103,6 +104,8 @@ let pp (ppf : Format.formatter) (code : t) =
         Format.fprintf ppf "OR %d %d %d" a b c
     | NOT (a, b) ->
         Format.fprintf ppf "NOT %d %d" a b
+    | LOADI (a, b) ->
+            Format.fprintf ppf "LOADI %d %a" a Base.pretty b
     | LOAD (a, b) ->
         Format.fprintf ppf "LOAD %d %d" a b
     | STORE (a, b) ->

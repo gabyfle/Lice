@@ -23,30 +23,19 @@
 open Ast
 open Types
 
-(* 
-
-   let number a = 12; let number b = 15;
-
-   let number c = a + b;
-
-   This should compile to, accordingly to the register-based structure of the
-   virtual machine to:
-
-   STORE 0 12 STORE 1 15 ADD 2 0 1 *)
-
 let binop_comp : Base.binop_type -> Opcode.t =
   let open Base in
   let bin_operator : binary_operator -> Opcode.t = function
     | Plus ->
-        [Opcode.HALT]
+        [Opcode.ADD(1, 1, 0)]
     | Minus ->
-        [Opcode.HALT]
+        [Opcode.SUB(1, 1, 0)]
     | Multiply ->
-        [Opcode.HALT]
+        [Opcode.MUL(1, 1, 0)]
     | Divide ->
-        [Opcode.HALT]
+        [Opcode.DIV(1, 1, 0)]
     | Mod ->
-        [Opcode.HALT]
+        [Opcode.MOD(1, 1, 0)]
   in
   let bin_comparison : binary_comp -> Opcode.t = function
     | Equal | NotEqual | GEQ | LEQ | Greater | Lesser ->
