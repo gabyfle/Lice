@@ -29,15 +29,25 @@ module Lookup = struct
   include Map.Make (String)
 end
 
+(* This is the inverse map of Lookup. It tracks used positions inside the
+   memory. *)
+module Memory = struct
+  include Map.Make (Int)
+
+  let first_unused (mem : 'a t) : int =
+    let rec aux i = if find_opt i mem = None then i else aux (i + 1) in
+    aux 0
+end
+
 (* This is the state of the program as we run throught the compilation. It
    carries usefull data such as the current bytecode of the program, a lookup
-   table that saves stack position of variables names the next register to
+   table that saves stack position of va riables names the next register to
    use *)
 module State = struct
   (* Current opcode list, next register and environement lookup table *)
-  type t = {code: Opcode.t; reg: int; env: int Lookup.t}
+  type t = {code: Opcode.t; reg: int; env: int Lookup.t * bool Memory.t}
 
-  let empty = {code= Opcode.empty; reg= 0; env= Lookup.empty}
+  let empty = {code= Opcode.empty; reg= 0; env= (Lookup.empty, Memory.empty)}
 
   let _reg = snd
 
@@ -50,15 +60,25 @@ module State = struct
 
   let add_opcodes (ops : Opcode.t) (st : t) : t = {st with code= ops @ st.code}
 
-  let add_var (name : Base.identificator) (st : t) (pos : int) : t =
-    let env = Lookup.add (Base.identificator_to_string name) pos st.env in
+  let add_var (name : Base.identificator) (st : t) : t =
+    let pos = Memory.first_unused (snd st.env) in
+    let mem = Memory.add pos true (snd st.env) in
+    let lookup =
+      Lookup.add (Base.identificator_to_string name) pos (fst st.env)
+    in
+    let env = (lookup, mem) in
     {st with env}
 
   (* merge_env merges a scope and a deeper scope into one. if a value exists
      inside the deeper scope, then it's not inside the first on *)
   let merge_env (st : t) (st' : t) : t =
-    let env = Lookup.merge (fun _ _ v' -> v') st.env st'.env in
-    {st with env}
+    let env = fst st.env in
+    let env' = fst st'.env in
+    let mem = snd st.env in
+    let mem' = snd st'.env in
+    let env = Lookup.merge (fun _ _ _ -> None) env env' in
+    let mem = Memory.merge (fun _ _ _ -> None) mem mem' in
+    {st with env= (env, mem)}
 end
 
 let binop_comp (state : State.t) : Base.binop_type -> Opcode.t =
@@ -92,7 +112,7 @@ let const_comp (state : State.t) : Base.value -> State.t =
 
 let var_comp (state : State.t) (var : Base.identificator) : State.t =
   let name = Base.identificator_to_string var in
-  let pos = Lookup.find_opt name state.env in
+  let pos = Lookup.find_opt name (fst state.env) in
   match pos with
   | Some pos ->
       State.next_reg (State.add_opcode (Opcode.LOAD (state.reg, pos)) state)
@@ -121,8 +141,10 @@ let rec stmt_comp (state : State.t) : Tree.statement -> State.t =
       expr_comp state e
   | Assign (_, var, e) ->
       let st = expr_comp state e in
-      let v = State.add_var var st 12 in
-      let var_pos = Lookup.find (Base.identificator_to_string var) v.env in
+      let v = State.add_var var st in
+      let var_pos =
+        Lookup.find (Base.identificator_to_string var) (fst v.env)
+      in
       let store_instr = Opcode.STORE (st.reg, var_pos) in
       State.add_opcode store_instr v
   | Block (_, stmts) ->
