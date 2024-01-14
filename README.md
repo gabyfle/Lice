@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/gabyfle/Lice/blob/main/lice_frame.png?raw=true" width="150px" style="margin: auto; border-radius: 200px;"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/gabyfle/Lice/main/lice.svg" width="200px" style="margin: auto; border-radius: 200px;"></p>
 
 # Lice
 Lice language main repository. Contains all the library code of the Lice language and everything you need to add Lice to your OCaml application.
