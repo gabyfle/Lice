@@ -26,11 +26,11 @@ type opcode =
   | HALT
   | VALUE of Base.value
   (* Arithmetic operators *)
-  | ADD of int * int * int
-  | SUB of int * int * int
-  | MUL of int * int * int
-  | DIV of int * int * int
-  | MOD of int * int * int
+  | ADD of int * int
+  | SUB of int * int
+  | MUL of int * int
+  | DIV of int * int
+  | MOD of int * int
   | NEG of int * int
   (* Comparision operators *)
   | LT of int * int * int
@@ -74,16 +74,16 @@ let pp (ppf : Format.formatter) (code : t) =
           Format.fprintf ppf "VALUE %a" Value.pretty c
       | Base.V_Var v ->
           Format.fprintf ppf "VAR %s" (Base.identificator_to_string v) )
-    | ADD (a, b, c) ->
-        Format.fprintf ppf "ADD %d %d %d" a b c
-    | SUB (a, b, c) ->
-        Format.fprintf ppf "SUB %d %d %d" a b c
-    | MUL (a, b, c) ->
-        Format.fprintf ppf "MUL %d %d %d" a b c
-    | DIV (a, b, c) ->
-        Format.fprintf ppf "DIV %d %d %d" a b c
-    | MOD (a, b, c) ->
-        Format.fprintf ppf "MOD %d %d %d" a b c
+    | ADD (a, b) ->
+        Format.fprintf ppf "ADD %d %d" a b
+    | SUB (a, b) ->
+        Format.fprintf ppf "SUB %d %d" a b
+    | MUL (a, b) ->
+        Format.fprintf ppf "MUL %d %d" a b
+    | DIV (a, b) ->
+        Format.fprintf ppf "DIV %d %d" a b
+    | MOD (a, b) ->
+        Format.fprintf ppf "MOD %d %d" a b
     | NEG (a, b) ->
         Format.fprintf ppf "NEG %d %d" a b
     | LT (a, b, c) ->
@@ -104,8 +104,13 @@ let pp (ppf : Format.formatter) (code : t) =
         Format.fprintf ppf "OR %d %d %d" a b c
     | NOT (a, b) ->
         Format.fprintf ppf "NOT %d %d" a b
-    | LOADI (a, b) ->
-            Format.fprintf ppf "LOADI %d %a" a Base.pretty b
+    | LOADI (a, b) -> (
+      match b with
+      | Base.Const c ->
+          Format.fprintf ppf "LOADI %d %a" a Value.pretty c
+      | Base.V_Var v ->
+          Format.fprintf ppf "LOADI %d (VAR %s)" a
+            (Base.identificator_to_string v) )
     | LOAD (a, b) ->
         Format.fprintf ppf "LOAD %d %d" a b
     | STORE (a, b) ->

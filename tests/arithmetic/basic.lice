@@ -1,12 +1,4 @@
 let number a = 50;
 let number b = 70;
 
-let c = a + b;
-
-let d = a / b;
-
-let e = a * b;
-
-let f = b % a;
-
-let r = "hello " + " world";
+a + b;

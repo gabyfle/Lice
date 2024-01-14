@@ -23,19 +23,25 @@
 open Ast
 open Types
 
+module Lookup = struct
+  include Map.Make (String)
+
+  let find_opt k m = try Some (find k m) with Not_found -> None
+end
+
 let binop_comp : Base.binop_type -> Opcode.t =
   let open Base in
   let bin_operator : binary_operator -> Opcode.t = function
     | Plus ->
-        [Opcode.ADD(1, 1, 0)]
+        [Opcode.ADD (1, 1)]
     | Minus ->
-        [Opcode.SUB(1, 1, 0)]
+        [Opcode.SUB (1, 1)]
     | Multiply ->
-        [Opcode.MUL(1, 1, 0)]
+        [Opcode.MUL (1, 1)]
     | Divide ->
-        [Opcode.DIV(1, 1, 0)]
+        [Opcode.DIV (1, 1)]
     | Mod ->
-        [Opcode.MOD(1, 1, 0)]
+        [Opcode.MOD (1, 1)]
   in
   let bin_comparison : binary_comp -> Opcode.t = function
     | Equal | NotEqual | GEQ | LEQ | Greater | Lesser ->
@@ -49,9 +55,9 @@ let binop_comp : Base.binop_type -> Opcode.t =
   | `Cons ->
       [Opcode.HALT]
 
-let const_comp : Base.value -> Opcode.t = fun v -> [Opcode.VALUE v]
+let const_comp : Base.value -> Opcode.t = fun v -> [Opcode.LOADI (1, v)]
 
-let var_comp : Base.value -> Opcode.t = function _ -> Opcode.empty
+let var_comp : Base.value -> Opcode.t = function var -> [Opcode.LOADI (1, var)]
 
 let rec expr_comp : Base.expr -> Opcode.t =
   let open Base in

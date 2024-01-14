@@ -26,11 +26,11 @@ type opcode =
   | HALT
   | VALUE of Base.value
   (* Arithmetic operators *)
-  | ADD of int * int * int
-  | SUB of int * int * int
-  | MUL of int * int * int
-  | DIV of int * int * int
-  | MOD of int * int * int
+  | ADD of int * int
+  | SUB of int * int
+  | MUL of int * int
+  | DIV of int * int
+  | MOD of int * int
   | NEG of int * int
   (* Comparision operators *)
   | LT of int * int * int
@@ -44,6 +44,7 @@ type opcode =
   | OR of int * int * int
   | NOT of int * int
   (* Memory operators *)
+  | LOADI of int * Base.value
   | LOAD of int * int
   | STORE of int * int
   | MOVE of int * int
