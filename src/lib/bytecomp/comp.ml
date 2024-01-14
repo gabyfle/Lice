@@ -23,25 +23,57 @@
 open Ast
 open Types
 
+(* This is the table that carries all the variables used inside our program and
+   their position into the stack *)
 module Lookup = struct
   include Map.Make (String)
-
-  let find_opt k m = try Some (find k m) with Not_found -> None
 end
 
-let binop_comp : Base.binop_type -> Opcode.t =
+(* This is the state of the program as we run throught the compilation. It
+   carries usefull data such as the current bytecode of the program, a lookup
+   table that saves stack position of variables names the next register to
+   use *)
+module State = struct
+  (* Current opcode list, next register and environement lookup table *)
+  type t = {code: Opcode.t; reg: int; env: int Lookup.t}
+
+  let empty = {code= Opcode.empty; reg= 0; env= Lookup.empty}
+
+  let _reg = snd
+
+  let opcodes t = t.code
+
+  let add_opcode (op : Opcode.opcode) (st : t) : t =
+    {st with code= op :: st.code}
+
+  let next_reg (st : t) : t = {st with reg= st.reg + 1}
+
+  let add_opcodes (ops : Opcode.t) (st : t) : t = {st with code= ops @ st.code}
+
+  let add_var (name : Base.identificator) (st : t) (pos : int) : t =
+    let env = Lookup.add (Base.identificator_to_string name) pos st.env in
+    {st with env}
+
+  (* merge_env merges a scope and a deeper scope into one. if a value exists
+     inside the deeper scope, then it's not inside the first on *)
+  let merge_env (st : t) (st' : t) : t =
+    let env = Lookup.merge (fun _ _ v' -> v') st.env st'.env in
+    {st with env}
+end
+
+let binop_comp (state : State.t) : Base.binop_type -> Opcode.t =
   let open Base in
   let bin_operator : binary_operator -> Opcode.t = function
     | Plus ->
-        [Opcode.ADD (1, 1)]
+        [Opcode.ADD (state.reg, state.reg - 1)]
     | Minus ->
-        [Opcode.SUB (1, 1)]
+        [Opcode.SUB (state.reg, state.reg - 1)]
     | Multiply ->
-        [Opcode.MUL (1, 1)]
+        [Opcode.MUL (state.reg, state.reg - 1)]
     | Divide ->
-        [Opcode.DIV (1, 1)]
+        [Opcode.DIV (state.reg, state.reg - 1)]
     | Mod ->
-        [Opcode.MOD (1, 1)]
+        [Opcode.MOD (state.reg, state.reg - 1)]
   in
   let bin_comparison : binary_comp -> Opcode.t = function
     | Equal | NotEqual | GEQ | LEQ | Greater | Lesser ->
@@ -55,48 +87,61 @@ let binop_comp : Base.binop_type -> Opcode.t =
   | `Cons ->
       [Opcode.HALT]
 
-let const_comp : Base.value -> Opcode.t = fun v -> [Opcode.LOADI (1, v)]
+let const_comp (state : State.t) : Base.value -> State.t =
+ fun v -> State.next_reg (State.add_opcode (Opcode.LOADI (state.reg, v)) state)
 
-let var_comp : Base.value -> Opcode.t = function var -> [Opcode.LOADI (1, var)]
+let var_comp (state : State.t) (var : Base.identificator) : State.t =
+  let name = Base.identificator_to_string var in
+  let pos = Lookup.find_opt name state.env in
+  match pos with
+  | Some pos ->
+      State.next_reg (State.add_opcode (Opcode.LOAD (state.reg, pos)) state)
+  | None ->
+      failwith "Variable not found"
 
-let rec expr_comp : Base.expr -> Opcode.t =
+let rec expr_comp (state : State.t) : Base.expr -> State.t =
   let open Base in
   function
   | BinOp (op, left, right) ->
-      let left = expr_comp left in
-      let right = expr_comp right in
-      let op = binop_comp op in
-      left @ right @ op
+      let left = expr_comp state left in
+      let right = expr_comp left right in
+      let op = binop_comp state op in
+      State.add_opcodes op right
   | Terminal (Const _ as v) ->
-      const_comp v
-  | Terminal (V_Var _ as v) ->
-      var_comp v
+      const_comp state v
+  | Terminal (V_Var ident) ->
+      var_comp state ident
   | _ ->
-      Opcode.empty (* TODO: Function call *)
+      state (* TODO: Function call *)
 
-let rec stmt_comp : Tree.statement -> Opcode.t =
+let rec stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in
   function
   | Return (_, e) ->
-      let e = expr_comp e in
-      e @ [Opcode.RET]
-  | Assign (_, v, e) ->
-      let e = expr_comp e in
-      let v = var_comp (Base.V_Var v) in
-      e @ v @ [Opcode.STORE (0, 0)]
+      expr_comp state e
+  | Assign (_, var, e) ->
+      let st = expr_comp state e in
+      let v = State.add_var var st 12 in
+      let var_pos = Lookup.find (Base.identificator_to_string var) v.env in
+      let store_instr = Opcode.STORE (st.reg, var_pos) in
+      State.add_opcode store_instr v
   | Block (_, stmts) ->
-      let encapsulate l = [Opcode.SCP_DUPLICATE] @ l @ [Opcode.SCP_CLEAR] in
-      let stmts = List.map stmt_comp stmts in
-      encapsulate (List.concat stmts)
+      let dup = State.add_opcode Opcode.SCP_DUPLICATE state in
+      let block = List.fold_left stmt_comp dup stmts in
+      (* merge the environement of the block with the current one *)
+      let res = State.merge_env state block in
+      let state = {res with code= block.code} in
+      State.add_opcode Opcode.SCP_CLEAR state
   | If (_, _, _, _) ->
-      Opcode.empty
+      State.add_opcode Opcode.HALT state
   | Expression (_, e, _) ->
-      expr_comp e
+      expr_comp state e
   | _ ->
-      Opcode.empty
+      State.add_opcode Opcode.HALT state
 
 let bytecomp (prog : Tree.program) : Opcode.t =
-  let rec aux (prog : Tree.program) (acc : Opcode.t) : Opcode.t =
-    match prog with [] -> acc | stmt :: t -> aux t (acc @ stmt_comp stmt)
+  let state = State.empty in
+  let rec aux (prog : Tree.program) (state : State.t) : State.t =
+    match prog with [] -> state | stmt :: t -> aux t (stmt_comp state stmt)
   in
-  aux prog Opcode.empty
+  List.rev (State.opcodes (aux prog state |> State.add_opcode Opcode.HALT))
