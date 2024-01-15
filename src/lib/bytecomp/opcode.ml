@@ -33,12 +33,12 @@ type opcode =
   | MOD of int * int
   | NEG of int * int
   (* Comparision operators *)
-  | LT of int * int * int
-  | GT of int * int * int
-  | LE of int * int * int
-  | GE of int * int * int
-  | EQ of int * int * int
-  | NE of int * int * int
+  | LT of int * int
+  | GT of int * int
+  | LE of int * int
+  | GE of int * int
+  | NE of int * int
+  | EQ of int * int
   (* Logical operators *)
   | AND of int * int * int
   | OR of int * int * int
@@ -86,18 +86,18 @@ let pp (ppf : Format.formatter) (code : t) =
         Format.fprintf ppf "MOD %d %d" a b
     | NEG (a, b) ->
         Format.fprintf ppf "NEG %d %d" a b
-    | LT (a, b, c) ->
-        Format.fprintf ppf "LT %d %d %d" a b c
-    | GT (a, b, c) ->
-        Format.fprintf ppf "GT %d %d %d" a b c
-    | LE (a, b, c) ->
-        Format.fprintf ppf "LE %d %d %d" a b c
-    | GE (a, b, c) ->
-        Format.fprintf ppf "GE %d %d %d" a b c
-    | EQ (a, b, c) ->
-        Format.fprintf ppf "EQ %d %d %d" a b c
-    | NE (a, b, c) ->
-        Format.fprintf ppf "NE %d %d %d" a b c
+    | LT (a, b) ->
+        Format.fprintf ppf "LT %d %d" a b
+    | GT (a, b) ->
+        Format.fprintf ppf "GT %d %d" a b
+    | LE (a, b) ->
+        Format.fprintf ppf "LE %d %d" a b
+    | GE (a, b) ->
+        Format.fprintf ppf "GE %d %d" a b
+    | EQ (a, b) ->
+        Format.fprintf ppf "EQ %d %d" a b
+    | NE (a, b) ->
+        Format.fprintf ppf "NE %d %d" a b
     | AND (a, b, c) ->
         Format.fprintf ppf "AND %d %d %d" a b c
     | OR (a, b, c) ->

@@ -1,0 +1,8 @@
+let number a = 12;
+let number b = 15;
+
+if (a == b) {
+    let d = a - b;
+} else {
+    let f = 12;
+}

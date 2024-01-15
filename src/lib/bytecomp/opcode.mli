@@ -33,12 +33,12 @@ type opcode =
   | MOD of int * int
   | NEG of int * int
   (* Comparision operators *)
-  | LT of int * int * int
-  | GT of int * int * int
-  | LE of int * int * int
-  | GE of int * int * int
-  | EQ of int * int * int
-  | NE of int * int * int
+  | LT of int * int
+  | GT of int * int
+  | LE of int * int
+  | GE of int * int
+  | NE of int * int
+  | EQ of int * int
   (* Logical operators *)
   | AND of int * int * int
   | OR of int * int * int

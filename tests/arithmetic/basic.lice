@@ -1,4 +1,3 @@
 let number a = 50;
 let number b = 70;
-
-a + b;
+let number c = a + b;

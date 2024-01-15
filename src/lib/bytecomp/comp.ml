@@ -79,25 +79,47 @@ module State = struct
     let env = Lookup.merge (fun _ _ _ -> None) env env' in
     let mem = Memory.merge (fun _ _ _ -> None) mem mem' in
     {st with env= (env, mem)}
+
+  let op_size (st : t) : int = List.length st.code
+
+  let replace_op (st : t) (nop : Opcode.opcode) (pos : int) : t =
+    let rec aux (acc : Opcode.t) (pos : int) = function
+      | [] ->
+          List.rev acc
+      | h :: t ->
+          if pos = 0 then List.rev acc @ (nop :: t)
+          else aux (h :: acc) (pos - 1) t
+    in
+    {st with code= aux [] pos st.code}
 end
 
 let binop_comp (state : State.t) : Base.binop_type -> Opcode.t =
   let open Base in
   let bin_operator : binary_operator -> Opcode.t = function
     | Plus ->
-        [Opcode.ADD (state.reg, state.reg - 1)]
+        [Opcode.ADD (state.reg - 1, state.reg - 2)]
     | Minus ->
-        [Opcode.SUB (state.reg, state.reg - 1)]
+        [Opcode.SUB (state.reg - 1, state.reg - 2)]
     | Multiply ->
-        [Opcode.MUL (state.reg, state.reg - 1)]
+        [Opcode.MUL (state.reg - 1, state.reg - 2)]
     | Divide ->
-        [Opcode.DIV (state.reg, state.reg - 1)]
+        [Opcode.DIV (state.reg - 1, state.reg - 2)]
     | Mod ->
-        [Opcode.MOD (state.reg, state.reg - 1)]
+        [Opcode.MOD (state.reg - 1, state.reg - 2)]
   in
   let bin_comparison : binary_comp -> Opcode.t = function
-    | Equal | NotEqual | GEQ | LEQ | Greater | Lesser ->
-        [Opcode.HALT]
+    | Equal ->
+        [Opcode.EQ (state.reg - 1, state.reg - 2)]
+    | NotEqual ->
+        [Opcode.NE (state.reg - 1, state.reg - 2)]
+    | Greater ->
+        [Opcode.GT (state.reg - 1, state.reg - 2)]
+    | GEQ ->
+        [Opcode.GE (state.reg - 1, state.reg - 2)]
+    | Lesser ->
+        [Opcode.LT (state.reg - 1, state.reg - 2)]
+    | LEQ ->
+        [Opcode.LE (state.reg - 1, state.reg - 2)]
   in
   function
   | `Operator op ->
@@ -125,7 +147,7 @@ let rec expr_comp (state : State.t) : Base.expr -> State.t =
   | BinOp (op, left, right) ->
       let left = expr_comp state left in
       let right = expr_comp left right in
-      let op = binop_comp state op in
+      let op = binop_comp right op in
       State.add_opcodes op right
   | Terminal (Const _ as v) ->
       const_comp state v
@@ -134,7 +156,17 @@ let rec expr_comp (state : State.t) : Base.expr -> State.t =
   | _ ->
       state (* TODO: Function call *)
 
-let rec stmt_comp (state : State.t) : Tree.statement -> State.t =
+let rec if_comp (state : State.t) (cond : Base.expr) (t : Tree.statement)
+    (f : Tree.statement) : State.t =
+  let state = expr_comp state cond in
+  let tmp = State.add_opcode (Opcode.JMP 0) state in
+  let t = stmt_comp tmp t in
+  let diff = State.op_size t - State.op_size tmp in
+  (* this is used to compute the jump address *)
+  let state = State.replace_op t (Opcode.JMP (diff + 1)) diff in
+  stmt_comp state f
+
+and stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in
   function
   | Return (_, e) ->
@@ -145,17 +177,21 @@ let rec stmt_comp (state : State.t) : Tree.statement -> State.t =
       let var_pos =
         Lookup.find (Base.identificator_to_string var) (fst v.env)
       in
-      let store_instr = Opcode.STORE (st.reg, var_pos) in
+      let store_instr = Opcode.STORE (st.reg - 1, var_pos) in
       State.add_opcode store_instr v
   | Block (_, stmts) ->
-      let dup = State.add_opcode Opcode.SCP_DUPLICATE state in
-      let block = List.fold_left stmt_comp dup stmts in
-      (* merge the environement of the block with the current one *)
-      let res = State.merge_env state block in
-      let state = {res with code= block.code} in
-      State.add_opcode Opcode.SCP_CLEAR state
-  | If (_, _, _, _) ->
-      State.add_opcode Opcode.HALT state
+      if stmts = [] then state
+        (* do not push an useless scope_dup and scope_clear *)
+      else
+        let dup = State.add_opcode Opcode.SCP_DUPLICATE state in
+        let block = List.fold_left stmt_comp dup stmts in
+        (* merge the environement of the block with the current one *)
+        let res = State.merge_env state block in
+        let state = {res with code= block.code} in
+        State.add_opcode Opcode.SCP_CLEAR state
+  | If (_, expr, t, f) ->
+      (* t = true, f = false *)
+      if_comp state expr t f
   | Expression (_, e, _) ->
       expr_comp state e
   | _ ->
