@@ -20,72 +20,23 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type ident = string
+module S = struct
+  type t = string
 
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
+  type value = int
+  (* for the moment, a function value can be created from its "address" in
+     code *)
 
-type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+  (* as we'll write the virtual machine, this is subject to change *)
 
-type binop_type =
-  [`Compare of binary_comp | `Operator of binary_operator | `Cons]
+  let name = "function"
 
-type typed_ident = ident * typ
+  let pretty : Format.formatter -> t -> unit =
+   fun fmt x -> Format.fprintf fmt "function<%s>" x
 
-and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
+  let compare : t -> t -> int = failwith "Functional values"
 
-type identificator = [`Ident of typed_ident | `Module of ident * typed_ident]
+  let from : value -> t = fun x -> string_of_int x
+end
 
-type expr =
-  | Terminal of value
-  | BinOp of binop_type * expr * expr
-  | FuncCall of identificator * expr list
-
-and value = Const of t | V_Var of identificator
-
-and t =
-  | V_Number of Lnumber.t
-  | V_String of Lstring.t
-  | V_List of expr list
-  | V_Boolean of Lbool.t
-  | V_Function of Lfunction.t
-  | V_Void
-
-let identificator_to_string = function
-  | `Ident (id, _) ->
-      id
-  | `Module (m, (id, _)) ->
-      m ^ "." ^ id
-
-let bincomp_to_string = function
-  | Equal ->
-      "=="
-  | NotEqual ->
-      "!="
-  | GEQ ->
-      ">="
-  | LEQ ->
-      "<="
-  | Greater ->
-      ">"
-  | Lesser ->
-      "<"
-
-let binop_to_string = function
-  | Plus ->
-      "+"
-  | Minus ->
-      "-"
-  | Divide ->
-      "/"
-  | Multiply ->
-      "*"
-  | Mod ->
-      "%"
-
-let binop_type_to_string = function
-  | `Compare c ->
-      bincomp_to_string c
-  | `Operator o ->
-      binop_to_string o
-  | `Cons ->
-      "::"
+include Type.Make (S)
