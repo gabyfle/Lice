@@ -166,6 +166,9 @@ let rec if_comp (state : State.t) (cond : Base.expr) (t : Tree.statement)
   let state = State.replace_op t (Opcode.JMP (diff + 1)) diff in
   stmt_comp state f
 
+and match_comp (_state: State.t) (_expr: Base.expr) (_cases: (Base.expr * Tree.statement list) list) : State.t =
+  failwith "WIP" 
+
 and stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in
   function
@@ -194,6 +197,8 @@ and stmt_comp (state : State.t) : Tree.statement -> State.t =
       if_comp state expr t f
   | Expression (_, e, _) ->
       expr_comp state e
+  | Match(_, e, cases) ->
+      match_comp state e cases
   | _ ->
       State.add_opcode Opcode.HALT state
 
