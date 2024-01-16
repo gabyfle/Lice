@@ -88,3 +88,21 @@ let binop_to_string = function
       "*"
   | Mod ->
       "%"
+
+let get_location = function
+  | Return (loc, _) ->
+      loc
+  | Expression (loc, _, _) ->
+      loc
+  | Block (loc, _) ->
+      loc
+  | Assign (loc, _, _) ->
+      loc
+  | FuncDef (loc, _, _, _) ->
+      loc
+  | Match (loc, _, _) ->
+      loc
+  | If (loc, _, _, _) ->
+      loc
+  | ModuleDef (loc, _, _) ->
+      loc

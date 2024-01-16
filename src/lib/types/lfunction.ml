@@ -34,7 +34,7 @@ module S = struct
   let pretty : Format.formatter -> t -> unit =
    fun fmt x -> Format.fprintf fmt "function<%s>" x
 
-  let compare : t -> t -> int = failwith "Functional values"
+  let compare : t -> t -> int = String.compare
 
   let from : value -> t = fun x -> string_of_int x
 end

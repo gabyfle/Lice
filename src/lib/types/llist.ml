@@ -72,6 +72,8 @@ module S = struct
           Lbool.pretty ppf b
       | Base.V_List l ->
           Format.fprintf ppf "[" ; aux ppf l ; Format.fprintf ppf "]"
+      | Base.V_Function n ->
+          Format.fprintf ppf "function<%s>" n
       | Base.V_Void ->
           Format.fprintf ppf ""
     in

@@ -166,8 +166,36 @@ let rec if_comp (state : State.t) (cond : Base.expr) (t : Tree.statement)
   let state = State.replace_op t (Opcode.JMP (diff + 1)) diff in
   stmt_comp state f
 
-and match_comp (_state: State.t) (_expr: Base.expr) (_cases: (Base.expr * Tree.statement list) list) : State.t =
-  failwith "WIP" 
+and match_comp (state : State.t) (expr : Base.expr)
+    (cases : (Base.expr * Tree.statement list) list) : State.t =
+  let open Tree in
+  let state = expr_comp state expr in
+  let val_reg = state.reg - 1 in
+  let rec aux (state : State.t) = function
+    | [] ->
+        state
+    | (pat, stmts) :: t ->
+        let stmts =
+          match stmts with
+          | [] ->
+              []
+          | [(Block (_, _) as b)] ->
+              [b]
+          | h :: t ->
+              [Block (get_location h, h :: t)]
+          (* we want to be sure that we get a single element with just a block
+             inside *)
+        in
+        let state = expr_comp state pat in
+        let pat_reg = state.reg - 1 in
+        let state = State.add_opcode (Opcode.EQ (val_reg, pat_reg)) state in
+        let tmp = State.add_opcode (Opcode.JMP 0) state in
+        let state = List.fold_left stmt_comp tmp stmts in
+        let diff = State.op_size state - State.op_size tmp in
+        let state = State.replace_op state (Opcode.JMP (diff + 1)) diff in
+        aux state t
+  in
+  aux state cases
 
 and stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in
@@ -197,7 +225,7 @@ and stmt_comp (state : State.t) : Tree.statement -> State.t =
       if_comp state expr t f
   | Expression (_, e, _) ->
       expr_comp state e
-  | Match(_, e, cases) ->
+  | Match (_, e, cases) ->
       match_comp state e cases
   | _ ->
       State.add_opcode Opcode.HALT state
