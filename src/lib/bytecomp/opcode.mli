@@ -50,8 +50,7 @@ type opcode =
   | MOVE of int * int
   (* Control flow operators *)
   | JMP of int
-  | JZ of int * int
-  | JNZ of int * int
+  | GOTO of int
   | CALL of int
   | RET
   (* Stack operators *)

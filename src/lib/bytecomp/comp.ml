@@ -39,6 +39,12 @@ module Memory = struct
     aux 0
 end
 
+(* This is the map that contains the locations (in byte) of the defined
+   functions inside the program *)
+module Functions = struct
+  include Map.Make (Int)
+end
+
 (* This is the state of the program as we run throught the compilation. It
    carries usefull data such as the current bytecode of the program, a lookup
    table that saves stack position of va riables names the next register to
@@ -197,6 +203,30 @@ and match_comp (state : State.t) (expr : Base.expr)
   in
   aux state cases
 
+  (* 
+     reg 1
+         2
+         3
+         4
+    
+    FUNC (a, b, c, d, e, f)
+
+    FUNCEND
+
+    PUSH a
+    PUSH b
+    PUSH c
+    PUSH d
+    PUSH e
+    PUSH f
+    CALL 1 (*  *)
+  *)
+and funcdef_comp (state : State.t) (name : Base.identificator)
+    (params : Base.identificator list) (block : Tree.statement) : State.t =
+    let _st = state in (* we're making a copy of the current state *)
+    let _nargs = List.length params in
+    state
+
 and stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in
   function
@@ -227,6 +257,8 @@ and stmt_comp (state : State.t) : Tree.statement -> State.t =
       expr_comp state e
   | Match (_, e, cases) ->
       match_comp state e cases
+  | FuncDef (_, name, params, block) ->
+      funcdef_comp state name params block
   | _ ->
       State.add_opcode Opcode.HALT state
 

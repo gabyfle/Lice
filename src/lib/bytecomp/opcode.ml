@@ -50,8 +50,7 @@ type opcode =
   | MOVE of int * int
   (* Control flow operators *)
   | JMP of int
-  | JZ of int * int
-  | JNZ of int * int
+  | GOTO of int
   | CALL of int
   | RET
   (* Stack operators *)
@@ -119,10 +118,8 @@ let pp (ppf : Format.formatter) (code : t) =
         Format.fprintf ppf "MOVE %d %d" a b
     | JMP a ->
         Format.fprintf ppf "JMP %d" a
-    | JZ (a, b) ->
-        Format.fprintf ppf "JZ %d %d" a b
-    | JNZ (a, b) ->
-        Format.fprintf ppf "JNZ %d %d" a b
+    | GOTO a ->
+        Format.fprintf ppf "GOTO %d" a
     | CALL a ->
         Format.fprintf ppf "CALL %d" a
     | RET ->
