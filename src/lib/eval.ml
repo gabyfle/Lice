@@ -313,8 +313,11 @@ module Eval : EVAL = struct
   and eval_expr _env loc ?(in_mod = None) = function
     | env, Terminal (Const V_Void) ->
         (env, Terminal (Const V_Void))
-    | (_, Terminal (Const (V_Number _ | V_String _ | V_Boolean _ | V_List _)))
-      as v ->
+    | ( _
+      , Terminal
+          (Const
+            (V_Number _ | V_String _ | V_Boolean _ | V_List _ | V_Function _) )
+      ) as v ->
         v
     | env, Terminal (V_Var id) -> (
         let id = update_name_module in_mod id in

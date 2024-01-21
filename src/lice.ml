@@ -22,6 +22,7 @@
 
 open Kernel
 open Utils.Logger
+open Bytecomp
 
 let () =
   let executable_dir =
@@ -30,7 +31,7 @@ let () =
         (* Get the directory containing the executable *)
         let exec_dir = Filename.dirname exec_path in
         (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/modules/basic.lice"
+        Filename.concat exec_dir "tests/branching/basic.lice"
     | _ ->
         failwith "Invalid command line arguments"
   in
@@ -46,4 +47,5 @@ let () =
   let code = String.concat "\n" code_lines in
   Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
   let _ast = parse_code code in
-  ()
+  let opcode = Comp.bytecomp _ast in
+  Opcode.pp Format.std_formatter opcode

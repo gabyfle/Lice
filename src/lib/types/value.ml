@@ -35,6 +35,8 @@ let to_typ v =
         T_List
     | V_Boolean _ ->
         T_Boolean
+    | V_Function _ ->
+        T_Auto
     | V_Void ->
         T_Void
   in
@@ -78,6 +80,8 @@ let name = function
       Llist.name
   | V_Boolean _ ->
       Lbool.name
+  | V_Function _ ->
+      Lfunction.name
   | V_Void ->
       "void"
 
@@ -90,6 +94,8 @@ let pretty fmt = function
       Format.fprintf fmt "%a" Llist.pretty l
   | V_Boolean b ->
       Format.fprintf fmt "%a" Lbool.pretty b
+  | V_Function f ->
+      Format.fprintf fmt "%a" Lfunction.pretty f
   | V_Void ->
       ()
 
@@ -138,6 +144,8 @@ let to_string = function
       Llist.to_string l
   | V_Boolean b ->
       Lbool.to_string b
+  | V_Function f ->
+      Lfunction.to_string f
   | V_Void ->
       ""
 
@@ -151,6 +159,8 @@ let add v v' =
       V_List (Llist.add l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.add b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.add f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -166,6 +176,8 @@ let sub v v' =
       V_List (Llist.sub l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.sub b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.sub f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -181,6 +193,8 @@ let mul v v' =
       V_List (Llist.mul l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.mul b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.mul f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -196,6 +210,8 @@ let div v v' =
       V_List (Llist.div l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.div b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.div f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -210,6 +226,8 @@ let neg = function
       V_List (Llist.neg l)
   | V_Boolean b ->
       V_Boolean (Lbool.neg b)
+  | V_Function f ->
+      V_Function (Lfunction.neg f)
   | V_Void ->
       V_Void
 
@@ -223,6 +241,8 @@ let md v v' =
       V_List (Llist.md l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.md b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.md f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -238,6 +258,8 @@ let band v v' =
       V_List (Llist.band l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.band b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.band f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -253,6 +275,8 @@ let bor v v' =
       V_List (Llist.bor l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.bor b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.bor f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->
@@ -268,6 +292,8 @@ let bxor v v' =
       V_List (Llist.bxor l l')
   | V_Boolean b, V_Boolean b' ->
       V_Boolean (Lbool.bxor b b')
+  | V_Function f, V_Function f' ->
+      V_Function (Lfunction.bxor f f')
   | V_Void, V_Void ->
       V_Void
   | _ ->

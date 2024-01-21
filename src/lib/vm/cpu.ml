@@ -19,3 +19,37 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
+
+open Types
+
+type register = Base.t
+
+type registers =
+  { a: register
+  ; b: register
+  ; c: register
+  ; d: register
+  ; e: register
+  ; f: register
+  ; g: register
+  ; h: register
+  ; i: register
+  ; pc: int64 }
+
+type 'a cpu = {registers: registers; memory: 'a}
+
+type t = Base.t cpu
+
+let empty =
+  { registers=
+      { a= Base.V_Void
+      ; b= Base.V_Void
+      ; c= Base.V_Void
+      ; d= Base.V_Void
+      ; e= Base.V_Void
+      ; f= Base.V_Void
+      ; g= Base.V_Void
+      ; h= Base.V_Void
+      ; i= Base.V_Void
+      ; pc= 0L }
+  ; memory= Base.V_Void }

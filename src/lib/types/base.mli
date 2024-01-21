@@ -47,6 +47,7 @@ and t =
   | V_String of Lstring.t
   | V_List of expr list
   | V_Boolean of Lbool.t
+  | V_Function of Lfunction.t
   | V_Void
 
 val identificator_to_string : identificator -> string

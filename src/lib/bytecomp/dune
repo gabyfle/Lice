@@ -1,4 +1,3 @@
 (library
  (name bytecomp)
- (libraries ast types)
- (wrapped false))
+ (libraries ast types))

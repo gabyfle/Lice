@@ -20,89 +20,23 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Types
-open Types.Base
+module S = struct
+  type t = string
 
-type location = Lexing.position
+  type value = int
+  (* for the moment, a function value can be created from its "address" in
+     code *)
 
-type statement =
-  | Return of location * expr
-  | Expression of location * expr * typ
-  | Block of location * statement list
-  | Assign of location * identificator * expr
-  | FuncDef of location * identificator * identificator list * statement
-  | Match of location * expr * (expr * statement list) list
-  | If of location * expr * statement * statement
-  | ModuleDef of location * ident * statement list
+  (* as we'll write the virtual machine, this is subject to change *)
 
-and program = statement list
+  let name = "function"
 
-let val_to_typ = function
-  | Terminal t ->
-      Value.to_typ t
-  | BinOp (_, _, _) ->
-      T_Number
-  | FuncCall (_, _) ->
-      T_Auto
+  let pretty : Format.formatter -> t -> unit =
+   fun fmt x -> Format.fprintf fmt "function<%s>" x
 
-let stmt_to_string = function
-  | Return (_, _) ->
-      "Return"
-  | Expression (_, _, _) ->
-      "Expression"
-  | Block (_, _) ->
-      "Block"
-  | Assign (_, _, _) ->
-      "Assign"
-  | FuncDef (_, _, _, _) ->
-      "Function definition"
-  | Match (_, _, _) ->
-      "Pattern-matching"
-  | If (_, _, _, _) ->
-      "If statement"
-  | ModuleDef (_, _, _) ->
-      "Module definition"
+  let compare : t -> t -> int = String.compare
 
-let bincomp_to_string = function
-  | Equal ->
-      "=="
-  | NotEqual ->
-      "!="
-  | GEQ ->
-      ">="
-  | LEQ ->
-      "<="
-  | Greater ->
-      ">"
-  | Lesser ->
-      "<"
+  let from : value -> t = fun x -> string_of_int x
+end
 
-let binop_to_string = function
-  | Plus ->
-      "+"
-  | Minus ->
-      "-"
-  | Divide ->
-      "/"
-  | Multiply ->
-      "*"
-  | Mod ->
-      "%"
-
-let get_location = function
-  | Return (loc, _) ->
-      loc
-  | Expression (loc, _, _) ->
-      loc
-  | Block (loc, _) ->
-      loc
-  | Assign (loc, _, _) ->
-      loc
-  | FuncDef (loc, _, _, _) ->
-      loc
-  | Match (loc, _, _) ->
-      loc
-  | If (loc, _, _, _) ->
-      loc
-  | ModuleDef (loc, _, _) ->
-      loc
+include Type.Make (S)

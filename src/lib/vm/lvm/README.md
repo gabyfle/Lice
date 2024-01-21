@@ -7,6 +7,7 @@ Here is the list of instructions available to the bytecode interpreter for the L
 ### Memory
 | Operation   | Description |
 | ----------- | ----------- |
+| `LOADI A B` | Loads the constant value B into register A. |
 | `LOAD A B` | Loads the value from memory location B into register A. |
 | `STORE A B` | Stores the value from register B into memory location A. |
 | `MOVE A B` | Copies the value from register B into register A. |

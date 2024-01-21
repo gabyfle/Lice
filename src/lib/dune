@@ -1,6 +1,6 @@
 (library
  (name kernel)
- (libraries ast utils vm)
+ (libraries ast utils vm bytecomp)
  (wrapped false))
 
 (ocamllex lexer)
