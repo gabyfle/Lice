@@ -203,29 +203,12 @@ and match_comp (state : State.t) (expr : Base.expr)
   in
   aux state cases
 
-  (* 
-     reg 1
-         2
-         3
-         4
-    
-    FUNC (a, b, c, d, e, f)
-
-    FUNCEND
-
-    PUSH a
-    PUSH b
-    PUSH c
-    PUSH d
-    PUSH e
-    PUSH f
-    CALL 1 (*  *)
-  *)
-and funcdef_comp (state : State.t) (name : Base.identificator)
-    (params : Base.identificator list) (block : Tree.statement) : State.t =
-    let _st = state in (* we're making a copy of the current state *)
-    let _nargs = List.length params in
-    state
+and funcdef_comp (state : State.t) (_name : Base.identificator)
+    (_params : Base.identificator list) (_block : Tree.statement) : State.t =
+  let _st = state in
+  (* we're making a copy of the current state *)
+  let _nargs = List.length _params in
+  state
 
 and stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in

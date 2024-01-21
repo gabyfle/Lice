@@ -17,4 +17,5 @@
 (library
  (name vm)
  (foreign_archives lvm)
+ (libraries types)
  (wrapped false))
