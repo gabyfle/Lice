@@ -22,12 +22,11 @@
 
 open Ast
 open Types
+open Env
 
-(* This is the table that carries all the variables used inside our program and
-   their position into the stack *)
-module Lookup = struct
-  include Map.Make (String)
-end
+(* This is the table that carries all the variables / functions used inside our
+   program and their position into the stack *)
+module Lookup = Scope
 
 (* This is the inverse map of Lookup. It tracks used positions inside the
    memory. *)
@@ -39,52 +38,58 @@ module Memory = struct
     aux 0
 end
 
-(* This is the map that contains the locations (in byte) of the defined
-   functions inside the program *)
-module Functions = struct
-  include Map.Make (Int)
-end
-
 (* This is the state of the program as we run throught the compilation. It
    carries usefull data such as the current bytecode of the program, a lookup
    table that saves stack position of va riables names the next register to
    use *)
 module State = struct
   (* Current opcode list, next register and environement lookup table *)
-  type t = {code: Opcode.t; reg: int; env: int Lookup.t * bool Memory.t}
+  type t = {code: Opcode.t; reg: int64; env: Lookup.t * bool Memory.t}
 
-  let empty = {code= Opcode.empty; reg= 0; env= (Lookup.empty, Memory.empty)}
+  let empty =
+    {code= Opcode.empty; reg= Int64.zero; env= (Lookup.empty, Memory.empty)}
 
-  let _reg = snd
+  let reg st = st.reg
 
   let opcodes t = t.code
 
   let add_opcode (op : Opcode.opcode) (st : t) : t =
     {st with code= op :: st.code}
 
-  let next_reg (st : t) : t = {st with reg= st.reg + 1}
+  let reset_reg (st : t) : t = {st with reg= Int64.zero}
+
+  let next_reg (st : t) : t =
+    let reg = Int64.add st.reg Int64.one in
+    if reg > Int64.of_int 15 then reset_reg st
+    else {st with reg= Int64.add st.reg Int64.one}
 
   let add_opcodes (ops : Opcode.t) (st : t) : t = {st with code= ops @ st.code}
 
   let add_var (name : Base.identificator) (st : t) : t =
     let pos = Memory.first_unused (snd st.env) in
     let mem = Memory.add pos true (snd st.env) in
-    let lookup =
-      Lookup.add (Base.identificator_to_string name) pos (fst st.env)
-    in
+    let lookup = Lookup.set_var (fst st.env) name (Int64.of_int pos) in
     let env = (lookup, mem) in
+    {st with env}
+
+  let deepen_scope (st : t) =
+    let mem = snd st.env in
+    let env = (Lookup.push_scope (fst st.env), mem) in
+    {st with env}
+
+  let raise_scope (st : t) =
+    let mem = snd st.env in
+    let env = (Lookup.pop_scope (fst st.env), mem) in
     {st with env}
 
   (* merge_env merges a scope and a deeper scope into one. if a value exists
      inside the deeper scope, then it's not inside the first on *)
   let merge_env (st : t) (st' : t) : t =
-    let env = fst st.env in
-    let env' = fst st'.env in
+    let lookup = fst (raise_scope st').env in
     let mem = snd st.env in
     let mem' = snd st'.env in
-    let env = Lookup.merge (fun _ _ _ -> None) env env' in
     let mem = Memory.merge (fun _ _ _ -> None) mem mem' in
-    {st with env= (env, mem)}
+    {st' with env= (lookup, mem)}
 
   let op_size (st : t) : int = List.length st.code
 
@@ -101,31 +106,32 @@ end
 
 let binop_comp (state : State.t) : Base.binop_type -> Opcode.t =
   let open Base in
+  let open Int64 in
   let bin_operator : binary_operator -> Opcode.t = function
     | Plus ->
-        [Opcode.ADD (state.reg - 1, state.reg - 2)]
+        [Opcode.ADD (sub state.reg one, sub state.reg (of_int 2))]
     | Minus ->
-        [Opcode.SUB (state.reg - 1, state.reg - 2)]
+        [Opcode.SUB (sub state.reg one, sub state.reg (of_int 2))]
     | Multiply ->
-        [Opcode.MUL (state.reg - 1, state.reg - 2)]
+        [Opcode.MUL (sub state.reg one, sub state.reg (of_int 2))]
     | Divide ->
-        [Opcode.DIV (state.reg - 1, state.reg - 2)]
+        [Opcode.DIV (sub state.reg one, sub state.reg (of_int 2))]
     | Mod ->
-        [Opcode.MOD (state.reg - 1, state.reg - 2)]
+        [Opcode.MOD (sub state.reg one, sub state.reg (of_int 2))]
   in
   let bin_comparison : binary_comp -> Opcode.t = function
     | Equal ->
-        [Opcode.EQ (state.reg - 1, state.reg - 2)]
+        [Opcode.EQ (sub state.reg one, sub state.reg (of_int 2))]
     | NotEqual ->
-        [Opcode.NE (state.reg - 1, state.reg - 2)]
+        [Opcode.NE (sub state.reg one, sub state.reg (of_int 2))]
     | Greater ->
-        [Opcode.GT (state.reg - 1, state.reg - 2)]
+        [Opcode.GT (sub state.reg one, sub state.reg (of_int 2))]
     | GEQ ->
-        [Opcode.GE (state.reg - 1, state.reg - 2)]
+        [Opcode.GE (sub state.reg one, sub state.reg (of_int 2))]
     | Lesser ->
-        [Opcode.LT (state.reg - 1, state.reg - 2)]
+        [Opcode.LT (sub state.reg one, sub state.reg (of_int 2))]
     | LEQ ->
-        [Opcode.LE (state.reg - 1, state.reg - 2)]
+        [Opcode.LE (sub state.reg one, sub state.reg (of_int 2))]
   in
   function
   | `Operator op ->
@@ -135,12 +141,12 @@ let binop_comp (state : State.t) : Base.binop_type -> Opcode.t =
   | `Cons ->
       [Opcode.HALT]
 
-let const_comp (state : State.t) : Base.value -> State.t =
- fun v -> State.next_reg (State.add_opcode (Opcode.LOADI (state.reg, v)) state)
+let const_comp (state : State.t) (value : Base.value) : State.t =
+  let next_reg = State.add_opcode (Opcode.LOADI (state.reg, value)) state in
+  State.next_reg next_reg
 
 let var_comp (state : State.t) (var : Base.identificator) : State.t =
-  let name = Base.identificator_to_string var in
-  let pos = Lookup.find_opt name (fst state.env) in
+  let pos = Lookup.get_var (fst state.env) var in
   match pos with
   | Some pos ->
       State.next_reg (State.add_opcode (Opcode.LOAD (state.reg, pos)) state)
@@ -165,18 +171,22 @@ let rec expr_comp (state : State.t) : Base.expr -> State.t =
 let rec if_comp (state : State.t) (cond : Base.expr) (t : Tree.statement)
     (f : Tree.statement) : State.t =
   let state = expr_comp state cond in
-  let tmp = State.add_opcode (Opcode.JMP 0) state in
+  let tmp = State.add_opcode (Opcode.JMP Int64.zero) state in
   let t = stmt_comp tmp t in
   let diff = State.op_size t - State.op_size tmp in
   (* this is used to compute the jump address *)
-  let state = State.replace_op t (Opcode.JMP (diff + 1)) diff in
+  let state =
+    State.replace_op t
+      (Opcode.JMP (Int64.add (Int64.of_int diff) Int64.zero))
+      diff
+  in
   stmt_comp state f
 
 and match_comp (state : State.t) (expr : Base.expr)
     (cases : (Base.expr * Tree.statement list) list) : State.t =
   let open Tree in
   let state = expr_comp state expr in
-  let val_reg = state.reg - 1 in
+  let val_reg = Int64.sub state.reg Int64.one in
   let rec aux (state : State.t) = function
     | [] ->
         state
@@ -193,41 +203,76 @@ and match_comp (state : State.t) (expr : Base.expr)
              inside *)
         in
         let state = expr_comp state pat in
-        let pat_reg = state.reg - 1 in
+        let pat_reg = Int64.sub state.reg Int64.one in
         let state = State.add_opcode (Opcode.EQ (val_reg, pat_reg)) state in
-        let tmp = State.add_opcode (Opcode.JMP 0) state in
+        let tmp = State.add_opcode (Opcode.JMP Int64.zero) state in
         let state = List.fold_left stmt_comp tmp stmts in
         let diff = State.op_size state - State.op_size tmp in
-        let state = State.replace_op state (Opcode.JMP (diff + 1)) diff in
+        let state =
+          State.replace_op state
+            (Opcode.JMP (Int64.add (Int64.of_int diff) Int64.zero))
+            diff
+        in
         aux state t
   in
   aux state cases
 
 and funcdef_comp (state : State.t) (_name : Base.identificator)
-    (_params : Base.identificator list) (_block : Tree.statement) : State.t =
-  let _st = state in
-  (* we're making a copy of the current state *)
-  let _nargs = List.length _params in
-  state
+    (params : Base.identificator list) (block : Tree.statement) : State.t =
+  let block = match block with Block (_, stmts) -> stmts | _ -> [] in
+  let dup = State.add_opcode Opcode.SCP_DUPLICATE state in
+  let state = State.deepen_scope dup in
+  (* we need to populate the state with the arguments passed to the function *)
+  let state =
+    List.fold_left
+      (fun state arg ->
+        let state = State.add_var arg state in
+        let var_pos = Lookup.get_var (fst state.env) arg in
+        match var_pos with
+        | None ->
+            exit 1
+        | Some var_pos ->
+            if State.reg state < Int64.of_int 15 then
+              let store_instr =
+                Opcode.STORE (Int64.sub state.reg Int64.one, var_pos)
+              in
+              State.add_opcode store_instr state
+            else
+              (* the remaining parameters are onto the stack *)
+              let pop_n_store =
+                [Opcode.POP Int64.zero; Opcode.STORE (Int64.zero, var_pos)]
+              in
+              State.add_opcodes pop_n_store state )
+      state params
+  in
+  let block = List.fold_left stmt_comp state block in
+  let res = State.merge_env state block in
+  let state = {res with code= block.code} in
+  State.add_opcode Opcode.SCP_CLEAR state
 
 and stmt_comp (state : State.t) : Tree.statement -> State.t =
   let open Tree in
   function
   | Return (_, e) ->
       expr_comp state e
-  | Assign (_, var, e) ->
+  | Assign (_, var, e) -> (
       let st = expr_comp state e in
       let v = State.add_var var st in
-      let var_pos =
-        Lookup.find (Base.identificator_to_string var) (fst v.env)
-      in
-      let store_instr = Opcode.STORE (st.reg - 1, var_pos) in
-      State.add_opcode store_instr v
+      let var_pos = Lookup.get_var (fst v.env) var in
+      match var_pos with
+      | None ->
+          failwith "Variable not found"
+      | Some var_pos ->
+          let store_instr =
+            Opcode.STORE (Int64.sub st.reg Int64.one, var_pos)
+          in
+          State.add_opcode store_instr v )
   | Block (_, stmts) ->
       if stmts = [] then state
         (* do not push an useless scope_dup and scope_clear *)
       else
         let dup = State.add_opcode Opcode.SCP_DUPLICATE state in
+        let state = State.deepen_scope dup in
         let block = List.fold_left stmt_comp dup stmts in
         (* merge the environement of the block with the current one *)
         let res = State.merge_env state block in

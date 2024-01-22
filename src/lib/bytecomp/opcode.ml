@@ -26,38 +26,38 @@ type opcode =
   | HALT
   | VALUE of Base.value
   (* Arithmetic operators *)
-  | ADD of int * int
-  | SUB of int * int
-  | MUL of int * int
-  | DIV of int * int
-  | MOD of int * int
-  | NEG of int * int
+  | ADD of int64 * int64
+  | SUB of int64 * int64
+  | MUL of int64 * int64
+  | DIV of int64 * int64
+  | MOD of int64 * int64
+  | NEG of int64 * int64
   (* Comparision operators *)
-  | LT of int * int
-  | GT of int * int
-  | LE of int * int
-  | GE of int * int
-  | NE of int * int
-  | EQ of int * int
+  | LT of int64 * int64
+  | GT of int64 * int64
+  | LE of int64 * int64
+  | GE of int64 * int64
+  | NE of int64 * int64
+  | EQ of int64 * int64
   (* Logical operators *)
-  | AND of int * int * int
-  | OR of int * int * int
-  | NOT of int * int
+  | AND of int64 * int64 * int64
+  | OR of int64 * int64 * int64
+  | NOT of int64 * int64
   (* Memory operators *)
-  | LOADI of int * Base.value
-  | LOAD of int * int
-  | STORE of int * int
-  | MOVE of int * int
+  | LOADI of int64 * Base.value
+  | LOAD of int64 * int64
+  | STORE of int64 * int64
+  | MOVE of int64 * int64
   (* Control flow operators *)
-  | JMP of int
-  | GOTO of int
-  | CALL of int
+  | JMP of int64
+  | GOTO of int64
+  | CALL of int64
   | RET
   (* Stack operators *)
   | SCP_DUPLICATE
   | SCP_CLEAR
-  | PUSH of int
-  | POP of int
+  | PUSH of int64
+  | POP of int64
 
 type t = opcode list
 
@@ -74,54 +74,54 @@ let pp (ppf : Format.formatter) (code : t) =
       | Base.V_Var v ->
           Format.fprintf ppf "VAR %s" (Base.identificator_to_string v) )
     | ADD (a, b) ->
-        Format.fprintf ppf "ADD %d %d" a b
+        Format.fprintf ppf "ADD %Ld %Ld" a b
     | SUB (a, b) ->
-        Format.fprintf ppf "SUB %d %d" a b
+        Format.fprintf ppf "SUB %Ld %Ld" a b
     | MUL (a, b) ->
-        Format.fprintf ppf "MUL %d %d" a b
+        Format.fprintf ppf "MUL %Ld %Ld" a b
     | DIV (a, b) ->
-        Format.fprintf ppf "DIV %d %d" a b
+        Format.fprintf ppf "DIV %Ld %Ld" a b
     | MOD (a, b) ->
-        Format.fprintf ppf "MOD %d %d" a b
+        Format.fprintf ppf "MOD %Ld %Ld" a b
     | NEG (a, b) ->
-        Format.fprintf ppf "NEG %d %d" a b
+        Format.fprintf ppf "NEG %Ld %Ld" a b
     | LT (a, b) ->
-        Format.fprintf ppf "LT %d %d" a b
+        Format.fprintf ppf "LT %Ld %Ld" a b
     | GT (a, b) ->
-        Format.fprintf ppf "GT %d %d" a b
+        Format.fprintf ppf "GT %Ld %Ld" a b
     | LE (a, b) ->
-        Format.fprintf ppf "LE %d %d" a b
+        Format.fprintf ppf "LE %Ld %Ld" a b
     | GE (a, b) ->
-        Format.fprintf ppf "GE %d %d" a b
+        Format.fprintf ppf "GE %Ld %Ld" a b
     | EQ (a, b) ->
-        Format.fprintf ppf "EQ %d %d" a b
+        Format.fprintf ppf "EQ %Ld %Ld" a b
     | NE (a, b) ->
-        Format.fprintf ppf "NE %d %d" a b
+        Format.fprintf ppf "NE %Ld %Ld" a b
     | AND (a, b, c) ->
-        Format.fprintf ppf "AND %d %d %d" a b c
+        Format.fprintf ppf "AND %Ld %Ld %Ld" a b c
     | OR (a, b, c) ->
-        Format.fprintf ppf "OR %d %d %d" a b c
+        Format.fprintf ppf "OR %Ld %Ld %Ld" a b c
     | NOT (a, b) ->
-        Format.fprintf ppf "NOT %d %d" a b
+        Format.fprintf ppf "NOT %Ld %Ld" a b
     | LOADI (a, b) -> (
       match b with
       | Base.Const c ->
-          Format.fprintf ppf "LOADI %d %a" a Value.pretty c
+          Format.fprintf ppf "LOADI %Ld %a" a Value.pretty c
       | Base.V_Var v ->
-          Format.fprintf ppf "LOADI %d (VAR %s)" a
+          Format.fprintf ppf "LOADI %Ld (VAR %s)" a
             (Base.identificator_to_string v) )
     | LOAD (a, b) ->
-        Format.fprintf ppf "LOAD %d %d" a b
+        Format.fprintf ppf "LOAD %Ld %Ld" a b
     | STORE (a, b) ->
-        Format.fprintf ppf "STORE %d %d" a b
+        Format.fprintf ppf "STORE %Ld %Ld" a b
     | MOVE (a, b) ->
-        Format.fprintf ppf "MOVE %d %d" a b
+        Format.fprintf ppf "MOVE %Ld %Ld" a b
     | JMP a ->
-        Format.fprintf ppf "JMP %d" a
+        Format.fprintf ppf "JMP %Ld" a
     | GOTO a ->
-        Format.fprintf ppf "GOTO %d" a
+        Format.fprintf ppf "GOTO %Ld" a
     | CALL a ->
-        Format.fprintf ppf "CALL %d" a
+        Format.fprintf ppf "CALL %Ld" a
     | RET ->
         Format.fprintf ppf "RET"
     | SCP_DUPLICATE ->
@@ -129,9 +129,9 @@ let pp (ppf : Format.formatter) (code : t) =
     | SCP_CLEAR ->
         Format.fprintf ppf "SCP_CLEAR"
     | PUSH a ->
-        Format.fprintf ppf "PUSH %d" a
+        Format.fprintf ppf "PUSH %Ld" a
     | POP a ->
-        Format.fprintf ppf "POP %d" a
+        Format.fprintf ppf "POP %Ld" a
   in
   Format.fprintf ppf "@[<v 2>@[<v 2>Generated code:@,%a@]@,@]"
     (Format.pp_print_list pp_opcode)

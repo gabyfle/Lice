@@ -25,7 +25,7 @@ open Types.Base
 module type SCOPE = sig
   type t
 
-  val create : unit -> t
+  val empty : t
 
   val get_var : t -> identificator -> int64 option
 
@@ -41,17 +41,19 @@ module type SCOPE = sig
 end
 
 module Identificator = struct
-  type t = string
+  type t = identificator
 
-  let compare = String.compare
+  let get_name (n : t) = match n with `Ident s -> s | `Module (_, s) -> s
+
+  let compare (id : t) (id' : t) =
+    let s = get_name id in
+    let s' = get_name id' in
+    String.compare (fst s) (fst s')
 end
 
 module Table = Map.Make (Identificator)
 
-let get_name (n : identificator) =
-  match n with `Ident s -> s | `Module (_, s) -> s
-
-module Scope = struct
+module Scope : SCOPE = struct
   type vars = int64 Table.t
 
   (* Each int *)
@@ -59,10 +61,9 @@ module Scope = struct
 
   and t = (vars * funcs) list
 
-  let create () : t = []
+  let empty : t = []
 
   let get_var (env : t) (name : identificator) : int64 option =
-    let n = get_name name in
     let rec find_opt name = function
       | [] ->
           None
@@ -73,10 +74,9 @@ module Scope = struct
         | None ->
             find_opt name t )
     in
-    find_opt (fst n) env
+    find_opt name env
 
   let get_func (env : t) (name : identificator) : int64 option =
-    let n = get_name name in
     let rec find_opt name = function
       | [] ->
           None
@@ -87,15 +87,14 @@ module Scope = struct
         | None ->
             find_opt name t )
     in
-    find_opt (fst n) env
+    find_opt name env
 
   let set_var (env : t) (name : identificator) (reg : int64) : t =
-    let n = get_name name in
     let rec aux = function
       | [] ->
-          [(Table.add (fst n) reg Table.empty, Table.empty)]
-      | (scp, md) :: t when Table.mem (fst n) scp ->
-          let new_scp = Table.add (fst n) reg scp in
+          [(Table.add name reg Table.empty, Table.empty)]
+      | (scp, md) :: t when Table.mem name scp ->
+          let new_scp = Table.add name reg scp in
           (new_scp, md) :: t
       | h :: t ->
           h :: aux t
@@ -103,12 +102,11 @@ module Scope = struct
     aux env
 
   let set_func (env : t) (name : identificator) (pos : int64) : t =
-    let n = get_name name in
     let rec aux = function
       | [] ->
-          [(Table.empty, Table.add (fst n) pos Table.empty)]
-      | (scp, funcs) :: t when Table.mem (fst n) funcs ->
-          let new_funcs = Table.add (fst n) pos funcs in
+          [(Table.empty, Table.add name pos Table.empty)]
+      | (scp, funcs) :: t when Table.mem name funcs ->
+          let new_funcs = Table.add name pos funcs in
           (scp, new_funcs) :: t
       | h :: t ->
           h :: aux t

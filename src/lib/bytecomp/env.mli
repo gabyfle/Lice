@@ -25,7 +25,7 @@ open Types.Base
 module type SCOPE = sig
   type t
 
-  val create : unit -> t
+  val empty : t
 
   val get_var : t -> identificator -> int64 option
 
