@@ -515,5 +515,5 @@ module Eval : EVAL = struct
           let nenv, _stmt = eval_statement env stmt in
           aux nenv t
     in
-    aux _env p
+    Located_error.handle_type_exception aux _env p;
 end
