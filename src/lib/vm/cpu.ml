@@ -20,15 +20,11 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Types
-
-type values = Base.t
-
 (**
     acc: The accumulator of our stack machine, accepting Base.t elements
     stack: The actual stack of our stack machine
     pc: the pointer towards program instructions *)
-type 'a cpu = {acc: 'a; stack: 'a Stack.t; pc: int64}
+type 'a t = {acc: 'a; stack: 'a Stack.t; pc: int64}
 
 let init_cpu acc = {acc; stack= Stack.create (); pc= 0L}
 

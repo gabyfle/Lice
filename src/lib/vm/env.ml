@@ -20,20 +20,20 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Types.Base
+open Types
 
 module type SCOPE = sig
   type t
 
   val empty : t
 
-  val get_var : t -> identificator -> int64 option
+  val get_var : t -> Base.identificator -> int64 option
 
-  val get_func : t -> identificator -> int64 option
+  val get_func : t -> Base.identificator -> int64 option
 
-  val set_var : t -> identificator -> int64 -> t
+  val set_var : t -> Base.identificator -> int64 -> t
 
-  val set_func : t -> identificator -> int64 -> t
+  val set_func : t -> Base.identificator -> int64 -> t
 
   val push_scope : t -> t
 
@@ -41,7 +41,7 @@ module type SCOPE = sig
 end
 
 module Identificator = struct
-  type t = identificator
+  type t = Base.identificator
 
   let get_name (n : t) = match n with `Ident s -> s | `Module (_, s) -> s
 
@@ -54,67 +54,19 @@ end
 module Table = Map.Make (Identificator)
 
 module Scope : SCOPE = struct
-  type vars = int64 Table.t
+  type t = unit
 
-  (* Each int *)
-  type funcs = int64 Table.t
+  let empty = ()
 
-  and t = (vars * funcs) list
+  let get_var = failwith "Not implemented"
 
-  let empty : t = []
+  let get_func = failwith "Not implemented"
 
-  let get_var (env : t) (name : identificator) : int64 option =
-    let rec find_opt name = function
-      | [] ->
-          None
-      | (vars, _) :: t -> (
-        match Table.find_opt name vars with
-        | Some _ as value ->
-            value
-        | None ->
-            find_opt name t )
-    in
-    find_opt name env
+  let set_var = failwith "Not implemented"
 
-  let get_func (env : t) (name : identificator) : int64 option =
-    let rec find_opt name = function
-      | [] ->
-          None
-      | (_, funcs) :: t -> (
-        match Table.find_opt name funcs with
-        | Some _ as value ->
-            value
-        | None ->
-            find_opt name t )
-    in
-    find_opt name env
+  let set_func = failwith "Not implemented"
 
-  let set_var (env : t) (name : identificator) (reg : int64) : t =
-    let rec aux = function
-      | [] ->
-          [(Table.add name reg Table.empty, Table.empty)]
-      | (scp, md) :: t when Table.mem name scp ->
-          let new_scp = Table.add name reg scp in
-          (new_scp, md) :: t
-      | h :: t ->
-          h :: aux t
-    in
-    aux env
+  let push_scope = failwith "Not implemented"
 
-  let set_func (env : t) (name : identificator) (pos : int64) : t =
-    let rec aux = function
-      | [] ->
-          [(Table.empty, Table.add name pos Table.empty)]
-      | (scp, funcs) :: t when Table.mem name funcs ->
-          let new_funcs = Table.add name pos funcs in
-          (scp, new_funcs) :: t
-      | h :: t ->
-          h :: aux t
-    in
-    aux env
-
-  let push_scope (env : t) : t =
-    match env with [] -> [(Table.empty, Table.empty)] | h :: _ -> h :: env
-
-  let pop_scope (env : t) : t = match env with [] -> env | _ :: t -> t
+  let pop_scope = failwith "Not implemented"
 end

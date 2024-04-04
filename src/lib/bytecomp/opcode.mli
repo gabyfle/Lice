@@ -26,38 +26,15 @@ type opcode =
   | HALT
   | VALUE of Base.value
   (* Arithmetic operators *)
-  | ADD of int64 * int64
-  | SUB of int64 * int64
-  | MUL of int64 * int64
-  | DIV of int64 * int64
-  | MOD of int64 * int64
-  | NEG of int64 * int64
-  (* Comparision operators *)
-  | LT of int64 * int64
-  | GT of int64 * int64
-  | LE of int64 * int64
-  | GE of int64 * int64
-  | NE of int64 * int64
-  | EQ of int64 * int64
-  (* Logical operators *)
-  | AND of int64 * int64 * int64
-  | OR of int64 * int64 * int64
-  | NOT of int64 * int64
+  | ADD
+  | SUB
+  | MUL
+  | DIV
+  | MOD
+  | NEG
   (* Memory operators *)
-  | LOADI of int64 * Base.value
-  | LOAD of int64 * int64
-  | STORE of int64 * int64
-  | MOVE of int64 * int64
-  (* Control flow operators *)
-  | JMP of int64
-  | GOTO of int64
-  | CALL of int64
-  | RET
-  (* Stack operators *)
-  | SCP_DUPLICATE
-  | SCP_CLEAR
-  | PUSH of int64
-  | POP of int64
+  | LDI of Base.value (* Loads Base.value inside the accumulator *)
+  | PUSH (* Push the accumulateur content into the stack *)
 
 type t = opcode list
 

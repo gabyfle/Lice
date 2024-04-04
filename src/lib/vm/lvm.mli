@@ -19,3 +19,15 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
+
+open Types
+open Cpu
+open Env
+
+type t
+
+val create : Base.t Cpu.t -> Scope.t -> t
+
+val cpu : t -> Base.t Cpu.t
+
+val memory : t -> Scope.t

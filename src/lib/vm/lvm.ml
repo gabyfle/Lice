@@ -19,3 +19,15 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
+
+open Cpu
+open Env
+open Types
+
+type t = {cpu: Base.t Cpu.t; memory: Scope.t}
+
+let create cpu memory = {cpu; memory}
+
+let cpu t = t.cpu
+
+let memory t = t.memory
