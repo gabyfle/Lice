@@ -23,10 +23,11 @@
 (**
     acc: The accumulator of our stack machine, accepting Base.t elements
     stack: The actual stack of our stack machine
+    rstack: The return stack of our stack machine
     pc: the pointer towards program instructions *)
-type 'a t = {acc: 'a; stack: 'a Stack.t; pc: int64}
+type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; pc: int64}
 
-let init_cpu acc = {acc; stack= Stack.create (); pc= 0L}
+let init_cpu acc = {acc; stack= Stack.create (); rstack= Stack.create (); pc= 0L}
 
 let push cpu v = Stack.push v cpu.stack
 

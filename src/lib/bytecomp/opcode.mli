@@ -22,22 +22,32 @@
 
 open Types
 
+type constant = NUMBER | BOOL | STRING | LIST of int
+
 type opcode =
+  | NOP
   | HALT
-  | VALUE of Base.value
-  (* Arithmetic operators *)
-  | ADD
-  | SUB
-  | MUL
-  | DIV
-  | MOD
-  | NEG
+  | LOADK of constant
+  (* Binary operator *)
+  | BIN of int
+  (* Comparison operator *)
+  | CMP of int
+  | JMP of int * int
+  (* (t, d) Jump to instruction adress d if flag register statisfy t *)
   (* Memory operators *)
-  | LDI of Base.value (* Loads Base.value inside the accumulator *)
   | PUSH (* Push the accumulateur content into the stack *)
+  | EXTEND of string * Base.t (* Extend the environnement with ENV[X] = V *)
+  | SEARCH of
+      string (* Search for the value of the variable in the environnement *)
+  | CALL (* Call the function from the accumulator *)
+  | RETURN (* Return from the function *)
 
 type t = opcode list
 
 val empty : t
+
+val add : t -> opcode -> t
+
+val add_list : t -> opcode list -> t
 
 val pp : Format.formatter -> t -> unit

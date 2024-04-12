@@ -22,6 +22,7 @@
 
 open Kernel
 open Utils.Logger
+
 (* open Bytecomp *)
 open Eval
 
@@ -50,5 +51,4 @@ let () =
   let _ast = parse_code code in
   let () = Eval.exec _ast in
   ()
-  (* let opcode = Comp.bytecomp _ast in
-  Opcode.pp Format.std_formatter opcode *)
+(* let opcode = Comp.bytecomp _ast in Opcode.pp Format.std_formatter opcode *)
