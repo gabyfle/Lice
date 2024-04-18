@@ -44,16 +44,15 @@ let pc t = Cpu.get_pc t.cpu
 let read t =
   let code = code t in
   let start = pc t in
-  if start >= Bytes.length code then (Opcode.HALT, t)
-  else
-    let opcode, size = Opcode.of_bytes code start in
-    let cpu = Cpu.add_pc (cpu t) size in
-    (opcode, {t with cpu})
+  let opcode, size = Opcode.of_bytes code start in
+  let cpu = Cpu.add_pc (cpu t) size in
+  (opcode, {t with cpu})
 
 let do_code t =
   let rec aux (vm : t) =
     let opcode, vm = read vm in
     Opcode.pp Format.std_formatter opcode ;
+    Format.force_newline () ;
     if opcode = Opcode.HALT then vm else aux vm
   in
   aux t

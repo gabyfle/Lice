@@ -86,22 +86,17 @@ let emit_byte = function
       Bytes.set bytes 0 (Char.chr 1) ;
       bytes
   | LOADK k ->
-      let bytes = Bytes.create 5 in
-      let id = int_to_bytes k in
-      Bytes.set bytes 0 (Char.chr 2) ;
-      Bytes.blit id 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 2) ;
+      Bytes.cat id (int_to_bytes k)
   | LOADV v ->
-      let bytes = Bytes.create 5 in
-      let id = int_to_bytes v in
-      Bytes.set bytes 0 (Char.chr 3) ;
-      Bytes.blit id 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 3) ;
+      Bytes.cat id (int_to_bytes v)
   | LDBOL b ->
-      let bytes = Bytes.create 2 in
-      Bytes.set bytes 0 (Char.chr 4) ;
-      Bytes.set bytes 1 (Char.chr (if b then 1 else 0)) ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 4) ;
+      Bytes.cat id (int_to_bytes (if b then 1 else 0))
   | ADD ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 5) ;
@@ -147,23 +142,17 @@ let emit_byte = function
       Bytes.set bytes 0 (Char.chr 15) ;
       bytes
   | JMP d ->
-      let bytes = Bytes.create 9 in
-      let d = int_to_bytes d in
-      Bytes.set bytes 0 (Char.chr 16) ;
-      Bytes.blit d 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 16) ;
+      Bytes.cat id (int_to_bytes d)
   | JMPNZ d ->
-      let bytes = Bytes.create 9 in
-      let d = int_to_bytes d in
-      Bytes.set bytes 0 (Char.chr 17) ;
-      Bytes.blit d 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 17) ;
+      Bytes.cat id (int_to_bytes d)
   | JMPZ d ->
-      let bytes = Bytes.create 9 in
-      let d = int_to_bytes d in
-      Bytes.set bytes 0 (Char.chr 18) ;
-      Bytes.blit d 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 18) ;
+      Bytes.cat id (int_to_bytes d)
   | PUSH ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 19) ;
@@ -173,17 +162,13 @@ let emit_byte = function
       Bytes.set bytes 0 (Char.chr 20) ;
       bytes
   | EXTEND v ->
-      let bytes = Bytes.create 5 in
-      let id = int_to_bytes v in
-      Bytes.set bytes 0 (Char.chr 21) ;
-      Bytes.blit id 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 21) ;
+      Bytes.cat id (int_to_bytes v)
   | SEARCH v ->
-      let bytes = Bytes.create 5 in
-      let id = int_to_bytes v in
-      Bytes.set bytes 0 (Char.chr 22) ;
-      Bytes.blit id 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 22) ;
+      Bytes.cat id (int_to_bytes v)
   | PUSHENV ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 23) ;
@@ -193,102 +178,93 @@ let emit_byte = function
       Bytes.set bytes 0 (Char.chr 24) ;
       bytes
   | CALL n ->
-      let bytes = Bytes.create 5 in
-      let id = int_to_bytes n in
-      Bytes.set bytes 0 (Char.chr 25) ;
-      Bytes.blit id 0 bytes 1 4 ;
-      bytes
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 25) ;
+      Bytes.cat id (int_to_bytes n)
   | RETURN ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 26) ;
       bytes
 
 let emit_bytes opcodes =
-  let bytes = Bytes.create (List.length opcodes) in
-  let rec aux (bytes : Bytes.t) (length : int) = function
+  let rec aux (bytes : Bytes.t) = function
     | [] ->
         bytes
     | opcode :: opcodes ->
         let opcode_bytes = emit_byte opcode in
-        let op_length = Bytes.length opcode_bytes in
-        let bytes =
-          if Bytes.length bytes <= length + op_length then
-            Bytes.extend bytes 0 op_length
-          else bytes
-        in
-        Bytes.blit opcode_bytes 0 bytes length op_length ;
-        aux bytes (length + op_length) opcodes
+        let bytes = Bytes.cat bytes opcode_bytes in
+        aux bytes opcodes
   in
-  aux bytes 0 opcodes
+  aux (Bytes.create 0) opcodes
 
-let emit code = emit_bytes (List.rev code)
+let emit code = emit_bytes code
 
 let of_bytes bytes start =
   let v = Bytes.get bytes start in
   match int_of_char v with
-  | 0x0 ->
+  | 0 ->
       (NOP, 1)
-  | 0x1 ->
+  | 1 ->
       (HALT, 1)
-  | 0x2 ->
+  | 2 ->
       let k = Bytes.get_int32_be bytes (start + 1) in
       (LOADK (Int32.to_int k), 5)
-  | 0x3 ->
+  | 3 ->
       let v = Bytes.get_int32_be bytes (start + 1) in
       (LOADK (Int32.to_int v), 5)
-  | 0x4 ->
+  | 4 ->
       let v = Bytes.get bytes (start + 1) in
       let b = if v = '1' then true else false in
       (LDBOL b, 2)
-  | 0x5 ->
+  | 5 ->
       (ADD, 1)
-  | 0x6 ->
+  | 6 ->
       (SUB, 1)
-  | 0x7 ->
+  | 7 ->
       (MUL, 1)
-  | 0x8 ->
+  | 8 ->
       (DIV, 1)
-  | 0x9 ->
+  | 9 ->
       (MOD, 1)
-  | 0x10 ->
+  | 10 ->
       (EQ, 1)
-  | 0x11 ->
+  | 11 ->
       (NEQ, 1)
-  | 0x12 ->
+  | 12 ->
       (LT, 1)
-  | 0x13 ->
+  | 13 ->
       (GT, 1)
-  | 0x14 ->
+  | 14 ->
       (LE, 1)
-  | 0x15 ->
+  | 15 ->
       (GE, 1)
-  | 0x16 ->
+  | 16 ->
       let d = Bytes.get_int32_be bytes (start + 1) in
       (JMP (Int32.to_int d), 5)
-  | 0x17 ->
+  | 17 ->
       let d = Bytes.get_int32_be bytes (start + 1) in
       (JMPNZ (Int32.to_int d), 5)
-  | 0x18 ->
+  | 18 ->
       let d = Bytes.get_int32_be bytes (start + 1) in
       (JMPZ (Int32.to_int d), 5)
-  | 0x19 ->
+  | 19 ->
       (PUSH, 1)
-  | 0x20 ->
+  | 20 ->
       (POP, 1)
-  | 0x21 ->
+  | 21 ->
       let v = Bytes.get_int32_be bytes (start + 1) in
       (EXTEND (Int32.to_int v), 5)
-  | 0x22 ->
+  | 22 ->
       let v = Bytes.get_int32_be bytes (start + 1) in
       (SEARCH (Int32.to_int v), 5)
-  | 0x23 ->
+  | 23 ->
       (PUSHENV, 1)
-  | 0x24 ->
+  | 24 ->
       (POPENV, 1)
-  | 0x25 ->
+  | 25 ->
       let n = Bytes.get_int32_be bytes (start + 1) in
       (CALL (Int32.to_int n), 5)
-  | 0x26 ->
+  | 26 ->
       (RETURN, 1)
   | _ ->
       (NOP, 1)
