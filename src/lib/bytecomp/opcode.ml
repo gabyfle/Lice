@@ -20,27 +20,32 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Types
-
 type opcode =
   | NOP
   | HALT
-  | NUMBER of float (* creates a float constant *)
-  | STRING of string (* creates a string constant *)
   | LOADK of int (* loads the nth constant into the acc *)
+  | LOADV of int (* loads a variable of id id *)
   | LDBOL of bool
   (* Binary operator *)
-  | BIN of int
+  | ADD
+  | SUB
+  | MUL
+  | DIV
+  | MOD
   (* Comparison operator *)
-  | CMP of int
+  | EQ
+  | NEQ
+  | LT
+  | GT
+  | LE
+  | GE
   | JMP of int * int
-  (* (t, d) Jump to instruction adress d if flag register statisfy t *)
+  (* (t, d) Jump to instruction address d if flag register statisfy t *)
   (* Memory operators *)
   | PUSH (* Push the accumulateur content into the stack *)
   | POP (* Pop the stack into the accumulateur *)
-  | EXTEND of string (* Extend the environnement with ENV[X] = V *)
-  | SEARCH of
-      string (* Search for the value of the variable in the environnement *)
+  | EXTEND of int (* Extend the environnement with ENV[X] = V *)
+  | SEARCH of int (* ACC = ENV[X] *)
   | CALL of int (* Call the function from the accumulator *)
   | RETURN (* Return from the function *)
 
@@ -52,62 +57,147 @@ let add code (opcode : opcode) = opcode :: code
 
 let add_list code (opcodes : opcode list) = List.rev_append opcodes code
 
-let string_to_bytes s =
+let _string_to_bytes s =
   let bytes = Bytes.create (String.length s) in
   for i = 0 to String.length s - 1 do
     Bytes.set bytes i s.[i]
   done ;
   bytes
 
-let float_to_bytes f =
-  let bytes = Bytes.create 8 in
-  let f = ref (Int64.bits_of_float f) in
-  for i = 0 to 7 do
-    Bytes.set bytes i (Char.chr (Int64.to_int (Int64.logand !f 0xFFL))) ;
-    f := Int64.shift_right !f 8
-  done ;
+let int_to_bytes n =
+  let bytes = Bytes.create 4 in
+  Bytes.set bytes 0 (Char.chr (n land 0xFF)) ;
+  Bytes.set bytes 1 (Char.chr ((n lsr 8) land 0xFF)) ;
+  Bytes.set bytes 2 (Char.chr ((n lsr 16) land 0xFF)) ;
+  Bytes.set bytes 3 (Char.chr ((n lsr 24) land 0xFF)) ;
   bytes
 
 let emit_byte = function
   | NOP ->
-      Bytes.create 1
-  | HALT ->
-      Bytes.create 1
-  | NUMBER f ->
-      (* we're encoding floats into a 64-bits *)
-      let float = float_to_bytes f in
-      let bytes = Bytes.create 9 in
-      Bytes.set bytes 0 '\x02' ;
-      Bytes.blit float 0 bytes 1 8 ;
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 0) ;
       bytes
-  | STRING s ->
-      let bytes = Bytes.create (String.length s + 1) in
-      Bytes.set bytes 0 '\x03' ;
-      Bytes.blit (string_to_bytes s) 0 bytes 1 (String.length s) ;
+  | HALT ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 1) ;
+      bytes
+  | LOADK k ->
+      let bytes = Bytes.create 5 in
+      let id = int_to_bytes k in
+      Bytes.set bytes 0 (Char.chr 2) ;
+      Bytes.blit id 0 bytes 1 4 ;
+      bytes
+  | LOADV v ->
+      let bytes = Bytes.create 5 in
+      let id = int_to_bytes v in
+      Bytes.set bytes 0 (Char.chr 3) ;
+      Bytes.blit id 0 bytes 1 4 ;
       bytes
   | LDBOL b ->
-      let bool = if b then '\x01' else '\x00' in
       let bytes = Bytes.create 2 in
-      Bytes.set bytes 0 '\x03' ; Bytes.set bytes 1 bool ; bytes
-  | BIN n ->
-      let bytes = Bytes.create 2 in
-      Bytes.set bytes 0 '\x04' ;
-      Bytes.set bytes 2 (Char.chr n) ;
+      Bytes.set bytes 0 (Char.chr 4) ;
+      Bytes.set bytes 1 (Char.chr (if b then 1 else 0)) ;
+      bytes
+  | ADD ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 5) ;
+      bytes
+  | SUB ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 6) ;
+      bytes
+  | MUL ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 7) ;
+      bytes
+  | DIV ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 8) ;
+      bytes
+  | MOD ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 9) ;
+      bytes
+  | EQ ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 10) ;
+      bytes
+  | NEQ ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 11) ;
+      bytes
+  | LT ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 12) ;
+      bytes
+  | GT ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 13) ;
+      bytes
+  | LE ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 14) ;
+      bytes
+  | GE ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 15) ;
       bytes
   | JMP (t, d) ->
-      let bytes = Bytes.create 6 in
-      Bytes.set bytes 0 '\x05' ;
-      Bytes.set bytes 1 (Char.chr t) ;
-      (* code adresses are hold inside 32-bits values this limit the total code
-         size for a single file to 4294967296 *)
+      let bytes = Bytes.create 9 in
+      let t = int_to_bytes t in
+      let d = int_to_bytes d in
+      Bytes.set bytes 0 (Char.chr 16) ;
+      Bytes.blit t 0 bytes 1 4 ;
+      Bytes.blit d 0 bytes 5 4 ;
       bytes
-  | _ ->
-      Bytes.create 1
+  | PUSH ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 17) ;
+      bytes
+  | POP ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 18) ;
+      bytes
+  | EXTEND v ->
+      let bytes = Bytes.create 5 in
+      let id = int_to_bytes v in
+      Bytes.set bytes 0 (Char.chr 19) ;
+      Bytes.blit id 0 bytes 1 4 ;
+      bytes
+  | SEARCH v ->
+      let bytes = Bytes.create 5 in
+      let id = int_to_bytes v in
+      Bytes.set bytes 0 (Char.chr 20) ;
+      Bytes.blit id 0 bytes 1 4 ;
+      bytes
+  | CALL n ->
+      let bytes = Bytes.create 5 in
+      let id = int_to_bytes n in
+      Bytes.set bytes 0 (Char.chr 21) ;
+      Bytes.blit id 0 bytes 1 4 ;
+      bytes
+  | RETURN ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 22) ;
+      bytes
 
 let emit_bytes opcodes =
   let bytes = Bytes.create (List.length opcodes) in
-  let rec aux (bytes : Bytes.t) = function [] -> bytes | _ -> bytes in
-  ()
+  let rec aux (bytes : Bytes.t) (length : int) = function
+    | [] ->
+        bytes
+    | opcode :: opcodes ->
+        let opcode_bytes = emit_byte opcode in
+        let op_length = Bytes.length opcode_bytes in
+        let bytes =
+          if Bytes.length bytes <= length + op_length then
+            Bytes.extend bytes 0 op_length
+          else bytes
+        in
+        Bytes.blit opcode_bytes 0 bytes length op_length ;
+        aux bytes (length + op_length) opcodes
+  in
+  aux bytes 0 opcodes
 
 let pp (ppf : Format.formatter) (code : t) =
   let pp_opcode ppf = function
@@ -115,26 +205,44 @@ let pp (ppf : Format.formatter) (code : t) =
         Format.fprintf ppf "NOP"
     | HALT ->
         Format.fprintf ppf "HALT"
-    | LDNUM f ->
-        Format.fprintf ppf "LDNUM %f" f
+    | LOADK k ->
+        Format.fprintf ppf "LOADK %d" k
+    | LOADV v ->
+        Format.fprintf ppf "LOADV %d" v
     | LDBOL b ->
         Format.fprintf ppf "LDBOL %b" b
-    | LDSTR s ->
-        Format.fprintf ppf "LDSTR %s" s
-    | BIN n ->
-        Format.fprintf ppf "BIN %d" n
+    | ADD ->
+        Format.fprintf ppf "ADD"
+    | SUB ->
+        Format.fprintf ppf "SUB"
+    | MUL ->
+        Format.fprintf ppf "MUL"
+    | DIV ->
+        Format.fprintf ppf "DIV"
+    | MOD ->
+        Format.fprintf ppf "MOD"
+    | EQ ->
+        Format.fprintf ppf "EQ"
+    | NEQ ->
+        Format.fprintf ppf "NEQ"
+    | LT ->
+        Format.fprintf ppf "LT"
+    | GT ->
+        Format.fprintf ppf "GT"
+    | LE ->
+        Format.fprintf ppf "LE"
+    | GE ->
+        Format.fprintf ppf "GE"
     | JMP (t, d) ->
         Format.fprintf ppf "JMP %d %d" t d
-    | CMP n ->
-        Format.fprintf ppf "CMP %d" n
     | PUSH ->
         Format.fprintf ppf "PUSH"
     | POP ->
         Format.fprintf ppf "POP"
     | EXTEND v ->
-        Format.fprintf ppf "EXTEND %s" v
+        Format.fprintf ppf "EXTEND %d" v
     | SEARCH v ->
-        Format.fprintf ppf "SEARCH %s" v
+        Format.fprintf ppf "SEARCH %d" v
     | CALL n ->
         Format.fprintf ppf "CALL %d" n
     | RETURN ->

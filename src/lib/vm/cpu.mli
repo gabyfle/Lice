@@ -20,43 +20,23 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type opcode =
-  | NOP
-  | HALT
-  | LOADK of int (* loads the nth constant into the acc *)
-  | LOADV of int (* loads a variable of id id *)
-  | LDBOL of bool
-  (* Binary operator *)
-  | ADD
-  | SUB
-  | MUL
-  | DIV
-  | MOD
-  (* Comparison operator *)
-  | EQ
-  | NEQ
-  | LT
-  | GT
-  | LE
-  | GE
-  | JMP of int * int
-  (* (t, d) Jump to instruction address d if flag register statisfy t *)
-  (* Memory operators *)
-  | PUSH (* Push the accumulateur content into the stack *)
-  | POP (* Pop the stack into the accumulateur *)
-  | EXTEND of int (* Extend the environnement with ENV[X] = V *)
-  | SEARCH of int (* ACC = ENV[X] *)
-  | CALL of int (* Call the function from the accumulator *)
-  | RETURN (* Return from the function *)
+(**
+    acc: The accumulator of our stack machine, accepting Base.t elements
+    stack: The actual stack of our stack machine
+    rstack: The return stack of our stack machine
+    pc: the pointer towards program instructions *)
+type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; pc: int64}
 
-type t = opcode list
+val init_cpu : 'a -> 'a t
 
-val empty : t
+val push : 'a t -> 'a -> unit
 
-val add : t -> opcode -> t
+val pop : 'a t -> 'a
 
-val add_list : t -> opcode list -> t
+val get_pc : 'a t -> int64
 
-val emit_bytes : t -> Bytes.t
+val set_pc : 'a t -> int64 -> 'a t
 
-val pp : Format.formatter -> t -> unit
+val get_acc : 'a t -> 'a
+
+val set_acc : 'a t -> 'a -> 'a t

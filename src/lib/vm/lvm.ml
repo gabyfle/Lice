@@ -20,13 +20,15 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Cpu
 open Env
 open Types
 
 type t = {cpu: Base.t Cpu.t; memory: Scope.t}
 
-let create cpu memory = {cpu; memory}
+let create () =
+  let cpu = Cpu.init_cpu Base.V_Void in
+  let memory = Scope.empty in
+  {cpu; memory}
 
 let cpu t = t.cpu
 
