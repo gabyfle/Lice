@@ -20,11 +20,8 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Kernel
 open Utils.Logger
-
-(* open Bytecomp *)
-open Eval
+open Bytecomp.Opcode
 
 let () =
   let executable_dir =
@@ -46,9 +43,35 @@ let () =
   in
   let code_lines = read_code [] in
   close_in in_channel ;
-  let code = String.concat "\n" code_lines in
+  let _code = String.concat "\n" code_lines in
   Logger.set_level ["Warning"; "Info"; "Error"] ;
-  let _ast = parse_code code in
-  let () = Eval.exec _ast in
-  ()
-(* let opcode = Comp.bytecomp _ast in Opcode.pp Format.std_formatter opcode *)
+  let code =
+    [ POP
+    ; EXTEND 2
+    ; LOADK 0
+    ; PUSH
+    ; SEARCH 1
+    ; EQ
+    ; JMPZ 11
+    ; LOADK 1
+    ; PUSH
+    ; RETURN
+    ; SEARCH 1
+    ; PUSH
+    ; LOADK 1
+    ; PUSH
+    ; SEARCH 1
+    ; SUB
+    ; PUSH
+    ; CALL 1
+    ; SEARCH 1
+    ; ADD
+    ; RETURN ]
+  in
+  let bytes = emit code in
+  let lvm = Lvm.create () in
+  let lvm = Lvm.load lvm bytes in
+  let start = Unix.gettimeofday () in
+  let _ = Lvm.do_code lvm in
+  let stop = Unix.gettimeofday () in
+  Printf.printf "Execution time: %f\n" (stop -. start)

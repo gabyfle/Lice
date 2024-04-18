@@ -22,14 +22,38 @@
 
 open Env
 open Types
+open Bytecomp
 
-type t = {cpu: Base.t Cpu.t; memory: Scope.t}
+type t = {cpu: Base.t Cpu.t; memory: Scope.t; code: Bytes.t}
 
 let create () =
   let cpu = Cpu.init_cpu Base.V_Void in
   let memory = Scope.empty in
-  {cpu; memory}
+  {cpu; memory; code= Bytes.empty}
+
+let load t code = {t with code}
 
 let cpu t = t.cpu
 
 let memory t = t.memory
+
+let code t = t.code
+
+let pc t = Cpu.get_pc t.cpu
+
+let read t =
+  let code = code t in
+  let start = pc t in
+  if start >= Bytes.length code then (Opcode.HALT, t)
+  else
+    let opcode, size = Opcode.of_bytes code start in
+    let cpu = Cpu.add_pc (cpu t) size in
+    (opcode, {t with cpu})
+
+let do_code t =
+  let rec aux (vm : t) =
+    let opcode, vm = read vm in
+    Opcode.pp Format.std_formatter opcode ;
+    if opcode = Opcode.HALT then vm else aux vm
+  in
+  aux t

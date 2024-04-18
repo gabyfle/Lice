@@ -39,13 +39,20 @@ type opcode =
   | GT
   | LE
   | GE
-  | JMP of int * int
-  (* (t, d) Jump to instruction address d if flag register statisfy t *)
+  | JMP of int
+  (* JMP(d) Jump to instruction address d *)
+  | JMPNZ of int
+  (* Jump to d if FLAG is non-zero *)
+  | JMPZ of int
+  (* Jump to d if FLAG is zero *)
   (* Memory operators *)
   | PUSH (* Push the accumulateur content into the stack *)
   | POP (* Pop the stack into the accumulateur *)
   | EXTEND of int (* Extend the environnement with ENV[X] = V *)
   | SEARCH of int (* ACC = ENV[X] *)
+  | PUSHENV (* Pushes a new scope frame into the environnement *)
+  | POPENV (* Pop the current scope frame from the environnement *)
+  (* Function operators *)
   | CALL of int (* Call the function from the accumulator *)
   | RETURN (* Return from the function *)
 
@@ -57,6 +64,11 @@ val add : t -> opcode -> t
 
 val add_list : t -> opcode list -> t
 
-val emit_bytes : t -> Bytes.t
+val emit : t -> Bytes.t
 
-val pp : Format.formatter -> t -> unit
+val of_bytes : Bytes.t -> int -> opcode * int
+(**
+    Reads the next instruction starting from index [start].
+    Returns a couple [(opcode, size)] where [opcode] is the read opcode and [size] is the total size of what's been read *)
+
+val pp : Format.formatter -> opcode -> unit
