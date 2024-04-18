@@ -27,46 +27,46 @@ module type SCOPE = sig
 
   val empty : t
 
-  val get_var : t -> Base.identificator -> int64 option
+  val get_var : t -> int -> Base.t option
 
-  val get_func : t -> Base.identificator -> int64 option
-
-  val set_var : t -> Base.identificator -> int64 -> t
-
-  val set_func : t -> Base.identificator -> int64 -> t
+  val set_var : t -> int -> Base.t -> t
 
   val push_scope : t -> t
 
   val pop_scope : t -> t
 end
 
-module Identificator = struct
-  type t = Base.identificator
+module Integer = struct
+  type t = int
 
-  let get_name (n : t) = match n with `Ident s -> s | `Module (_, s) -> s
-
-  let compare (id : t) (id' : t) =
-    let s = get_name id in
-    let s' = get_name id' in
-    String.compare (fst s) (fst s')
+  let compare = compare
 end
 
-module Table = Map.Make (Identificator)
+module Table = Map.Make (Integer)
 
 module Scope : SCOPE = struct
-  type t = unit
+  type t = Base.t Table.t list
 
-  let empty = ()
+  let empty = [Table.empty]
 
-  let get_var = failwith "Not implemented"
+  let get_var (scope : t) id =
+    let rec aux = function
+      | [] ->
+          None
+      | h :: t -> (
+        match Table.find_opt id h with Some v -> Some v | None -> aux t )
+    in
+    aux scope
 
-  let get_func = failwith "Not implemented"
+  let set_var (scope : t) (id : int) (value : Base.t) =
+    match scope with
+    | [] ->
+        failwith "Empty scope"
+    | h :: t ->
+        Table.add id value h :: t
 
-  let set_var = failwith "Not implemented"
+  let push_scope (scope : t) = Table.empty :: scope
 
-  let set_func = failwith "Not implemented"
-
-  let push_scope = failwith "Not implemented"
-
-  let pop_scope = failwith "Not implemented"
+  let pop_scope (scope : t) =
+    match scope with [] -> failwith "Empty scope" | _ :: t -> t
 end

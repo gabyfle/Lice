@@ -27,13 +27,9 @@ module type SCOPE = sig
 
   val empty : t
 
-  val get_var : t -> Base.identificator -> int64 option
+  val get_var : t -> int -> Base.t option
 
-  val get_func : t -> Base.identificator -> int64 option
-
-  val set_var : t -> Base.identificator -> int64 -> t
-
-  val set_func : t -> Base.identificator -> int64 -> t
+  val set_var : t -> int -> Base.t -> t
 
   val push_scope : t -> t
 
