@@ -22,7 +22,7 @@
 
 open Types
 
-module type SCOPE = sig
+module type Env = sig
   type t
 
   val empty : t
@@ -42,19 +42,19 @@ module Integer = struct
   let compare = compare
 end
 
-module Table = Map.Make (Integer)
+module Scope = Map.Make (Integer)
 
-module Scope : SCOPE = struct
-  type t = Base.t Table.t list
+module Environment : Env = struct
+  type t = Base.t Scope.t list
 
-  let empty = [Table.empty]
+  let empty = [Scope.empty]
 
   let get_var (scope : t) id =
     let rec aux = function
       | [] ->
           None
       | h :: t -> (
-        match Table.find_opt id h with Some v -> Some v | None -> aux t )
+        match Scope.find_opt id h with Some v -> Some v | None -> aux t )
     in
     aux scope
 
@@ -63,9 +63,9 @@ module Scope : SCOPE = struct
     | [] ->
         failwith "Empty scope"
     | h :: t ->
-        Table.add id value h :: t
+        Scope.add id value h :: t
 
-  let push_scope (scope : t) = Table.empty :: scope
+  let push_scope (scope : t) = Scope.empty :: scope
 
   let pop_scope (scope : t) =
     match scope with [] -> failwith "Empty scope" | _ :: t -> t

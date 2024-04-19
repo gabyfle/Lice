@@ -70,8 +70,6 @@ let () =
     ; HALT ]
   in
   let bytes = emit code in
-  let str = Bytes.to_string bytes in
-  Printf.printf "Code: %s !\n\n" str ;
   let lvm = Lvm.create () in
   let lvm = Lvm.load lvm bytes in
   let start = Unix.gettimeofday () in

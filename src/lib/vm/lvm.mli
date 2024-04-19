@@ -31,7 +31,7 @@ val load : t -> bytes -> t
 
 val cpu : t -> Base.t Cpu.t
 
-val memory : t -> Scope.t
+val memory : t -> Environment.t
 
 val code : t -> bytes
 

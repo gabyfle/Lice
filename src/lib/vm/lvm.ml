@@ -24,11 +24,11 @@ open Env
 open Types
 open Bytecomp
 
-type t = {cpu: Base.t Cpu.t; memory: Scope.t; code: Bytes.t}
+type t = {cpu: Base.t Cpu.t; memory: Environment.t; code: Bytes.t}
 
 let create () =
   let cpu = Cpu.init_cpu Base.V_Void in
-  let memory = Scope.empty in
+  let memory = Environment.empty in
   {cpu; memory; code= Bytes.empty}
 
 let load t code = {t with code}
@@ -47,6 +47,90 @@ let read t =
   let opcode, size = Opcode.of_bytes code start in
   let cpu = Cpu.add_pc (cpu t) size in
   (opcode, {t with cpu})
+
+let nop (t : t) = t
+
+let halt (t : t) = t
+
+let ldbool (t : t) (v : bool) = Cpu.set_acc t.cpu (V_Boolean (Lbool.from v))
+
+let add (t : t) =
+  let a = Cpu.get_acc t.cpu in
+  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let res = Value.add a b in
+  Cpu.set_acc t.cpu res
+
+let sub (t : t) =
+  let a = Cpu.get_acc t.cpu in
+  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let res = Value.sub a b in
+  Cpu.set_acc t.cpu res
+
+let mul (t : t) =
+  let a = Cpu.get_acc t.cpu in
+  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let res = Value.mul a b in
+  Cpu.set_acc t.cpu res
+
+let div (t : t) =
+  let a = Cpu.get_acc t.cpu in
+  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let res = Value.div a b in
+  Cpu.set_acc t.cpu res
+
+let md (t : t) =
+  let a = Cpu.get_acc t.cpu in
+  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let res = Value.md a b in
+  Cpu.set_acc t.cpu res
+
+let eq (t : t) =
+  let a = Cpu.get_acc t.cpu in
+  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  ()
+
+let jmp t d =
+  let cpu = Cpu.set_pc t.cpu d in
+  {t with cpu}
+
+let jmpnz t d =
+  let cpu = if Cpu.get_flag t.cpu <> 0 then Cpu.set_pc t.cpu d else t.cpu in
+  {t with cpu}
+
+let jmpz t d =
+  let cpu = if Cpu.get_flag t.cpu = 0 then Cpu.set_pc t.cpu d else t.cpu in
+  {t with cpu}
+
+let push t =
+  let cpu = Cpu.push (cpu t) in
+  {t with cpu}
+
+let pop t =
+  let cpu = Cpu.pop (cpu t) in
+  {t with cpu}
+
+let extend t id =
+  let v = Cpu.get_acc t.cpu in
+  let memory = Environment.set_var t.memory id v in
+  {t with memory}
+
+let search t id =
+  let v = Environment.get_var t.memory id in
+  match v with
+  | None ->
+      failwith "Variable not found"
+      (* TODO: Handle this kind of error using Located_errors.mli *)
+  | Some v ->
+      let cpu = Cpu.set_acc t.cpu v in
+      {t with cpu}
+
+let pushenv t =
+  let memory = Environment.push_scope t.memory in
+  {t with memory}
+
+let popenv t =
+  let memory = Environment.pop_scope t.memory in
+  {t with memory}
 
 let do_code t =
   let rec aux (vm : t) =

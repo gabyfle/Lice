@@ -25,13 +25,22 @@
     stack: The actual stack of our stack machine
     rstack: The return stack of our stack machine
     pc: the pointer towards program instructions *)
-type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; pc: int}
+type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; flag: int; pc: int}
 
-let init_cpu acc = {acc; stack= Stack.create (); rstack= Stack.create (); pc= 0}
+let init_cpu acc =
+  {acc; stack= Stack.create (); rstack= Stack.create (); flag= 0; pc= 0}
 
-let push cpu v = Stack.push v cpu.stack
+let push cpu =
+  Stack.push cpu.acc cpu.stack ;
+  cpu
 
-let pop cpu = Stack.pop cpu.stack
+let pop cpu =
+  let acc = Stack.pop cpu.stack in
+  {cpu with acc}
+
+let get_flag cpu = cpu.flag
+
+let set_flag cpu flag = {cpu with flag}
 
 let get_pc cpu = cpu.pc
 

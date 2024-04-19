@@ -22,7 +22,7 @@
 
 open Types
 
-module type SCOPE = sig
+module type Env = sig
   type t
 
   val empty : t
@@ -36,4 +36,4 @@ module type SCOPE = sig
   val pop_scope : t -> t
 end
 
-module Scope : SCOPE
+module Environment : Env
