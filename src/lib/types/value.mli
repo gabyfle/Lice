@@ -22,9 +22,7 @@
 
 open Base
 
-val expr_eq : expr -> expr -> bool
-
-val to_typ : value -> typ
+val to_typ : t -> typ
 
 val typ_to_string : typ -> string
 
@@ -38,9 +36,9 @@ val pretty : Format.formatter -> t -> unit
 
 val compare : t -> t -> int
 
-val eq : t -> t -> t
+val eq : t -> t -> bool
 
-val neq : t -> t -> t
+val neq : t -> t -> bool
 
 val to_string : t -> string
 

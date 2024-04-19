@@ -24,18 +24,33 @@ open Env
 open Types
 open Bytecomp
 
-type t = {cpu: Base.t Cpu.t; memory: Environment.t; code: Bytes.t}
+type t =
+  { cpu: Base.t Cpu.t
+  ; memory: Environment.t
+  ; symbols: Environment.t
+  ; code: Bytes.t }
 
 let create () =
   let cpu = Cpu.init_cpu Base.V_Void in
   let memory = Environment.empty in
-  {cpu; memory; code= Bytes.empty}
+  let symbols = Environment.empty in
+  {cpu; memory; symbols; code= Bytes.empty}
 
 let load t code = {t with code}
 
 let cpu t = t.cpu
 
 let memory t = t.memory
+
+let symbols t = t.symbols
+
+let add_symbol t id v =
+  let symbols = Environment.set_var t.symbols id v in
+  {t with symbols}
+
+let get_symbol t id =
+  let v = Environment.get_var t.symbols id in
+  match v with None -> failwith "Symbol not found" | Some v -> v
 
 let code t = t.code
 
@@ -52,42 +67,47 @@ let nop (t : t) = t
 
 let halt (t : t) = t
 
-let ldbool (t : t) (v : bool) = Cpu.set_acc t.cpu (V_Boolean (Lbool.from v))
+let loadk (t : t) (k : int) =
+  let v = get_symbol t k in
+  {t with cpu= Cpu.set_acc t.cpu v}
+
+let ldbool (t : t) (v : bool) =
+  {t with cpu= Cpu.set_acc t.cpu (V_Boolean (Lbool.from v))}
 
 let add (t : t) =
   let a = Cpu.get_acc t.cpu in
   let b = Cpu.get_acc (Cpu.pop t.cpu) in
   let res = Value.add a b in
-  Cpu.set_acc t.cpu res
+  {t with cpu= Cpu.set_acc t.cpu res}
 
 let sub (t : t) =
   let a = Cpu.get_acc t.cpu in
   let b = Cpu.get_acc (Cpu.pop t.cpu) in
   let res = Value.sub a b in
-  Cpu.set_acc t.cpu res
+  {t with cpu= Cpu.set_acc t.cpu res}
 
 let mul (t : t) =
   let a = Cpu.get_acc t.cpu in
   let b = Cpu.get_acc (Cpu.pop t.cpu) in
   let res = Value.mul a b in
-  Cpu.set_acc t.cpu res
+  {t with cpu= Cpu.set_acc t.cpu res}
 
 let div (t : t) =
   let a = Cpu.get_acc t.cpu in
   let b = Cpu.get_acc (Cpu.pop t.cpu) in
   let res = Value.div a b in
-  Cpu.set_acc t.cpu res
+  {t with cpu= Cpu.set_acc t.cpu res}
 
 let md (t : t) =
   let a = Cpu.get_acc t.cpu in
   let b = Cpu.get_acc (Cpu.pop t.cpu) in
   let res = Value.md a b in
-  Cpu.set_acc t.cpu res
+  {t with cpu= Cpu.set_acc t.cpu res}
 
 let eq (t : t) =
   let a = Cpu.get_acc t.cpu in
   let b = Cpu.get_acc (Cpu.pop t.cpu) in
-  ()
+  if Value.eq a b then {t with cpu= Cpu.set_flag t.cpu 0} else t
 
 let jmp t d =
   let cpu = Cpu.set_pc t.cpu d in
@@ -132,11 +152,66 @@ let popenv t =
   let memory = Environment.pop_scope t.memory in
   {t with memory}
 
+let call t _ =
+  let cpu = Cpu.rpush t.cpu in
+  let acc = Cpu.get_acc t.cpu in
+  match acc with
+  | V_Function f ->
+      {t with cpu= Cpu.set_pc cpu (Lfunction.address f)}
+  | _ ->
+      t
+
+let return t =
+  let cpu = Cpu.rpop t.cpu in
+  {t with cpu}
+
 let do_code t =
   let rec aux (vm : t) =
     let opcode, vm = read vm in
-    Opcode.pp Format.std_formatter opcode ;
-    Format.force_newline () ;
-    if opcode = Opcode.HALT then vm else aux vm
+    match opcode with
+    | NOP ->
+        aux (nop vm)
+    | HALT ->
+        halt vm
+    | LOADK k ->
+        aux (loadk vm k)
+    | LDBOL b ->
+        aux (ldbool vm b)
+    | ADD ->
+        aux (add vm)
+    | SUB ->
+        aux (sub vm)
+    | MUL ->
+        aux (mul vm)
+    | DIV ->
+        aux (div vm)
+    | MOD ->
+        aux (md vm)
+    | EQ ->
+        aux (eq vm)
+    | JMP d ->
+        aux (jmp vm d)
+    | JMPNZ d ->
+        aux (jmpnz vm d)
+    | JMPZ d ->
+        aux (jmpz vm d)
+    | PUSH ->
+        aux (push vm)
+    | POP ->
+        aux (pop vm)
+    | EXTEND n ->
+        aux (extend vm n)
+    | SEARCH n ->
+        aux (search vm n)
+    | PUSHENV ->
+        aux (pushenv vm)
+    | POPENV ->
+        aux (popenv vm)
+    | CALL n ->
+        aux (call vm n)
+    | RETURN ->
+        aux (return vm)
+    | _ ->
+        halt vm
   in
   aux t

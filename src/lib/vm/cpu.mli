@@ -33,6 +33,10 @@ val push : 'a t -> 'a t
 
 val pop : 'a t -> 'a t
 
+val rpush : 'a t -> 'a t
+
+val rpop : 'a t -> 'a t
+
 val get_flag : 'a t -> int
 
 val set_flag : 'a t -> int -> 'a t

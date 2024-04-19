@@ -127,37 +127,39 @@ let binop ==
   | LESSER; { `Compare(Lesser) }
 
 let list_terminals :=
-  | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }
-  | i = FLOAT; { Terminal(Const (V_Number (Lnumber.from i))) }
-  | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
-  | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
+  | i = INT; { Terminal((V_Number (Lnumber.from(float_of_int i)))) }
+  | i = FLOAT; { Terminal((V_Number (Lnumber.from i))) }
+  | b = BOOLEAN; { Terminal((V_Boolean (Lbool.from b))) }
+  | s = STRING_VALUE; { Terminal((V_String(Lstring.from (s)))) }
   | l = lists; { l }
 
 let lists :=
-  | LBRACKET; elems=separated_list(SEMICOLON, expr); RBRACKET;
+  | LBRACKET; _=separated_list(SEMICOLON, expr); RBRACKET;
   {
-    Terminal(Const(V_List(Llist.from_list elems)))
+    Terminal((V_List(Llist.from_list [])))
   }
-  | h = IDENT; DOUBLE_COLON; t = IDENT;
+  | _ = IDENT; DOUBLE_COLON; _ = IDENT;
   {
-    BinOp(`Cons, Terminal(V_Var(`Ident(h, T_Auto))), Terminal(V_Var(`Ident(t, T_Auto))))
+    (*BinOp(`Cons, Terminal(V_Variable(`Ident(h, T_Auto))), Terminal(V_Variable(`Ident(t, T_Auto))))*)
+    Terminal((V_List(Llist.from_list [])))
   }
-  | h = list_terminals; DOUBLE_COLON; t = IDENT;
+  | _ = list_terminals; DOUBLE_COLON; _ = IDENT;
   { 
-    BinOp(`Cons, Terminal(Const(V_List(Llist.from h))), Terminal(V_Var(`Ident(t, T_Auto))))
+    (*BinOp(`Cons, Terminal((V_List(Llist.from h))), Terminal(V_Variable(`Ident(t, T_Auto))))*)
+    Terminal((V_List(Llist.from_list [])))
   }
   | h = list_terminals; DOUBLE_COLON; LBRACKET; RBRACKET;
   {
-    Terminal(Const(V_List(Llist.from h)))
+    Terminal((V_List(Llist.from h)))
   }
 
 let terminal ==
-  | i = INT; { Terminal(Const (V_Number (Lnumber.from(float_of_int i)))) }
-  | i = FLOAT; { Terminal(Const (V_Number (Lnumber.from i))) }
-  | i = IDENT; { Terminal(V_Var(`Ident(i, T_Auto))) }
-  | i = IDENT; DOT; p = IDENT; { Terminal(V_Var(`Module(i, (p, T_Auto)))) }
-  | b = BOOLEAN; { Terminal(Const (V_Boolean (Lbool.from b))) }
-  | s = STRING_VALUE; { Terminal(Const (V_String(Lstring.from (s)))) }
+  | i = INT; { Terminal((V_Number (Lnumber.from(float_of_int i)))) }
+  | i = FLOAT; { Terminal((V_Number (Lnumber.from i))) }
+  | i = IDENT; { Terminal(V_Variable(`Ident(i, T_Auto))) }
+  | i = IDENT; DOT; p = IDENT; { Terminal(V_Variable(`Module(i, (p, T_Auto)))) }
+  | b = BOOLEAN; { Terminal(V_Boolean (Lbool.from b)) }
+  | s = STRING_VALUE; { Terminal(V_String(Lstring.from (s))) }
   | l = lists; { l }
 
 let block ==
@@ -186,7 +188,7 @@ let assign ==
 
 let pattern ==
   | t = terminal; { t }
-  | WILDCARD; { Terminal(Const(V_Void)) }
+  | WILDCARD; { Terminal((V_Void)) }
 
 let match_expr ==
   | MATCH; e = expr; WITH; LBRACE; m = match_cases; RBRACE;
@@ -233,7 +235,7 @@ let func_call ==
 
 let return_call ==
   | RETURN;
-    { Return($startpos, Terminal(Const(V_Void))) }
+    { Return($startpos, Terminal((V_Void))) }
   | RETURN; r = expr;
     { Return($startpos, r) }
 
@@ -241,7 +243,7 @@ let if_stmt :=
   | IF; LPAREN; e = expr; RPAREN; b1 = statement; ELSE; b2 = statement;
   { If ($startpos, e, b1, b2) }
   | IF; LPAREN; e = expr; RPAREN; b1 = statement;
-  { If ($startpos, e, b1, Expression($startpos, Terminal(Const(V_Void)), T_Void)) }
+  { If ($startpos, e, b1, Expression($startpos, Terminal((V_Void)), T_Void)) }
 
 let module_elems := 
   | e = assign; SEMICOLON; EOL*; { e }

@@ -28,7 +28,7 @@
 type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; flag: int; pc: int}
 
 let init_cpu acc =
-  {acc; stack= Stack.create (); rstack= Stack.create (); flag= 0; pc= 0}
+  {acc; stack= Stack.create (); rstack= Stack.create (); flag= -1; pc= 0}
 
 let push cpu =
   Stack.push cpu.acc cpu.stack ;
@@ -37,6 +37,14 @@ let push cpu =
 let pop cpu =
   let acc = Stack.pop cpu.stack in
   {cpu with acc}
+
+let rpush cpu =
+  Stack.push cpu.pc cpu.rstack ;
+  cpu
+
+let rpop cpu =
+  let pc = Stack.pop cpu.rstack in
+  {cpu with pc}
 
 let get_flag cpu = cpu.flag
 

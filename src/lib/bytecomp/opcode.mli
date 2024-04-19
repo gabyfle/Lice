@@ -53,7 +53,7 @@ type opcode =
   | PUSHENV (* Pushes a new scope frame into the environnement *)
   | POPENV (* Pop the current scope frame from the environnement *)
   (* Function operators *)
-  | CALL of int (* Call the function from the accumulator *)
+  | CALL of int (* Call the function from the accumulator with n parameters *)
   | RETURN (* Return from the function *)
 
 type t = opcode list
