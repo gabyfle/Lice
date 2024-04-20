@@ -74,7 +74,7 @@ let () =
   let lvm =
     Lvm.add_symbol lvm 2 (V_Function (Lfunction.from ("factorial", 5)))
   in
-  let lvm = Lvm.add_symbol lvm 3 (V_Number (Lnumber.from 10000.)) in
+  let lvm = Lvm.add_symbol lvm 3 (V_Number (Lnumber.from 100000.)) in
   let lvm = Lvm.load lvm bytes in
   let start = Unix.gettimeofday () in
   let lvm = Lvm.do_code lvm in
