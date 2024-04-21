@@ -20,42 +20,16 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+type t
+
+val empty : t
 (**
-    [acc]: The accumulator of our stack machine, accepting [Base.t] elements
-    [stack]: The actual stack of our stack machine
-    [rstack]: The return stack of our stack machine
-    [pc]: the pointer towards program instructions *)
-type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; flag: int; pc: int}
+    The empty chunk value. This is the base to create a new chunk *)
 
-let init_cpu acc =
-  {acc; stack= Stack.create (); rstack= Stack.create (); flag= -1; pc= 0}
+val emit : t -> bytes
+(**
+    [emit chunk] emits the given chunk into a string of bytes *)
 
-let push cpu =
-  Stack.push cpu.acc cpu.stack ;
-  cpu
-
-let pop cpu =
-  let acc = Stack.pop cpu.stack in
-  {cpu with acc}
-
-let rpush cpu =
-  Stack.push cpu.pc cpu.rstack ;
-  cpu
-
-let rpop cpu =
-  let pc = Stack.pop cpu.rstack in
-  {cpu with pc}
-
-let get_flag cpu = cpu.flag
-
-let set_flag cpu flag = {cpu with flag}
-
-let get_pc cpu = cpu.pc
-
-let set_pc cpu pc = {cpu with pc}
-
-let add_pc cpu amount = {cpu with pc= cpu.pc + amount}
-
-let get_acc cpu = cpu.acc
-
-let set_acc cpu acc = {cpu with acc}
+val reader : Bytes.t -> t * (int -> Opcode.opcode * int)
+(**
+    [reader bytes] construct a reader function over a byte string *)

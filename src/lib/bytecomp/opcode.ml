@@ -199,7 +199,7 @@ let emit_bytes opcodes =
 
 let emit code = emit_bytes code
 
-let of_bytes bytes start =
+let of_bytes (bytes : bytes) (start : int) : opcode * int =
   let v = Bytes.get bytes start in
   match int_of_char v with
   | 0 ->
