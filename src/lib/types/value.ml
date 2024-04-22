@@ -37,16 +37,12 @@ let to_typ v =
         T_Boolean
     | V_Function _ ->
         T_Auto
+    | V_Variable _ ->
+        T_Auto
     | V_Void ->
         T_Void
   in
-  let from_val = function
-    | Const c ->
-        from_t c
-    | V_Var id -> (
-      match id with `Ident (_n, t) -> t | `Module (_id, (_n, t)) -> t )
-  in
-  from_val v
+  from_t v
 
 let typ_to_string = function
   | T_Number ->
@@ -82,6 +78,8 @@ let name = function
       Lbool.name
   | V_Function _ ->
       Lfunction.name
+  | V_Variable _ ->
+      "variable"
   | V_Void ->
       "void"
 
@@ -96,7 +94,7 @@ let pretty fmt = function
       Format.fprintf fmt "%a" Lbool.pretty b
   | V_Function f ->
       Format.fprintf fmt "%a" Lfunction.pretty f
-  | V_Void ->
+  | _ ->
       ()
 
 let compare v v' =
@@ -115,25 +113,17 @@ let compare v v' =
 let eq v v' =
   match (v, v') with
   | V_Number n, V_Number n' ->
-      V_Boolean (Lnumber.eq n n')
+      Lnumber.eq n n'
   | V_String s, V_String s' ->
-      V_Boolean (Lstring.eq s s')
+      Lstring.eq s s'
   | V_List l, V_List l' ->
-      V_Boolean (Llist.eq l l')
+      Llist.eq l l'
   | V_Boolean b, V_Boolean b' ->
-      V_Boolean (Lbool.eq b b')
-  | _ ->
-      V_Boolean false
-
-let neq v v' =
-  match eq v v' with V_Boolean b -> V_Boolean (not b) | _ -> failwith "neq"
-
-let expr_eq v v' =
-  match (v, v') with
-  | Terminal (Const k), Terminal (Const k') -> (
-    match eq k k' with V_Boolean b -> b | _ -> failwith "expr_eq" )
+      Lbool.eq b b'
   | _ ->
       false
+
+let neq v v' = match eq v v' with b -> not b
 
 let to_string = function
   | V_Number n ->
@@ -146,6 +136,12 @@ let to_string = function
       Lbool.to_string b
   | V_Function f ->
       Lfunction.to_string f
+  | V_Variable v -> (
+    match v with
+    | `Ident (id, _) ->
+        id
+    | `Module (id, (id', _)) ->
+        id ^ ".." ^ id' )
   | V_Void ->
       ""
 
@@ -228,7 +224,7 @@ let neg = function
       V_Boolean (Lbool.neg b)
   | V_Function f ->
       V_Function (Lfunction.neg f)
-  | V_Void ->
+  | V_Variable _ | V_Void ->
       V_Void
 
 let md v v' =

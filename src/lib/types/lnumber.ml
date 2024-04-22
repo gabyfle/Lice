@@ -37,6 +37,8 @@ end
 
 include Type.Make (S)
 
+let to_float : t -> float = Fun.id
+
 let to_string : t -> string = string_of_float
 
 let add : t -> t -> t = ( +. )

@@ -20,47 +20,65 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Types
-
+(**
+    This is the representation of our machine's instructions *)
 type opcode =
-  | HALT
-  | VALUE of Base.value
-  (* Arithmetic operators *)
-  | ADD of int * int
-  | SUB of int * int
-  | MUL of int * int
-  | DIV of int * int
-  | MOD of int * int
-  | NEG of int * int
-  (* Comparision operators *)
-  | LT of int * int
-  | GT of int * int
-  | LE of int * int
-  | GE of int * int
-  | NE of int * int
-  | EQ of int * int
-  (* Logical operators *)
-  | AND of int * int * int
-  | OR of int * int * int
-  | NOT of int * int
+  | NOP (* does nothing *)
+  | HALT (* stops the virtual machine execution *)
+  | LOADK of int (* loads the nth constant into the accumulator *)
+  | LOADV of int (* loads a variable of id id into the accumulator *)
+  | LDBOL of bool (* loads a bool value into the accumulator *)
+  (* Binary operator *)
+  | ADD (* + *)
+  | SUB (* - *)
+  | MUL (* * *)
+  | DIV (* / *)
+  | MOD (* % *)
+  (* Comparison operator *)
+  | EQ (* == *)
+  | NEQ (* != *)
+  | LT (* < *)
+  | GT (* > *)
+  | LE (* <= *)
+  | GE (* >= *)
+  (* Unconditional and conditional jumps *)
+  | JMP of int (* JMP(d) Jump to instruction address d *)
+  | JMPNZ of int (* Jump to d if FLAG is non-zero *)
+  | JMPZ of int (* Jump to d if FLAG is zero *)
   (* Memory operators *)
-  | LOADI of int * Base.value
-  | LOAD of int * int
-  | STORE of int * int
-  | MOVE of int * int
-  (* Control flow operators *)
-  | JMP of int
-  | GOTO of int
-  | CALL of int
-  | RET
-  (* Stack operators *)
-  | SCP_DUPLICATE
-  | SCP_CLEAR
-  | PUSH of int
-  | POP of int
+  | PUSH (* Push the accumulateur content into the stack *)
+  | POP (* Pop the stack into the accumulateur *)
+  | EXTEND of int (* Extend the environnement with ENV[X] = ACC *)
+  | SEARCH of int (* ACC = ENV[X] *)
+  | PUSHENV (* Pushes a new scope frame into the environnement *)
+  | POPENV (* Pop the current scope frame from the environnement *)
+  (* Function operators *)
+  | CALL of int (* Call the function from the accumulator with n parameters *)
+  | RETURN (* Return from the function *)
 
 type t = opcode list
 
 val empty : t
+(**
+    Creates an empty list of opcodes *)
 
-val pp : Format.formatter -> t -> unit
+val add : t -> opcode -> t
+(**
+    [add opcodes opcode] appends [opcode] to the [opcodes] list *)
+
+val add_list : t -> opcode list -> t
+(**
+    [add_list opcodes opcodes_list] appends the [opcodes_list] list to the [opcodes] list *)
+
+val emit : t -> Bytes.t
+(**
+    [emit opcodes] returns a [Bytes.t] string representing the bytecode of the [opcodes] list into binary format *)
+
+val of_bytes : Bytes.t -> int -> opcode * int
+(**
+    Reads the next instruction starting from index [start].
+    Returns a couple [(opcode, size)] where [opcode] is the read opcode and [size] is the total size of what's been read *)
+
+val pp : Format.formatter -> opcode -> unit
+(**
+    [pp fmt opcode] pretty prints the [opcode] code with the [fmt] format into the formatter buffer *)

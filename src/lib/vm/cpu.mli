@@ -20,6 +20,33 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast
+(**
+    acc: The accumulator of our stack machine, accepting Base.t elements
+    stack: The actual stack of our stack machine
+    rstack: The return stack of our stack machine
+    pc: the pointer towards program instructions *)
+type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; flag: int; pc: int}
 
-val bytecomp : Tree.program -> Opcode.t
+val init_cpu : 'a -> 'a t
+
+val push : 'a t -> 'a t
+
+val pop : 'a t -> 'a t
+
+val rpush : 'a t -> 'a t
+
+val rpop : 'a t -> 'a t
+
+val get_flag : 'a t -> int
+
+val set_flag : 'a t -> int -> 'a t
+
+val get_pc : 'a t -> int
+
+val set_pc : 'a t -> int -> 'a t
+
+val add_pc : 'a t -> int -> 'a t
+
+val get_acc : 'a t -> 'a
+
+val set_acc : 'a t -> 'a -> 'a t

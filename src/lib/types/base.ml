@@ -36,11 +36,9 @@ and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
 type identificator = [`Ident of typed_ident | `Module of ident * typed_ident]
 
 type expr =
-  | Terminal of value
+  | Terminal of t
   | BinOp of binop_type * expr * expr
   | FuncCall of identificator * expr list
-
-and value = Const of t | V_Var of identificator
 
 and t =
   | V_Number of Lnumber.t
@@ -48,6 +46,7 @@ and t =
   | V_List of expr list
   | V_Boolean of Lbool.t
   | V_Function of Lfunction.t
+  | V_Variable of identificator
   | V_Void
 
 let identificator_to_string = function
@@ -55,6 +54,9 @@ let identificator_to_string = function
       id
   | `Module (m, (id, _)) ->
       m ^ "." ^ id
+
+(** TODO: reformat the Base module *)
+let string_to_identificator (str : string) = `Ident (str, T_Auto)
 
 let bincomp_to_string = function
   | Equal ->

@@ -1,21 +1,4 @@
-(data_only_dirs lvm)
-
-(rule
- (deps
-  (source_tree lvm))
- (targets liblvm.a)
- (action
-  (progn
-   (chdir
-    lvm
-    (run cmake .))
-   (chdir
-    lvm
-    (run cmake --build . --target lvm))
-   (run cp lvm/liblvm.a .))))
-
 (library
  (name vm)
- (foreign_archives lvm)
- (libraries types)
+ (libraries types bytecomp)
  (wrapped false))

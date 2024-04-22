@@ -20,41 +20,48 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type ident = string
+open Types
 
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
+type t
 
-type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+val empty : t
+(**
+    The empty chunk value. This is the base to create a new chunk *)
 
-type binop_type =
-  [`Compare of binary_comp | `Operator of binary_operator | `Cons]
+val add : t -> Base.t -> t
+(**
+    [add chunk symbol] adds a symbol to the chunk at the end of chunk *)
 
-type typed_ident = ident * typ
+val set : t -> Opcode.t -> t
+(**
+    [set chunk code] sets the code of the chunk *)
 
-and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
+val get : t -> int -> Base.t
+(**
+    [get chunk index] returns the symbol at index *)
 
-type identificator = [`Ident of typed_ident | `Module of ident * typed_ident]
+val load : t -> Bytes.t -> t
+(**
+    [load chunk bytes] loads the bytecode into the chunk.
+    This function also parse the header provided inside the
+    bytecode and separate the header from the code *)
 
-type expr =
-  | Terminal of t
-  | BinOp of binop_type * expr * expr
-  | FuncCall of identificator * expr list
+val iter : t -> (int -> Base.t -> unit) -> unit
+(**
+    [iter chunk f] iterates over the symbols of the chunk *)
 
-and t =
-  | V_Number of Lnumber.t
-  | V_String of Lstring.t
-  | V_List of expr list
-  | V_Boolean of Lbool.t
-  | V_Function of Lfunction.t
-  | V_Variable of identificator
-  | V_Void
+val emit : t -> bytes
+(**
+    [emit chunk] emits the given chunk into a string of bytes *)
 
-val identificator_to_string : identificator -> string
+val reader : Bytes.t -> t * (int -> Opcode.opcode * int)
+(**
+    [reader bytes] construct a reader function over a byte string *)
 
-val string_to_identificator : string -> identificator
+val code : t -> Opcode.t
+(**
+    [code chunk] returns the opcodes of the chunk *)
 
-val bincomp_to_string : binary_comp -> string
-
-val binop_to_string : binary_operator -> string
-
-val binop_type_to_string : binop_type -> string
+val bytecode : t -> Bytes.t
+(**
+    [bytecode chunk] returns the bytecode of the chunk *)

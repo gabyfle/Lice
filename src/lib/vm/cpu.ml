@@ -20,36 +20,42 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Types
+(**
+    [acc]: The accumulator of our stack machine, accepting [Base.t] elements
+    [stack]: The actual stack of our stack machine
+    [rstack]: The return stack of our stack machine
+    [pc]: the pointer towards program instructions *)
+type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; flag: int; pc: int}
 
-type register = Base.t
+let init_cpu acc =
+  {acc; stack= Stack.create (); rstack= Stack.create (); flag= -1; pc= 0}
 
-type registers =
-  { a: register
-  ; b: register
-  ; c: register
-  ; d: register
-  ; e: register
-  ; f: register
-  ; g: register
-  ; h: register
-  ; i: register
-  ; pc: int64 }
+let push cpu =
+  Stack.push cpu.acc cpu.stack ;
+  cpu
 
-type 'a cpu = {registers: registers; memory: 'a}
+let pop cpu =
+  let acc = Stack.pop cpu.stack in
+  {cpu with acc}
 
-type t = Base.t cpu
+let rpush cpu =
+  Stack.push cpu.pc cpu.rstack ;
+  cpu
 
-let empty =
-  { registers=
-      { a= Base.V_Void
-      ; b= Base.V_Void
-      ; c= Base.V_Void
-      ; d= Base.V_Void
-      ; e= Base.V_Void
-      ; f= Base.V_Void
-      ; g= Base.V_Void
-      ; h= Base.V_Void
-      ; i= Base.V_Void
-      ; pc= 0L }
-  ; memory= Base.V_Void }
+let rpop cpu =
+  let pc = Stack.pop cpu.rstack in
+  {cpu with pc}
+
+let get_flag cpu = cpu.flag
+
+let set_flag cpu flag = {cpu with flag}
+
+let get_pc cpu = cpu.pc
+
+let set_pc cpu pc = {cpu with pc}
+
+let add_pc cpu amount = {cpu with pc= cpu.pc + amount}
+
+let get_acc cpu = cpu.acc
+
+let set_acc cpu acc = {cpu with acc}

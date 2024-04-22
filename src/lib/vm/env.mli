@@ -20,25 +20,20 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Ast.Tree
-open Types.Base
+open Types
 
-module type SCOPE = sig
+module type Env = sig
   type t
 
-  val create : unit -> t
+  val empty : t
 
-  val get : t -> identificator -> statement option
+  val get_var : t -> int -> Base.t option
 
-  val set : t -> identificator -> statement -> t
+  val set_var : t -> int -> Base.t -> t
 
   val push_scope : t -> t
 
   val pop_scope : t -> t
-
-  val add_module : t -> string -> t
-
-  val dump : t -> unit
 end
 
-module Scope : SCOPE
+module Environment : Env

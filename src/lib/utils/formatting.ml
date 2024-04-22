@@ -46,12 +46,8 @@ let misc_error (loc : Lexing.position) str =
 
 let expr_format expr =
   let rec aux = function
-    | Terminal t -> (
-      match t with
-      | Const c ->
-          Format.asprintf "%a" Value.pretty c
-      | V_Var id ->
-          Printf.sprintf "Variable: %s\n" (Base.identificator_to_string id) )
+    | Terminal t ->
+        Format.asprintf "%a" Value.pretty t
     | BinOp (binop_t, e, e') ->
         let bin =
           match binop_t with

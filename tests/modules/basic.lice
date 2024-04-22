@@ -1,3 +1,6 @@
+let a = 420;
+let b = a + "erreur de typage";
+
 module Testing {
     let string t = "this is a test";
 

@@ -13,4 +13,4 @@ function exp(n) {
     return exp_aux(n, 1);    
 }
 
-let number f = exp(300);
+let number f = exp(6200);

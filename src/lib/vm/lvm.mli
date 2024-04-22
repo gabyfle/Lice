@@ -19,3 +19,20 @@
 (*  limitations under the License.                                           *)
 (*                                                                           *)
 (*****************************************************************************)
+
+open Types
+open Env
+
+type t
+
+val create : unit -> t
+
+val load : t -> bytes -> t
+
+val cpu : t -> Base.t Cpu.t
+
+val memory : t -> Environment.t
+
+val code : t -> bytes
+
+val do_code : t -> t

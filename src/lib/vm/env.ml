@@ -20,41 +20,53 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-type ident = string
+open Types
 
-type binary_operator = Plus | Minus | Divide | Multiply | Mod
+module type Env = sig
+  type t
 
-type binary_comp = Equal | NotEqual | GEQ | LEQ | Greater | Lesser
+  val empty : t
 
-type binop_type =
-  [`Compare of binary_comp | `Operator of binary_operator | `Cons]
+  val get_var : t -> int -> Base.t option
 
-type typed_ident = ident * typ
+  val set_var : t -> int -> Base.t -> t
 
-and typ = T_Number | T_String | T_List | T_Boolean | T_Auto | T_Void
+  val push_scope : t -> t
 
-type identificator = [`Ident of typed_ident | `Module of ident * typed_ident]
+  val pop_scope : t -> t
+end
 
-type expr =
-  | Terminal of t
-  | BinOp of binop_type * expr * expr
-  | FuncCall of identificator * expr list
+module Integer = struct
+  type t = int
 
-and t =
-  | V_Number of Lnumber.t
-  | V_String of Lstring.t
-  | V_List of expr list
-  | V_Boolean of Lbool.t
-  | V_Function of Lfunction.t
-  | V_Variable of identificator
-  | V_Void
+  let compare = compare
+end
 
-val identificator_to_string : identificator -> string
+module Scope = Map.Make (Integer)
 
-val string_to_identificator : string -> identificator
+module Environment : Env = struct
+  type t = Base.t Scope.t list
 
-val bincomp_to_string : binary_comp -> string
+  let empty = [Scope.empty]
 
-val binop_to_string : binary_operator -> string
+  let get_var (scope : t) id =
+    let rec aux = function
+      | [] ->
+          None
+      | h :: t -> (
+        match Scope.find_opt id h with Some v -> Some v | None -> aux t )
+    in
+    aux scope
 
-val binop_type_to_string : binop_type -> string
+  let set_var (scope : t) (id : int) (value : Base.t) =
+    match scope with
+    | [] ->
+        failwith "Empty scope"
+    | h :: t ->
+        Scope.add id value h :: t
+
+  let push_scope (scope : t) = Scope.empty :: scope
+
+  let pop_scope (scope : t) =
+    match scope with [] -> failwith "Empty scope" | _ :: t -> t
+end

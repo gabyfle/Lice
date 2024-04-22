@@ -24,7 +24,7 @@ function reverse(l: list): list {
 }
 
 function main(): void {
-    let number x = 30;
+    let number x = 2;
     let number n = 5;
 
     let number pow = power(x, n);

@@ -21,22 +21,22 @@
 (*****************************************************************************)
 
 module S = struct
-  type t = string
+  type t = int32
 
-  type value = int
-  (* for the moment, a function value can be created from its "address" in
-     code *)
-
-  (* as we'll write the virtual machine, this is subject to change *)
+  (**
+      A function is represented by its address, stored in 32-bits *)
+  type value = int32
 
   let name = "function"
 
   let pretty : Format.formatter -> t -> unit =
-   fun fmt x -> Format.fprintf fmt "function<%s>" x
+   fun fmt d -> Format.fprintf fmt "<function object> at: %d" (Int32.to_int d)
 
-  let compare : t -> t -> int = String.compare
+  let compare (a : t) (b : t) = Stdlib.compare a b
 
-  let from : value -> t = fun x -> string_of_int x
+  let from : value -> t = fun x -> x
 end
 
 include Type.Make (S)
+
+let address : t -> int32 = Fun.id
