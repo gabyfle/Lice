@@ -33,10 +33,6 @@ val cpu : t -> Base.t Cpu.t
 
 val memory : t -> Environment.t
 
-val symbols : t -> Environment.t
-
-val add_symbol : t -> int -> Base.t -> t
-
 val code : t -> bytes
 
 val do_code : t -> t

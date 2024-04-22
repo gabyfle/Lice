@@ -51,6 +51,8 @@ and t =
 
 val identificator_to_string : identificator -> string
 
+val string_to_identificator : string -> identificator
+
 val bincomp_to_string : binary_comp -> string
 
 val binop_to_string : binary_operator -> string

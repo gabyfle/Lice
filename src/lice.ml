@@ -22,6 +22,7 @@
 
 open Utils.Logger
 open Bytecomp.Opcode
+open Bytecomp
 open Types
 
 let () =
@@ -33,7 +34,7 @@ let () =
     lines = try let line = input_line in_channel in read_code (line :: lines)
     with End_of_file -> List.rev lines in let code_lines = read_code [] in
     close_in in_channel ; let _code = String.concat "\n" code_lines in*)
-  Logger.set_level ["Warning"; "Info"; "Error"] ;
+  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
   let code =
     [ JMP 69
     ; PUSHENV (* we push the environment *)
@@ -67,18 +68,18 @@ let () =
     ; POP
     ; HALT ]
   in
-  let bytes = emit code in
+  let chunk = Chunk.empty in
+  let chunk = Chunk.add chunk (V_Number (Lnumber.from 0.)) in
+  let chunk = Chunk.add chunk (V_Number (Lnumber.from 1.)) in
+  let chunk = Chunk.add chunk (V_Function (Lfunction.from 5l)) in
+  let chunk = Chunk.add chunk (V_Number (Lnumber.from 100.)) in
+  let chunk = Chunk.set chunk code in
+  let bytes = Chunk.emit chunk in
   let lvm = Lvm.create () in
-  let lvm = Lvm.add_symbol lvm 0 (V_Number (Lnumber.from 0.)) in
-  let lvm = Lvm.add_symbol lvm 1 (V_Number (Lnumber.from 1.)) in
-  let lvm =
-    Lvm.add_symbol lvm 2 (V_Function (Lfunction.from ("factorial", 5)))
-  in
-  let lvm = Lvm.add_symbol lvm 3 (V_Number (Lnumber.from 100000.)) in
   let lvm = Lvm.load lvm bytes in
   let start = Unix.gettimeofday () in
   let lvm = Lvm.do_code lvm in
-  Value.pretty Format.std_formatter (Cpu.get_acc (Lvm.cpu lvm)) ;
+  Logger.debug "Accumulator value: %a" Value.pretty (Cpu.get_acc (Lvm.cpu lvm)) ;
   Format.force_newline () ;
   let stop = Unix.gettimeofday () in
   Printf.printf "Execution time: %f\n" (stop -. start)

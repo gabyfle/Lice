@@ -27,39 +27,29 @@ open Bytecomp
 type t =
   { cpu: Base.t Cpu.t
   ; memory: Environment.t
-  ; symbols: Environment.t
-  ; code: Bytes.t }
+  ; chunk: Chunk.t
+  ; reader: int -> Opcode.opcode * int }
 
 let create () =
   let cpu = Cpu.init_cpu Base.V_Void in
   let memory = Environment.empty in
-  let symbols = Environment.empty in
-  {cpu; memory; symbols; code= Bytes.empty}
+  {cpu; memory; chunk= Chunk.empty; reader= (fun _ -> (HALT, 0))}
 
-let load t code = {t with code}
+let load t chunk =
+  let chunk, reader = Chunk.reader chunk in
+  {t with chunk; reader}
+
+let code t = Chunk.bytecode t.chunk
 
 let cpu t = t.cpu
 
 let memory t = t.memory
 
-let symbols t = t.symbols
-
-let add_symbol t id v =
-  let symbols = Environment.set_var t.symbols id v in
-  {t with symbols}
-
-let get_symbol t id =
-  let v = Environment.get_var t.symbols id in
-  match v with None -> failwith "Symbol not found" | Some v -> v
-
-let code t = t.code
-
 let pc t = Cpu.get_pc t.cpu
 
 let read t =
-  let code = code t in
-  let start = pc t in
-  let opcode, size = Opcode.of_bytes code start in
+  let pc = pc t in
+  let opcode, size = t.reader pc in
   let cpu = Cpu.add_pc (cpu t) size in
   (opcode, {t with cpu})
 
@@ -68,7 +58,8 @@ let nop (t : t) = t
 let halt (t : t) = t
 
 let loadk (t : t) (k : int) =
-  let v = get_symbol t k in
+  let chunk = t.chunk in
+  let v = Chunk.get chunk k in
   {t with cpu= Cpu.set_acc t.cpu v}
 
 let ldbool (t : t) (v : bool) =
@@ -157,7 +148,9 @@ let call t _ =
   let acc = Cpu.get_acc t.cpu in
   match acc with
   | V_Function f ->
-      {t with cpu= Cpu.set_pc cpu (Lfunction.address f)}
+      {t with cpu= Cpu.set_pc cpu (Int32.to_int (Lfunction.address f))}
+  | V_Variable _ ->
+      t
   | _ ->
       t
 

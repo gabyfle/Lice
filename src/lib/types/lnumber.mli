@@ -22,6 +22,8 @@
 
 include Type.T with type value = float
 
+val to_float : t -> float
+
 val to_string : t -> string
 
 val add : t -> t -> t

@@ -20,6 +20,6 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Type.T with type t = string * int and type value = string * int
+include Type.T with type t = int32 and type value = int32
 
-val address : t -> int
+val address : t -> int32

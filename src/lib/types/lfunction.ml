@@ -21,18 +21,16 @@
 (*****************************************************************************)
 
 module S = struct
-  type name = string
-
-  type t = name * int
+  type t = int32
 
   (**
       A function is represented by its address, stored in 32-bits *)
-  type value = name * int
+  type value = int32
 
   let name = "function"
 
   let pretty : Format.formatter -> t -> unit =
-   fun fmt (n, d) -> Format.fprintf fmt "function<%s> at: %d" n d
+   fun fmt d -> Format.fprintf fmt "<function object> at: %d" (Int32.to_int d)
 
   let compare (a : t) (b : t) = Stdlib.compare a b
 
@@ -41,4 +39,4 @@ end
 
 include Type.Make (S)
 
-let address : t -> int = fun (_, x) -> x
+let address : t -> int32 = Fun.id

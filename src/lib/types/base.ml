@@ -55,6 +55,9 @@ let identificator_to_string = function
   | `Module (m, (id, _)) ->
       m ^ "." ^ id
 
+(** TODO: reformat the Base module *)
+let string_to_identificator (str : string) = `Ident (str, T_Auto)
+
 let bincomp_to_string = function
   | Equal ->
       "=="

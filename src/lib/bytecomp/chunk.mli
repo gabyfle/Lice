@@ -20,11 +20,35 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+open Types
+
 type t
 
 val empty : t
 (**
     The empty chunk value. This is the base to create a new chunk *)
+
+val add : t -> Base.t -> t
+(**
+    [add chunk symbol] adds a symbol to the chunk at the end of chunk *)
+
+val set : t -> Opcode.t -> t
+(**
+    [set chunk code] sets the code of the chunk *)
+
+val get : t -> int -> Base.t
+(**
+    [get chunk index] returns the symbol at index *)
+
+val load : t -> Bytes.t -> t
+(**
+    [load chunk bytes] loads the bytecode into the chunk.
+    This function also parse the header provided inside the
+    bytecode and separate the header from the code *)
+
+val iter : t -> (int -> Base.t -> unit) -> unit
+(**
+    [iter chunk f] iterates over the symbols of the chunk *)
 
 val emit : t -> bytes
 (**
@@ -33,3 +57,11 @@ val emit : t -> bytes
 val reader : Bytes.t -> t * (int -> Opcode.opcode * int)
 (**
     [reader bytes] construct a reader function over a byte string *)
+
+val code : t -> Opcode.t
+(**
+    [code chunk] returns the opcodes of the chunk *)
+
+val bytecode : t -> Bytes.t
+(**
+    [bytecode chunk] returns the bytecode of the chunk *)
