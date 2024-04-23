@@ -47,9 +47,8 @@ let () =
   let code = String.concat "\n" code_lines in
   let ast = Kernel.parse_code code in
   let chunk = Bytecomp.Compiler.compile ast in
-  let code = Bytecomp.Chunk.code chunk in
-  List.iter
-    (fun instr ->
-      Opcode.pp Format.std_formatter instr ;
-      Format.force_newline () )
-    (List.rev code)
+  let bytes = Chunk.emit chunk in
+  let vm = Lvm.create () in
+  let vm = Lvm.load vm bytes in
+  let _ = Lvm.do_code vm in
+  ()

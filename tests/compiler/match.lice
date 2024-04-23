@@ -1,18 +1,9 @@
 let number a = "test";
-let number b = "testing";
 
-if (a == "b") {
-    let number c = 5;
-    a = 16;
-    return true;
+if (a == false) {
+    let c = 12;
+    a = 12;
 } else if (a == "test") {
-    {
-        let bool r = b == false;
-        let bool b = 15;
-
-        return c;
-    }
-    return b;
+    let string b = "oertherjgbkleblskejb";
+    b == c;
 }
-
-

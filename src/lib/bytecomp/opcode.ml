@@ -99,9 +99,10 @@ let emit_byte = function
       Bytes.set id 0 (Char.chr 4) ;
       Bytes.cat id (int_to_bytes v)
   | LDBOL b ->
-      let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 5) ;
-      Bytes.cat id (int_to_bytes (if b then 1 else 0))
+      let bytes = Bytes.create 2 in
+      Bytes.set bytes 0 (Char.chr 5) ;
+      Bytes.set bytes 1 (Char.chr (if b then 1 else 0)) ;
+      bytes
   | ADD ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 6) ;

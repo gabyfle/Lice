@@ -25,7 +25,7 @@ open Types
 
 let not_found (a : Base.t) (chunk : Chunk.t) : (Chunk.t * int) option =
   match a with
-  | V_Variable v ->
+  | V_Variable _ ->
       None
   | _ ->
       let chunk, key = Chunk.add chunk a in
@@ -106,8 +106,6 @@ and compile_expr (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
     Chunk.t * int =
   match expr with
   | Terminal t ->
-      Value.pretty Format.str_formatter t ;
-      Printf.printf "Value %s \n" (Format.flush_str_formatter ()) ;
       let chunk, size = load_value t chunk in
       (chunk, curr_size + size)
   | BinOp (op, a, b) ->
@@ -172,8 +170,13 @@ and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
      chunk later *)
   let tchunk = Chunk.set tchunk Opcode.empty in
   let tchunk, tsize = compile_statement then_ tchunk curr_size in
-  let tchunk, esize = compile_statement else_ tchunk (tsize + 5) in
-  let opcodes = Opcode.add opcodes (Opcode.JMPNZ tsize) in
+  let echunk = chunk in
+  let echunk = Chunk.set echunk Opcode.empty in
+  let echunk, esize = compile_statement else_ echunk (tsize + 10) in
+  let tchunk = Chunk.add_code tchunk [Opcode.JMP esize] in
+  let tchunk = Chunk.add_code tchunk (List.rev (Chunk.code echunk)) in
+  let opcodes = Opcode.add opcodes (Opcode.JMPNZ (tsize + 10)) in
+  (* + 10 here is for the recently added JMP operation + JMPNZ *)
   let chunk = Chunk.add_code chunk opcodes in
   let chunk = Chunk.add_code chunk (List.rev (Chunk.code tchunk)) in
   (chunk, esize)
@@ -221,7 +224,7 @@ and compile_statement (stmt : statement) (chunk : Chunk.t) (curr_size : int) :
   | Match (_, pattern, cases) ->
       compile_match pattern cases chunk curr_size
   | _ ->
-      (chunk, 0)
+      (chunk, curr_size)
 
 let compile (ast : program) : Chunk.t =
   let chunk = Chunk.empty in
@@ -233,4 +236,5 @@ let compile (ast : program) : Chunk.t =
         let chunk, size = compile_statement stmt chunk curr_size in
         aux t chunk size
   in
-  aux ast chunk 0
+  let chunk = aux ast chunk 0 in
+  Chunk.add_code chunk [Opcode.HALT]

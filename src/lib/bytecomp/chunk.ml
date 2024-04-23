@@ -59,18 +59,11 @@ module Symbol = struct
     | _ ->
         -1
 
-  let show (symbol : t) =
-    match symbol with
-    | Const (Number number) ->
-        Printf.sprintf "Number(%s)" (Lnumber.to_string number)
-    | Const (String str) ->
-        Printf.sprintf "String(%s)" (Lstring.to_string str)
-    | Const (Function func) ->
-        Printf.sprintf "Function(%s)" (Lfunction.to_string func)
-    | Variable name ->
-        Printf.sprintf "Variable(%s)" name
-    | None ->
-        "None"
+  (*let show (symbol : t) = match symbol with | Const (Number number) ->
+    Printf.sprintf "Number(%s)" (Lnumber.to_string number) | Const (String str)
+    -> Printf.sprintf "String(%s)" (Lstring.to_string str) | Const (Function
+    func) -> Printf.sprintf "Function(%s)" (Lfunction.to_string func) | Variable
+    name -> Printf.sprintf "Variable(%s)" name | None -> "None"*)
 end
 
 module Table = Map.Make (Integer)
@@ -108,18 +101,6 @@ module Symbols : SYMBOLS = struct
     let key = Table.cardinal table in
     let table = Table.add key symbol table in
     let inverse = Inverse.add symbol key inverse in
-    (* Debug print the inverse map *)
-    Table.iter
-      (fun key value -> Logger.warning "%d -> %s" key (Symbol.show value))
-      table ;
-    Inverse.iter
-      (fun key value -> Logger.debug "%s -> %d" (Symbol.show key) value)
-      inverse ;
-    Inverse.iter
-      (fun key value ->
-        Logger.debug "%s == %s : %d" (Symbol.show key) (Symbol.show symbol)
-          (Symbol.compare key symbol) )
-      inverse ;
     ((table, inverse), key)
 
   let get ((symbols, _) : t) (key : int) : Symbol.t =
@@ -262,7 +243,6 @@ module Header : HEADER = struct
     let start = emit_start header in
     let bytes = Bytes.cat bytes symbols in
     let final = Bytes.cat bytes start in
-    Bytes.iter (fun c -> Printf.printf "%d " (int_of_char c)) final ;
     final
 
   let of_bytes (bytes : Bytes.t) (start : int) =
@@ -312,17 +292,22 @@ let set (chunk : t) (code : Opcode.t) : t = {chunk with code}
 
 let get (chunk : t) (key : int) : Base.t =
   let symbol = Header.get chunk.header key in
-  match symbol with
-  | Symbol.Const (Symbol.Number number) ->
-      Base.V_Number number
-  | Symbol.Const (Symbol.String str) ->
-      Base.V_String str
-  | Symbol.Const (Symbol.Function func) ->
-      Base.V_Function func
-  | Symbol.Variable name ->
-      Base.V_Variable (Base.string_to_identificator name)
-  | _ ->
-      Base.V_Void
+  let v =
+    match symbol with
+    | Symbol.Const (Symbol.Number number) ->
+        Base.V_Number number
+    | Symbol.Const (Symbol.String str) ->
+        Base.V_String str
+    | Symbol.Const (Symbol.Function func) ->
+        Base.V_Function func
+    | Symbol.Variable name ->
+        Base.V_Variable (Base.string_to_identificator name)
+    | _ ->
+        Base.V_Void
+  in
+  Value.pretty Format.str_formatter v ;
+  Logger.error "GOT VALUE %s at KEY %d" (Format.flush_str_formatter ()) key ;
+  v
 
 let get_key (chunk : t) (value : Base.t) : int option =
   match value with
@@ -362,9 +347,20 @@ let iter (chunk : t) (func : int -> Base.t -> unit) : unit =
   let iter (key : int) (symbol : Symbol.t) = func key (of_sym symbol) in
   Header.iter iter chunk.header
 
-let emit (chunk : t) : bytes =
+let emit (chunk : t) : Bytes.t =
   let header = Header.emit chunk.header in
-  let code = Opcode.emit chunk.code in
+  Logger.warning "Emitting this bytecode:" ;
+  let rec pp_code (code : Opcode.t) : unit =
+    match code with
+    | [] ->
+        ()
+    | opcode :: rest ->
+        Opcode.pp Format.str_formatter opcode ;
+        Logger.warning "%s" (Format.flush_str_formatter ()) ;
+        pp_code rest
+  in
+  pp_code (List.rev chunk.code) ;
+  let code = Opcode.emit (List.rev chunk.code) in
   Bytes.cat header code
 
 let reader (bytes : Bytes.t) =
@@ -373,8 +369,8 @@ let reader (bytes : Bytes.t) =
   let chunk = {empty with header} in
   let func (start : int) =
     let opcode, size = Opcode.of_bytes bytes start in
-    Logger.debug "[Reader] %a" Opcode.pp opcode ;
-    Format.pp_print_newline Format.std_formatter () ;
+    Opcode.pp Format.str_formatter opcode ;
+    Logger.debug "%s, next: %d" (Format.flush_str_formatter ()) (size + start) ;
     (opcode, size)
   in
   (chunk, func)

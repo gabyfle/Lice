@@ -35,8 +35,8 @@ let create () =
   let memory = Environment.empty in
   {cpu; memory; chunk= Chunk.empty; reader= (fun _ -> (HALT, 0))}
 
-let load t chunk =
-  let chunk, reader = Chunk.reader chunk in
+let load t (bytes : Bytes.t) =
+  let chunk, reader = Chunk.reader bytes in
   {t with chunk; reader}
 
 let code t = Chunk.bytecode t.chunk
