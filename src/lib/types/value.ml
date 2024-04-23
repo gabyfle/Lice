@@ -94,8 +94,14 @@ let pretty fmt = function
       Format.fprintf fmt "%a" Lbool.pretty b
   | V_Function f ->
       Format.fprintf fmt "%a" Lfunction.pretty f
-  | _ ->
-      ()
+  | V_Variable v -> (
+    match v with
+    | `Ident (id, _) ->
+        Format.fprintf fmt "%s" id
+    | `Module (id, (id', _)) ->
+        Format.fprintf fmt "%s..%s" id id' )
+  | V_Void ->
+      Format.fprintf fmt "Void"
 
 let compare v v' =
   match (v, v') with

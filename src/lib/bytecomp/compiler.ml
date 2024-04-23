@@ -26,7 +26,9 @@ open Types
 let not_found (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
   match a with
   | V_Variable v ->
-      failwith ("Variable " ^ Base.identificator_to_string v ^ " not defined")
+      let name = Base.identificator_to_string v in
+      let str = Printf.sprintf "Variable %s not found" name in
+      failwith str
   | _ -> (
       let chunk = Chunk.add chunk a in
       let key = Chunk.get_key chunk a in
@@ -34,20 +36,29 @@ let not_found (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
       | Some key ->
           (chunk, key)
       | None ->
-          failwith "Internal error: key not found" )
+          Value.pretty Format.str_formatter a ;
+          let str =
+            Printf.sprintf "Failed to add symbol %s to the header"
+              (Format.flush_str_formatter ())
+          in
+          failwith str )
 
 let find_key (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
   let key = Chunk.get_key chunk a in
   match key with Some key -> (chunk, key) | None -> not_found a chunk
 
-let load_value (a : Base.t) (key : int) : Opcode.opcode * int =
+let load_value (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
   match a with
   | V_Variable _ ->
-      (Opcode.SEARCH key, 5)
+      let chunk, key = find_key a chunk in
+      (Chunk.add_code chunk [Opcode.SEARCH key], 5)
   | V_Boolean b ->
-      (Opcode.LDBOL b, 2)
+      (Chunk.add_code chunk [Opcode.LDBOL b], 2)
+  | V_Void ->
+      (Chunk.add_code chunk [Opcode.LDVOID], 1)
   | _ ->
-      (Opcode.LOADK key, 5)
+      let chunk, key = find_key a chunk in
+      (Chunk.add_code chunk [Opcode.LOADK key], 5)
 
 let compile_bin (op : Base.binary_operator) (chunk : Chunk.t) : Chunk.t * int =
   let opcodes = Opcode.empty in
@@ -98,9 +109,7 @@ let rec compile_operator (op : Base.binop_type) (chunk : Chunk.t) :
 and compile_expr (expr : Base.expr) (chunk : Chunk.t) : Chunk.t * int =
   match expr with
   | Terminal t ->
-      let chunk, key = find_key t chunk in
-      let opcode, size = load_value t key in
-      (Chunk.add_code chunk [opcode], size)
+      load_value t chunk
   | BinOp (op, a, b) ->
       let chunk, bsize = compile_expr b chunk in
       let chunk = Chunk.add_code chunk [Opcode.PUSH] in
@@ -152,6 +161,32 @@ and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
   let chunk, esize = compile_statement else_ chunk in
   (chunk, exprsize + tsize + esize + 5)
 
+and compile_match (pattern : Base.expr)
+    (cases : (Base.expr * statement list) list) (chunk : Chunk.t) :
+    Chunk.t * int =
+  let chunk, psize = compile_expr pattern chunk in
+  let chunk = Chunk.add_code chunk [Opcode.PUSH] in
+  let rec aux (cases : (Base.expr * statement list) list) (chunk : Chunk.t)
+      (previous : int) : Chunk.t * int =
+    match cases with
+    | [] ->
+        (chunk, 0)
+    | case :: t ->
+        let expr, stmt = case in
+        (* the pattern is pushed into the stack *)
+        let chunk, csize = compile_expr expr chunk in
+        (* the expr will then be into the acc *)
+        let chunk = Chunk.add_code chunk [Opcode.EQ] in
+        (* so we can compare them with EQ *)
+        let chunk, ssize =
+          compile_statement (Block (Lexing.dummy_pos, stmt)) chunk
+        in
+        let chunk = Chunk.add_code chunk [Opcode.JMPNZ (ssize + previous)] in
+        let chunk, tsize = aux t chunk psize in
+        (chunk, csize + ssize + tsize + 3)
+  in
+  aux cases chunk 0
+
 and compile_statement (stmt : statement) (chunk : Chunk.t) : Chunk.t * int =
   match stmt with
   | Return (_, expr) ->
@@ -162,6 +197,8 @@ and compile_statement (stmt : statement) (chunk : Chunk.t) : Chunk.t * int =
       compile_assign var expr chunk
   | If (_, cond, then_, else_) ->
       compile_if cond then_ else_ chunk
+  | Match (_, pattern, cases) ->
+      compile_match pattern cases chunk
   | _ ->
       (chunk, 0)
 

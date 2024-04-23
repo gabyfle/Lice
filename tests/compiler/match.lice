@@ -1,0 +1,10 @@
+let number a = 22;
+
+if (a == 2) {
+    return;
+} else if (a == 3) {
+    return;
+} else if (a == 4) {
+    return;
+}
+

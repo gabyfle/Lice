@@ -57,6 +57,8 @@ let nop (t : t) = t
 
 let halt (t : t) = t
 
+let ldvoid (t : t) = {t with cpu= Cpu.set_acc t.cpu V_Void}
+
 let loadk (t : t) (k : int) =
   let chunk = t.chunk in
   let v = Chunk.get chunk k in
@@ -166,6 +168,8 @@ let do_code t =
         aux (nop vm)
     | HALT ->
         halt vm
+    | LDVOID ->
+        ldvoid vm
     | LOADK k ->
         aux (loadk vm k)
     | LDBOL b ->

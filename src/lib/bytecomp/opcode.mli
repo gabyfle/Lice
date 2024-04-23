@@ -25,6 +25,7 @@
 type opcode =
   | NOP (* does nothing *)
   | HALT (* stops the virtual machine execution *)
+  | LDVOID (* loads void into the accumulator *)
   | LOADK of int (* loads the nth constant into the accumulator *)
   | LOADV of int (* loads a variable of id id into the accumulator *)
   | LDBOL of bool (* loads a bool value into the accumulator *)
