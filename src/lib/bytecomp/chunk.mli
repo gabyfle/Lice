@@ -32,6 +32,10 @@ val add : t -> Base.t -> t
 (**
     [add chunk symbol] adds a symbol to the chunk at the end of chunk *)
 
+val add_code : t -> Opcode.t -> t
+(**
+    [add_code chunk code] adds a code to the chunk at the end of chunk *)
+
 val set : t -> Opcode.t -> t
 (**
     [set chunk code] sets the code of the chunk *)
@@ -39,6 +43,14 @@ val set : t -> Opcode.t -> t
 val get : t -> int -> Base.t
 (**
     [get chunk index] returns the symbol at index *)
+
+val get_key : t -> Base.t -> int option
+(**
+    [get_key chunk value] returns the symbol at index *)
+
+val length : t -> int
+(**
+    [length chunk] returns the number of symbols in the chunk *)
 
 val load : t -> Bytes.t -> t
 (**

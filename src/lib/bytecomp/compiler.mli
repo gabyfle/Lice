@@ -20,36 +20,6 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Utils.Logger
-open Bytecomp
+open Ast.Tree
 
-let () =
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
-  let executable_dir =
-    match Sys.argv with
-    | [|_; exec_path|] ->
-        (* Get the directory containing the executable *)
-        let exec_dir = Filename.dirname exec_path in
-        (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/compiler/random.lice"
-    | _ ->
-        failwith "Invalid command line\n    arguments"
-  in
-  let in_channel = open_in executable_dir in
-  let rec read_code lines =
-    try
-      let line = input_line in_channel in
-      read_code (line :: lines)
-    with End_of_file -> List.rev lines
-  in
-  let code_lines = read_code [] in
-  close_in in_channel ;
-  let code = String.concat "\n" code_lines in
-  let ast = Kernel.parse_code code in
-  let chunk = Bytecomp.Compiler.compile ast in
-  let code = Bytecomp.Chunk.code chunk in
-  List.iter
-    (fun instr ->
-      Opcode.pp Format.std_formatter instr ;
-      Format.force_newline () )
-    (List.rev code)
+val compile : program -> Chunk.t
