@@ -54,6 +54,7 @@ rule token = parse
   | "--[["          { block_comments lexbuf } (* Block comment starting *)
   | '\"'            { string lexbuf } (* String starting *)
   | ['0'-'9']+ as lxm { INT(int_of_string lxm) }
+  | ['0'-'9']+ '.' ['0'-'9']?+ as lxm { FLOAT(float_of_string lxm) }
   | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] * as id
                     { try
                         Hashtbl.find keyword_table id
