@@ -23,42 +23,38 @@
 open Ast.Tree
 open Types
 
-let not_found (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
+let not_found (a : Base.t) (chunk : Chunk.t) : (Chunk.t * int) option =
   match a with
   | V_Variable v ->
-      let name = Base.identificator_to_string v in
-      let str = Printf.sprintf "Variable %s not found" name in
-      failwith str
-  | _ -> (
-      let chunk = Chunk.add chunk a in
-      let key = Chunk.get_key chunk a in
-      match key with
-      | Some key ->
-          (chunk, key)
-      | None ->
-          Value.pretty Format.str_formatter a ;
-          let str =
-            Printf.sprintf "Failed to add symbol %s to the header"
-              (Format.flush_str_formatter ())
-          in
-          failwith str )
+      None
+  | _ ->
+      let chunk, key = Chunk.add chunk a in
+      if key = -1 then None else Some (chunk, key)
 
-let find_key (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
+let find_key (a : Base.t) (chunk : Chunk.t) : (Chunk.t * int) option =
   let key = Chunk.get_key chunk a in
-  match key with Some key -> (chunk, key) | None -> not_found a chunk
+  match key with Some key -> Some (chunk, key) | None -> not_found a chunk
 
 let load_value (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
   match a with
-  | V_Variable _ ->
-      let chunk, key = find_key a chunk in
-      (Chunk.add_code chunk [Opcode.SEARCH key], 5)
+  | V_Variable _ -> (
+      let res = find_key a chunk in
+      match res with
+      | Some (chunk, key) ->
+          (Chunk.add_code chunk [Opcode.SEARCH key], 5)
+      | None ->
+          failwith "Variable not found" )
   | V_Boolean b ->
       (Chunk.add_code chunk [Opcode.LDBOL b], 2)
   | V_Void ->
       (Chunk.add_code chunk [Opcode.LDVOID], 1)
-  | _ ->
-      let chunk, key = find_key a chunk in
-      (Chunk.add_code chunk [Opcode.LOADK key], 5)
+  | _ -> (
+      let res = find_key a chunk in
+      match res with
+      | Some (chunk, key) ->
+          (Chunk.add_code chunk [Opcode.LOADK key], 5)
+      | None ->
+          failwith "Variable not found" )
 
 let compile_bin (op : Base.binary_operator) (chunk : Chunk.t) : Chunk.t * int =
   let opcodes = Opcode.empty in
@@ -106,110 +102,135 @@ let rec compile_operator (op : Base.binop_type) (chunk : Chunk.t) :
   | `Cons ->
       compile_bin Base.Plus chunk
 
-and compile_expr (expr : Base.expr) (chunk : Chunk.t) : Chunk.t * int =
+and compile_expr (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
+    Chunk.t * int =
   match expr with
   | Terminal t ->
-      load_value t chunk
+      Value.pretty Format.str_formatter t ;
+      Printf.printf "Value %s \n" (Format.flush_str_formatter ()) ;
+      let chunk, size = load_value t chunk in
+      (chunk, curr_size + size)
   | BinOp (op, a, b) ->
-      let chunk, bsize = compile_expr b chunk in
+      let chunk, bsize = compile_expr b chunk curr_size in
       let chunk = Chunk.add_code chunk [Opcode.PUSH] in
-      let chunk, asize = compile_expr a chunk in
+      let chunk, asize = compile_expr a chunk (bsize + 1) in
       let chunk, opsize = compile_operator op chunk in
-      (chunk, asize + bsize + opsize + 1)
+      (chunk, asize + opsize)
   | _ ->
-      (chunk, 0)
+      (chunk, curr_size)
 
-and compile_return (expr : Base.expr) (chunk : Chunk.t) : Chunk.t * int =
-  let chunk, size = compile_expr expr chunk in
+and compile_return (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
+    Chunk.t * int =
+  let chunk, size = compile_expr expr chunk curr_size in
   let opcodes = Opcode.empty in
-  let opcodes = Opcode.add opcodes Opcode.PUSH in
   let opcodes = Opcode.add opcodes Opcode.RETURN in
+  let opcodes = Opcode.add opcodes Opcode.PUSH in
   (Chunk.add_code chunk opcodes, size + 2)
 
-and compile_block (block : statement list) (chunk : Chunk.t) : Chunk.t * int =
-  let rec aux (block : statement list) (chunk : Chunk.t) : Chunk.t * int =
+and compile_block (block : statement list) (chunk : Chunk.t) (curr_size : int) :
+    Chunk.t * int =
+  let rec aux (block : statement list) (chunk : Chunk.t) (csize : int) :
+      Chunk.t * int =
     match block with
     | [] ->
-        (chunk, 0)
+        (chunk, csize)
     | stmt :: t ->
-        let chunk, size = compile_statement stmt chunk in
-        let chunk, tsize = aux t chunk in
-        (chunk, size + tsize)
+        let chunk, size = compile_statement stmt chunk csize in
+        let chunk, tsize = aux t chunk size in
+        (chunk, tsize)
   in
   let chunk = Chunk.add_code chunk [Opcode.PUSHENV] in
-  let chunk, size = aux block chunk in
+  let chunk, size = aux block chunk (curr_size + 1) in
   let chunk = Chunk.add_code chunk [Opcode.POPENV] in
-  (chunk, size + 2)
+  (chunk, size + 1)
 
 and compile_assign (var : Base.identificator) (expr : Base.expr)
-    (chunk : Chunk.t) : Chunk.t * int =
+    (chunk : Chunk.t) (curr_size : int) : Chunk.t * int =
   let var = Base.V_Variable var in
-  let chunk = Chunk.add chunk var in
-  let chunk, key = find_key var chunk in
-  let chunk, size = compile_expr expr chunk in
-  let opcodes = Opcode.empty in
-  let opcodes = Opcode.add opcodes (Opcode.EXTEND key) in
-  (Chunk.add_code chunk opcodes, size + 5)
+  let res = find_key var chunk in
+  match res with
+  | Some (chunk, key) ->
+      let chunk, size = compile_expr expr chunk curr_size in
+      let opcodes = Opcode.empty in
+      let opcodes = Opcode.add opcodes (Opcode.EXTEND key) in
+      (Chunk.add_code chunk opcodes, size + 5)
+  | None ->
+      let chunk, key = Chunk.add chunk var in
+      let chunk, size = compile_expr expr chunk curr_size in
+      let opcodes = Opcode.empty in
+      let opcodes = Opcode.add opcodes (Opcode.EXTEND key) in
+      (Chunk.add_code chunk opcodes, size + 5)
 
 and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
-    (chunk : Chunk.t) : Chunk.t * int =
-  let chunk, exprsize = compile_expr cond chunk in
+    (chunk : Chunk.t) (curr_size : int) : Chunk.t * int =
+  let chunk, curr_size = compile_expr cond chunk curr_size in
   let opcodes = Opcode.empty in
-  let chunk, tsize = compile_statement then_ chunk in
+  (* We're going to make a copy of the current chunk to compile the then / else
+     expression *)
+  let tchunk = chunk in
+  (* This new chunk has empty code, so that we can append it to the original
+     chunk later *)
+  let tchunk = Chunk.set tchunk Opcode.empty in
+  let tchunk, tsize = compile_statement then_ tchunk curr_size in
+  let tchunk, esize = compile_statement else_ tchunk (tsize + 5) in
   let opcodes = Opcode.add opcodes (Opcode.JMPNZ tsize) in
   let chunk = Chunk.add_code chunk opcodes in
-  let chunk, esize = compile_statement else_ chunk in
-  (chunk, exprsize + tsize + esize + 5)
+  let chunk = Chunk.add_code chunk (List.rev (Chunk.code tchunk)) in
+  (chunk, esize)
 
 and compile_match (pattern : Base.expr)
-    (cases : (Base.expr * statement list) list) (chunk : Chunk.t) :
-    Chunk.t * int =
-  let chunk, psize = compile_expr pattern chunk in
+    (cases : (Base.expr * statement list) list) (chunk : Chunk.t)
+    (curr_size : int) : Chunk.t * int =
+  let chunk, psize = compile_expr pattern chunk curr_size in
   let chunk = Chunk.add_code chunk [Opcode.PUSH] in
   let rec aux (cases : (Base.expr * statement list) list) (chunk : Chunk.t)
-      (previous : int) : Chunk.t * int =
+      (curr_size : int) : Chunk.t * int =
     match cases with
     | [] ->
         (chunk, 0)
     | case :: t ->
         let expr, stmt = case in
         (* the pattern is pushed into the stack *)
-        let chunk, csize = compile_expr expr chunk in
+        let chunk, csize = compile_expr expr chunk curr_size in
         (* the expr will then be into the acc *)
         let chunk = Chunk.add_code chunk [Opcode.EQ] in
         (* so we can compare them with EQ *)
-        let chunk, ssize =
-          compile_statement (Block (Lexing.dummy_pos, stmt)) chunk
+        let bchunk = chunk in
+        let bchunk = Chunk.set bchunk Opcode.empty in
+        let bchunk, ssize =
+          compile_statement (Block (Lexing.dummy_pos, stmt)) bchunk (csize + 1)
         in
-        let chunk = Chunk.add_code chunk [Opcode.JMPNZ (ssize + previous)] in
-        let chunk, tsize = aux t chunk psize in
-        (chunk, csize + ssize + tsize + 3)
+        let chunk = Chunk.add_code chunk [Opcode.JMPNZ ssize] in
+        let chunk = Chunk.add_code chunk (Chunk.code bchunk) in
+        let chunk, tsize = aux t chunk (psize + 5) in
+        (chunk, tsize)
   in
-  aux cases chunk 0
+  aux cases chunk (psize + 1)
 
-and compile_statement (stmt : statement) (chunk : Chunk.t) : Chunk.t * int =
+and compile_statement (stmt : statement) (chunk : Chunk.t) (curr_size : int) :
+    Chunk.t * int =
   match stmt with
   | Return (_, expr) ->
-      compile_return expr chunk
+      compile_return expr chunk curr_size
   | Block (_, block) ->
-      compile_block block chunk
+      compile_block block chunk curr_size
   | Assign (_, var, expr) ->
-      compile_assign var expr chunk
+      compile_assign var expr chunk curr_size
   | If (_, cond, then_, else_) ->
-      compile_if cond then_ else_ chunk
+      compile_if cond then_ else_ chunk curr_size
   | Match (_, pattern, cases) ->
-      compile_match pattern cases chunk
+      compile_match pattern cases chunk curr_size
   | _ ->
       (chunk, 0)
 
 let compile (ast : program) : Chunk.t =
   let chunk = Chunk.empty in
-  let rec aux (ast : program) (chunk : Chunk.t) : Chunk.t =
+  let rec aux (ast : program) (chunk : Chunk.t) (curr_size : int) : Chunk.t =
     match ast with
     | [] ->
         chunk
     | stmt :: t ->
-        let chunk, _ = compile_statement stmt chunk in
-        aux t chunk
+        let chunk, size = compile_statement stmt chunk curr_size in
+        aux t chunk size
   in
-  aux ast chunk
+  aux ast chunk 0

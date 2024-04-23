@@ -58,6 +58,19 @@ module Symbol = struct
         0
     | _ ->
         -1
+
+  let show (symbol : t) =
+    match symbol with
+    | Const (Number number) ->
+        Printf.sprintf "Number(%s)" (Lnumber.to_string number)
+    | Const (String str) ->
+        Printf.sprintf "String(%s)" (Lstring.to_string str)
+    | Const (Function func) ->
+        Printf.sprintf "Function(%s)" (Lfunction.to_string func)
+    | Variable name ->
+        Printf.sprintf "Variable(%s)" name
+    | None ->
+        "None"
 end
 
 module Table = Map.Make (Integer)
@@ -70,7 +83,7 @@ module type SYMBOLS = sig
 
   val length : t -> int
 
-  val add : t -> Symbol.t -> t
+  val add : t -> Symbol.t -> t * int
 
   val get : t -> int -> Symbol.t
 
@@ -90,12 +103,24 @@ module Symbols : SYMBOLS = struct
 
   let length ((symbols, _) : t) = Table.cardinal symbols
 
-  let add (symbols : t) (symbol : Symbol.t) : t =
+  let add (symbols : t) (symbol : Symbol.t) : t * int =
     let table, inverse = symbols in
     let key = Table.cardinal table in
     let table = Table.add key symbol table in
     let inverse = Inverse.add symbol key inverse in
-    (table, inverse)
+    (* Debug print the inverse map *)
+    Table.iter
+      (fun key value -> Logger.warning "%d -> %s" key (Symbol.show value))
+      table ;
+    Inverse.iter
+      (fun key value -> Logger.debug "%s -> %d" (Symbol.show key) value)
+      inverse ;
+    Inverse.iter
+      (fun key value ->
+        Logger.debug "%s == %s : %d" (Symbol.show key) (Symbol.show symbol)
+          (Symbol.compare key symbol) )
+      inverse ;
+    ((table, inverse), key)
 
   let get ((symbols, _) : t) (key : int) : Symbol.t =
     Table.find_opt key symbols |> Option.value ~default:Symbol.None
@@ -187,7 +212,7 @@ module type HEADER = sig
 
   (*val start : t -> int32*)
 
-  val add : t -> Symbol.t -> t
+  val add : t -> Symbol.t -> t * int
 
   val length : t -> int
 
@@ -211,9 +236,9 @@ module Header : HEADER = struct
 
   let set_start (header : t) (start : int32) = {header with start}
 
-  let add (header : t) (symbol : Symbol.t) : t =
-    let symbols = Symbols.add header.symbols symbol in
-    {header with symbols}
+  let add (header : t) (symbol : Symbol.t) : t * int =
+    let symbols, key = Symbols.add header.symbols symbol in
+    ({header with symbols}, key)
 
   let emit_start (header : t) =
     let start = header.start in
@@ -251,7 +276,7 @@ module Header : HEADER = struct
           let header = set_start header pc in
           (header, start + size + 5)
       | _ ->
-          let symbols = Symbols.add header.symbols symbol in
+          let symbols, _ = Symbols.add header.symbols symbol in
           let header = {header with symbols} in
           aux header (start + size)
     in
@@ -262,22 +287,26 @@ type t = {header: Header.t; code: Opcode.t; bytecode: Bytes.t}
 
 let empty = {header= Header.empty; code= []; bytecode= Bytes.empty}
 
-let add (chunk : t) (symbol : Base.t) : t =
+let add (chunk : t) (symbol : Base.t) : t * int =
   match symbol with
   | V_Number number ->
       let symbol = Symbol.Const (Symbol.Number number) in
-      {chunk with header= Header.add chunk.header symbol}
+      let header, key = Header.add chunk.header symbol in
+      ({chunk with header}, key)
   | V_String str ->
       let symbol = Symbol.Const (Symbol.String str) in
-      {chunk with header= Header.add chunk.header symbol}
+      let header, key = Header.add chunk.header symbol in
+      ({chunk with header}, key)
   | V_Function func ->
       let symbol = Symbol.Const (Symbol.Function func) in
-      {chunk with header= Header.add chunk.header symbol}
+      let header, key = Header.add chunk.header symbol in
+      ({chunk with header}, key)
   | V_Variable name ->
       let symbol = Symbol.Variable (Base.identificator_to_string name) in
-      {chunk with header= Header.add chunk.header symbol}
+      let header, key = Header.add chunk.header symbol in
+      ({chunk with header}, key)
   | _ ->
-      chunk
+      (chunk, -1)
 
 let set (chunk : t) (code : Opcode.t) : t = {chunk with code}
 

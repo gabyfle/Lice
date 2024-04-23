@@ -28,9 +28,9 @@ val empty : t
 (**
     The empty chunk value. This is the base to create a new chunk *)
 
-val add : t -> Base.t -> t
+val add : t -> Base.t -> t * int
 (**
-    [add chunk symbol] adds a symbol to the chunk at the end of chunk *)
+    [add chunk symbol] adds a symbol to the chunk at the end of chunk, returns also the key index where it has been added *)
 
 val add_code : t -> Opcode.t -> t
 (**

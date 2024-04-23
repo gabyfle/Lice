@@ -97,9 +97,9 @@ let pretty fmt = function
   | V_Variable v -> (
     match v with
     | `Ident (id, _) ->
-        Format.fprintf fmt "%s" id
+        Format.fprintf fmt "<variable> %s" id
     | `Module (id, (id', _)) ->
-        Format.fprintf fmt "%s..%s" id id' )
+        Format.fprintf fmt "<variable> %s..%s" id id' )
   | V_Void ->
       Format.fprintf fmt "Void"
 

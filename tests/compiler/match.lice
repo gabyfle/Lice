@@ -1,10 +1,18 @@
-let number a = 22;
+let number a = "test";
+let number b = "testing";
 
-if (a == 2) {
-    return;
-} else if (a == 3) {
-    return;
-} else if (a == 4) {
-    return;
+if (a == "b") {
+    let number c = 5;
+    a = 16;
+    return true;
+} else if (a == "test") {
+    {
+        let bool r = b == false;
+        let bool b = 15;
+
+        return c;
+    }
+    return b;
 }
+
 
