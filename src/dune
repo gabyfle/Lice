@@ -2,4 +2,12 @@
  (name lice)
  (public_name lice)
  (libraries kernel bytecomp vm)
- (ocamlc_flags (-g)))
+ (modes native js))
+
+(env
+ (dev
+  (flags
+   (:standard -g)))
+ (release
+  (ocamlopt_flags
+   (:standard -O3))))

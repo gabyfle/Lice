@@ -1,0 +1,11 @@
+let number a = 2134 + 4567 - 5;
+let number b = 26155389 * 2654372 + 4;
+
+let number a = 12;
+let number b = 15;
+
+if (a == b) {
+    let d = a - b;
+} else {
+    let f = 12;
+}

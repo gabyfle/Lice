@@ -29,55 +29,82 @@ module Integer = struct
   let compare = compare
 end
 
-module Table = Map.Make (Integer)
-
-module type SYMBOLS = sig
+module Symbol = struct
   type t_symbol =
     | Number of Lnumber.t
     | String of Lstring.t
     | Function of Lfunction.t
 
-  type symbol = Const of t_symbol | Variable of string | None
+  type t = Const of t_symbol | Variable of string | None
 
+  let compare_vals (a : t_symbol) (b : t_symbol) =
+    match (a, b) with
+    | Number a, Number b ->
+        Lnumber.compare a b
+    | String a, String b ->
+        Lstring.compare a b
+    | Function a, Function b ->
+        Lfunction.compare a b
+    | _ ->
+        -1
+
+  let compare (a : t) (b : t) =
+    match (a, b) with
+    | Const a, Const b ->
+        compare_vals a b
+    | Variable a, Variable b ->
+        String.compare a b
+    | None, None ->
+        0
+    | _ ->
+        -1
+end
+
+module Table = Map.Make (Integer)
+module Inverse = Map.Make (Symbol)
+
+module type SYMBOLS = sig
   type t
 
   val empty : t
 
-  val add : t -> symbol -> t
+  val length : t -> int
 
-  val get : t -> int -> symbol
+  val add : t -> Symbol.t -> t
 
-  (*val remove : t -> int -> t*)
+  val get : t -> int -> Symbol.t
 
-  val iter : (int -> symbol -> unit) -> t -> unit
+  val get_key : t -> Symbol.t -> int option
+
+  val iter : (int -> Symbol.t -> unit) -> t -> unit
 
   val emit : t -> Bytes.t
 
-  val of_bytes : Bytes.t -> int -> symbol * int
+  val of_bytes : Bytes.t -> int -> Symbol.t * int
 end
 
 module Symbols : SYMBOLS = struct
-  type t_symbol =
-    | Number of Lnumber.t
-    | String of Lstring.t
-    | Function of Lfunction.t
+  type t = Symbol.t Table.t * int Inverse.t
 
-  type symbol = Const of t_symbol | Variable of string | None
+  let empty : t = (Table.empty, Inverse.empty)
 
-  type t = symbol Table.t
+  let length ((symbols, _) : t) = Table.cardinal symbols
 
-  let empty = Table.empty
+  let add (symbols : t) (symbol : Symbol.t) : t =
+    let table, inverse = symbols in
+    let key = Table.cardinal table in
+    let table = Table.add key symbol table in
+    let inverse = Inverse.add symbol key inverse in
+    (table, inverse)
 
-  let add (symbols : t) (symbol : symbol) : t =
-    Table.add (Table.cardinal symbols) symbol symbols
+  let get ((symbols, _) : t) (key : int) : Symbol.t =
+    Table.find_opt key symbols |> Option.value ~default:Symbol.None
 
-  let get (symbols : t) (key : int) : symbol =
-    Table.find_opt key symbols |> Option.value ~default:None
+  let get_key (_, symbols) (symbol : Symbol.t) : int option =
+    Inverse.find_opt symbol symbols
 
-  (*let remove (symbols : t) (key : int) : t = Table.remove key symbols*)
-
-  let iter (func : int -> symbol -> unit) (symbols : t) : unit =
-    let iter (key : int) (value : symbol) = func key value in
+  let iter (func : int -> Symbol.t -> unit) ((symbols, _) : t) : unit =
+    let iter (key : int) (value : Symbol.t) = func key value in
     Table.iter iter symbols
 
   let emit_number (number : float) =
@@ -109,7 +136,7 @@ module Symbols : SYMBOLS = struct
     Bytes.set_int32_be bytes 1 func ;
     bytes
 
-  let emit_symbol (symbol : symbol) =
+  let emit_symbol (symbol : Symbol.t) =
     match symbol with
     | Const (Number number) ->
         emit_number (Lnumber.to_float number)
@@ -122,9 +149,9 @@ module Symbols : SYMBOLS = struct
     | None ->
         Bytes.empty
 
-  let emit (symbols : t) =
+  let emit ((symbols, _) : t) =
     let bytes = ref (Bytes.create 0) in
-    let iter (_ : int) (value : symbol) =
+    let iter (_ : int) (value : Symbol.t) =
       let sym = emit_symbol value in
       bytes := Bytes.cat !bytes sym
     in
@@ -136,21 +163,21 @@ module Symbols : SYMBOLS = struct
     | 0 ->
         let number = Bytes.get_int32_be bytes (start + 1) in
         let float = Int32.float_of_bits number in
-        (Const (Number (Lnumber.from float)), 5)
+        (Symbol.Const (Number (Lnumber.from float)), 5)
     | 1 ->
         let length = Bytes.get_int32_be bytes (start + 1) in
         let str = Bytes.sub_string bytes (start + 5) (Int32.to_int length) in
         let str = Lstring.from str in
-        (Const (String str), 5 + Int32.to_int length)
+        (Symbol.Const (String str), 5 + Int32.to_int length)
     | 2 ->
         let length = Bytes.get_int32_be bytes (start + 1) in
         let str = Bytes.sub_string bytes (start + 5) (Int32.to_int length) in
-        (Variable str, 5 + Int32.to_int length)
+        (Symbol.Variable str, 5 + Int32.to_int length)
     | 3 ->
         let func = Bytes.get_int32_be bytes (start + 1) in
-        (Const (Function (Lfunction.from func)), 5)
+        (Symbol.Const (Function (Lfunction.from func)), 5)
     | _ ->
-        (None, 0)
+        (Symbol.None, 0)
 end
 
 module type HEADER = sig
@@ -160,11 +187,15 @@ module type HEADER = sig
 
   (*val start : t -> int32*)
 
-  val add : t -> Symbols.symbol -> t
+  val add : t -> Symbol.t -> t
 
-  val iter : (int -> Symbols.symbol -> unit) -> t -> unit
+  val length : t -> int
 
-  val get : t -> int -> Symbols.symbol
+  val iter : (int -> Symbol.t -> unit) -> t -> unit
+
+  val get : t -> int -> Symbol.t
+
+  val get_key : t -> Symbol.t -> int option
 
   val emit : t -> Bytes.t
 
@@ -176,9 +207,11 @@ module Header : HEADER = struct
 
   let empty = {symbols= Symbols.empty; start= 0l}
 
+  let length (header : t) = Symbols.length header.symbols
+
   let set_start (header : t) (start : int32) = {header with start}
 
-  let add (header : t) (symbol : Symbols.symbol) : t =
+  let add (header : t) (symbol : Symbol.t) : t =
     let symbols = Symbols.add header.symbols symbol in
     {header with symbols}
 
@@ -189,10 +222,13 @@ module Header : HEADER = struct
     Bytes.set_int32_be bytes 1 (Int32.add start 5l) ;
     bytes
 
-  let iter (func : int -> Symbols.symbol -> unit) (header : t) : unit =
+  let iter (func : int -> Symbol.t -> unit) (header : t) : unit =
     Symbols.iter func header.symbols
 
   let get (header : t) (key : int) = Symbols.get header.symbols key
+
+  let get_key (header : t) (symbol : Symbol.t) =
+    Symbols.get_key header.symbols symbol
 
   let emit (header : t) =
     let bytes = Bytes.create 0 in
@@ -208,7 +244,7 @@ module Header : HEADER = struct
     let rec aux (header : t) (start : int) =
       let symbol, size = Symbols.of_bytes bytes start in
       match symbol with
-      | Symbols.None ->
+      | Symbol.None ->
           (* the Symbols.of_bytes found something that is not a symbol *)
           let pc = Bytes.get_int32_be bytes (start + 1) in
           (* it's surelly the start of the code of the header *)
@@ -229,16 +265,16 @@ let empty = {header= Header.empty; code= []; bytecode= Bytes.empty}
 let add (chunk : t) (symbol : Base.t) : t =
   match symbol with
   | V_Number number ->
-      let symbol = Symbols.Const (Symbols.Number number) in
+      let symbol = Symbol.Const (Symbol.Number number) in
       {chunk with header= Header.add chunk.header symbol}
   | V_String str ->
-      let symbol = Symbols.Const (Symbols.String str) in
+      let symbol = Symbol.Const (Symbol.String str) in
       {chunk with header= Header.add chunk.header symbol}
   | V_Function func ->
-      let symbol = Symbols.Const (Symbols.Function func) in
+      let symbol = Symbol.Const (Symbol.Function func) in
       {chunk with header= Header.add chunk.header symbol}
   | V_Variable name ->
-      let symbol = Symbols.Variable (Base.identificator_to_string name) in
+      let symbol = Symbol.Variable (Base.identificator_to_string name) in
       {chunk with header= Header.add chunk.header symbol}
   | _ ->
       chunk
@@ -248,16 +284,32 @@ let set (chunk : t) (code : Opcode.t) : t = {chunk with code}
 let get (chunk : t) (key : int) : Base.t =
   let symbol = Header.get chunk.header key in
   match symbol with
-  | Symbols.Const (Symbols.Number number) ->
+  | Symbol.Const (Symbol.Number number) ->
       Base.V_Number number
-  | Symbols.Const (Symbols.String str) ->
+  | Symbol.Const (Symbol.String str) ->
       Base.V_String str
-  | Symbols.Const (Symbols.Function func) ->
+  | Symbol.Const (Symbol.Function func) ->
       Base.V_Function func
-  | Symbols.Variable name ->
+  | Symbol.Variable name ->
       Base.V_Variable (Base.string_to_identificator name)
   | _ ->
       Base.V_Void
+
+let get_key (chunk : t) (value : Base.t) : int option =
+  match value with
+  | V_Number number ->
+      Header.get_key chunk.header (Symbol.Const (Symbol.Number number))
+  | V_String str ->
+      Header.get_key chunk.header (Symbol.Const (Symbol.String str))
+  | V_Function func ->
+      Header.get_key chunk.header (Symbol.Const (Symbol.Function func))
+  | V_Variable name ->
+      Header.get_key chunk.header
+        (Symbol.Variable (Base.identificator_to_string name))
+  | _ ->
+      None
+
+let length (chunk : t) : int = Header.length chunk.header
 
 let load (chunk : t) (bytecode : Bytes.t) : t =
   let header, size = Header.of_bytes bytecode 0 in
@@ -265,20 +317,20 @@ let load (chunk : t) (bytecode : Bytes.t) : t =
   {chunk with header; bytecode}
 
 let iter (chunk : t) (func : int -> Base.t -> unit) : unit =
-  let of_sym (symbol : Symbols.symbol) =
+  let of_sym (symbol : Symbol.t) =
     match symbol with
-    | Symbols.Const (Symbols.Number number) ->
+    | Symbol.Const (Symbol.Number number) ->
         Base.V_Number number
-    | Symbols.Const (Symbols.String str) ->
+    | Symbol.Const (Symbol.String str) ->
         Base.V_String str
-    | Symbols.Const (Symbols.Function func) ->
+    | Symbol.Const (Symbol.Function func) ->
         Base.V_Function func
-    | Symbols.Variable name ->
+    | Symbol.Variable name ->
         Base.V_Variable (Base.string_to_identificator name)
     | _ ->
         Base.V_Void
   in
-  let iter (key : int) (symbol : Symbols.symbol) = func key (of_sym symbol) in
+  let iter (key : int) (symbol : Symbol.t) = func key (of_sym symbol) in
   Header.iter iter chunk.header
 
 let emit (chunk : t) : bytes =
@@ -299,5 +351,8 @@ let reader (bytes : Bytes.t) =
   (chunk, func)
 
 let code (chunk : t) = chunk.code
+
+let add_code (chunk : t) (opcode : Opcode.t) : t =
+  {chunk with code= Opcode.add_list chunk.code opcode}
 
 let bytecode (chunk : t) = chunk.bytecode
