@@ -90,6 +90,10 @@ val emit : t -> bytes
 (**
     [emit chunk] emits the given chunk into a string of bytes *)
 
+val emit_code : t -> bytes
+(**
+    [emit_code chunk] emits the code of the chunk into a string of bytes *)
+
 val reader : Bytes.t -> t * (int -> Opcode.opcode * int)
 (**
     [reader bytes] construct a reader function over a byte string *)

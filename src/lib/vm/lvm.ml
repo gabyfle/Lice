@@ -119,8 +119,12 @@ let push t =
   {t with cpu}
 
 let pop t =
-  let cpu = Cpu.pop (cpu t) in
-  {t with cpu}
+  try
+    let cpu = Cpu.pop (cpu t) in
+    {t with cpu}
+  with Stack.Empty ->
+    let cpu = Cpu.set_acc t.cpu V_Void in
+    {t with cpu}
 
 let extend t id =
   let v = Cpu.get_acc t.cpu in
@@ -169,7 +173,7 @@ let do_code t =
     | HALT ->
         halt vm
     | LDVOID ->
-        ldvoid vm
+        aux (ldvoid vm)
     | LOADK k ->
         aux (loadk vm k)
     | LDBOL b ->

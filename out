@@ -1,0 +1,43 @@
+[Info] Adding key "test" 
+[Info] Adding key 12.000000 
+[Info] Adding key 1.000000 
+Adjusting delta 58
+Adjusting delta 58
+[Warning] Emitting this bytecode (WITHOUT HEADER): 
+[Warning] PUSHENV 
+[Warning] LDBOL false 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] Emitting this bytecode (WITHOUT HEADER): 
+[Warning] PUSHENV 
+[Warning] POP 
+[Warning] EXTEND 6 
+[Warning] LOADK 7 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] Emitting this bytecode (WITH HEADER): 
+[Warning] LOADK 1 
+[Warning] EXTEND 0 
+[Warning] LOADK 3 
+[Warning] EXTEND 2 
+[Warning] LOADK 4 
+[Warning] CALL 0 
+[Warning] PUSH 
+[Warning] SEARCH 2 
+[Warning] ADD 
+[Warning] EXTEND 2 
+[Warning] HALT 
+[Debug] LOADK 1 
+[Error] GOT VALUE "test" at KEY 1 
+[Debug] EXTEND 0 
+[Debug] LOADK 3 
+[Error] GOT VALUE 12.000000 at KEY 3 
+[Debug] EXTEND 2 
+[Debug] LOADK 4 
+[Error] GOT VALUE <function object> at: 58 at KEY 4 
+[Debug] CALL 0 
+[Debug] NOP 
+[Debug] NOP 
+[Debug] SUB 

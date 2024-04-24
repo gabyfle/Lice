@@ -31,7 +31,7 @@ let () =
         (* Get the directory containing the executable *)
         let exec_dir = Filename.dirname exec_path in
         (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/perf/exp.lice"
+        Filename.concat exec_dir "tests/compiler/match.lice"
     | _ ->
         failwith "Invalid command line\n    arguments"
   in

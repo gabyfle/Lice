@@ -5,5 +5,9 @@ function testing(a: string) {
     return 1;
 }
 
-let number b = testing();
+function nice() {
+    return false;
+}
+
+let number b = b + testing();
 

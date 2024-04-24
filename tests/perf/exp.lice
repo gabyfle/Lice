@@ -1,6 +1,4 @@
-let number test = 12800;
-
-test = test + 12;
+let number test = 10;
 
 function factorial(n) {
     if (n == 0) return 1;
@@ -17,4 +15,4 @@ function exp(n) {
     return exp_aux(n, 1);    
 }
 
-let number e = exp(12800);
+let number e = exp(test);

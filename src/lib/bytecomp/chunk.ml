@@ -527,7 +527,7 @@ let iter (chunk : t) (func : int -> Base.t -> unit) : unit =
 
 let emit (chunk : t) : Bytes.t =
   let header = Header.emit chunk.header in
-  Logger.warning "Emitting this bytecode:" ;
+  Logger.warning "Emitting this bytecode (WITH HEADER):" ;
   let rec pp_code (code : Opcode.t) : unit =
     match code with
     | [] ->
@@ -541,6 +541,20 @@ let emit (chunk : t) : Bytes.t =
   let code = Opcode.emit (List.rev chunk.code) in
   Bytes.cat header code
 
+let emit_code (chunk : t) : Bytes.t =
+  Logger.warning "Emitting this bytecode (WITHOUT HEADER):" ;
+  let rec pp_code (code : Opcode.t) : unit =
+    match code with
+    | [] ->
+        ()
+    | opcode :: rest ->
+        Opcode.pp Format.str_formatter opcode ;
+        Logger.warning "%s" (Format.flush_str_formatter ()) ;
+        pp_code rest
+  in
+  pp_code (List.rev chunk.code) ;
+  Opcode.emit (List.rev chunk.code)
+
 let reader (bytes : Bytes.t) =
   let header, size = Header.of_bytes bytes 0 in
   let bytes = Bytes.sub bytes size (Bytes.length bytes - size) in
@@ -548,7 +562,7 @@ let reader (bytes : Bytes.t) =
   let func (start : int) =
     let opcode, size = Opcode.of_bytes bytes start in
     Opcode.pp Format.str_formatter opcode ;
-    Logger.debug "%s, next: %d" (Format.flush_str_formatter ()) (size + start) ;
+    Logger.debug "%s" (Format.flush_str_formatter ()) ;
     (opcode, size)
   in
   (chunk, func)
