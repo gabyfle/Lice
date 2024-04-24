@@ -45,8 +45,18 @@ module Symbol = struct
         Lstring.compare a b
     | Function a, Function b ->
         Lfunction.compare a b
-    | _ ->
+    | String _, Number _ ->
+        1
+    | Number _, String _ ->
         -1
+    | Function _, Number _ ->
+        2
+    | Number _, Function _ ->
+        -2
+    | Function _, String _ ->
+        3
+    | String _, Function _ ->
+        -3
 
   let compare (a : t) (b : t) =
     match (a, b) with
@@ -56,8 +66,18 @@ module Symbol = struct
         String.compare a b
     | None, None ->
         0
-    | _ ->
+    | Variable _, Const _ ->
         -1
+    | Const _, Variable _ ->
+        1
+    | None, Const _ ->
+        -2
+    | Const _, None ->
+        2
+    | None, Variable _ ->
+        -3
+    | Variable _, None ->
+        3
 end
 
 module Table = Map.Make (Integer)
