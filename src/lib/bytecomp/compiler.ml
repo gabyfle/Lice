@@ -48,6 +48,8 @@ module Code = struct
 
   let add (chunk : Worker.t) (t : t) = List.append t [chunk]
 
+  let add_front (chunk : Worker.t) (t : t) = List.append [chunk] t
+
   let get (t : t) = match t with [] -> None | h :: _ -> Some h
 
   let set (chunk : Worker.t) (code : t) : t =
@@ -69,6 +71,10 @@ module Code = struct
     let main = Chunk.emit (Worker.chunk main) in
     Bytes.cat main bytes
 end
+
+let unique_id =
+  let count = ref 0 in
+  fun () -> incr count ; !count
 
 let add_key (a : Base.t) (worker : Worker.t) : Worker.t * int =
   Value.pretty Format.str_formatter a ;
@@ -229,18 +235,20 @@ and compile_return (expr : Base.expr) (worker : Worker.t) : Worker.t =
   let opcodes = Opcode.add opcodes Opcode.PUSH in
   let opcodes = Opcode.add opcodes Opcode.POPENV in
   let opcodes = Opcode.add opcodes Opcode.RETURN in
-  let chunk = Worker.chunk worker in
-  let chunk = Chunk.add_code chunk opcodes in
-  Worker.grow {worker with chunk} 3
+  Worker.grow
+    {worker with chunk= Chunk.add_code (Worker.chunk worker) opcodes}
+    3
 
 and compile_block (block : statement list) (worker : Worker.t) : Worker.t =
-  let chunk = Worker.chunk worker in
-  let chunk = Chunk.add_code chunk [Opcode.PUSHENV] in
-  let worker = Worker.grow {worker with chunk} 1 in
+  let worker =
+    Worker.grow
+      {worker with chunk= Chunk.add_code (Worker.chunk worker) [Opcode.PUSHENV]}
+      1
+  in
   let worker = compile_stmt_list block worker in
-  let chunk = Worker.chunk worker in
-  let chunk = Chunk.add_code chunk [Opcode.POPENV] in
-  Worker.grow {worker with chunk} 1
+  Worker.grow
+    {worker with chunk= Chunk.add_code (Worker.chunk worker) [Opcode.POPENV]}
+    1
 
 and compile_assign (var : Base.identificator) (expr : Base.expr)
     (worker : Worker.t) : Worker.t =
@@ -286,9 +294,7 @@ and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
   let worker =
     {worker with chunk= Chunk.add_code (Worker.chunk worker) opcodes}
   in
-  { worker with
-    chunk= Chunk.add_code (Worker.chunk worker) (List.rev (Chunk.code tchunk))
-  }
+  {worker with chunk= Chunk.add_code (Worker.chunk worker) (Chunk.code tchunk)}
 
 and compile_match (pattern : Base.expr)
     (cases : (Base.expr * statement list) list) (worker : Worker.t) : Worker.t =
@@ -341,8 +347,7 @@ and compile_function (id : Base.identificator) (vars : Base.identificator list)
     {worker with chunk= Chunk.set (Worker.chunk worker) Opcode.empty; size= 0}
   in
   let chunk, key =
-    Chunk.add (Worker.chunk worker)
-      (V_Function (Int32.of_int (Worker.size worker)))
+    Chunk.add (Worker.chunk worker) (V_Function (Int32.of_int (unique_id ())))
   in
   let chunk, key = Chunk.addk chunk (V_Variable id) key in
   let worker =
@@ -385,17 +390,15 @@ and compile_statement (stmt : statement) (worker : Worker.t) : Worker.t =
   | _ ->
       worker
 
-let adjust_jumps (code : Opcode.t) (delta : int) : Opcode.t =
-  Printf.printf "Adjusting delta %d\n" delta ;
+let adjust_jumps (code : Opcode.t) (pos : int) : Opcode.t =
   let rec aux acc = function
     | [] ->
         List.rev acc
     | Opcode.JMPNZ i :: t ->
-        let i = i + delta in
-        aux (Opcode.JMPNZ i :: acc) t
+        Printf.printf "JMPNZ %d + %d\n" i pos ;
+        aux (Opcode.JMPNZ (i + pos) :: acc) t
     | Opcode.JMP i :: t ->
-        let i = i + delta in
-        aux (Opcode.JMP i :: acc) t
+        aux (Opcode.JMP (i + pos) :: acc) t
     | h :: t ->
         aux (h :: acc) t
   in
@@ -407,7 +410,7 @@ let resolve_addresses (code : Code.t) : Code.t =
   let sizes =
     let rec aux acc = function
       | [] ->
-          acc
+          List.rev acc
       | worker :: t ->
           aux ((Worker.size worker, Some worker) :: acc) t
     in
@@ -434,31 +437,29 @@ let resolve_addresses (code : Code.t) : Code.t =
         in
         aux main (dsize + size) worker ([], t')
     | key :: t, (dsize, worker) :: t' ->
-        let main = Worker.grow main dsize in
+        let nsize = size + dsize in
+        let nfunc = Base.V_Function (Int32.of_int nsize) in
         let main =
-          { main with
-            chunk=
-              Chunk.setk (Worker.chunk main) key
-                (V_Function (Int32.of_int (size + dsize))) }
+          {main with chunk= Chunk.setk (Worker.chunk main) key nfunc}
         in
         let worker =
           match worker with
           | Some worker ->
               let code = Chunk.code (Worker.chunk worker) in
-              let code = adjust_jumps code (size + dsize) in
+              let code = adjust_jumps code size in
               let chunk = Chunk.set (Worker.chunk worker) code in
               let worker = {worker with chunk} in
               Code.add worker rest
           | None ->
               rest
         in
-        aux main (dsize + size) worker (t, t')
+        aux main nsize worker (t, t')
     | _ ->
         (main, rest)
   in
   Chunk.iter (Worker.chunk main) iter ;
-  let main, rest = aux main 0 [] (!todo, List.rev sizes) in
-  List.rev (Code.add main rest)
+  let main, rest = aux main 0 [] (!todo, sizes) in
+  Code.add_front main rest
 
 let compile (ast : program) : Bytes.t =
   let code = Code.empty in
@@ -503,4 +504,7 @@ let compile (ast : program) : Bytes.t =
   let worker = Worker.grow {worker with chunk} 1 in
   let code = Code.set worker code in
   let code = resolve_addresses code in
-  Code.emit code
+  let _worker = Option.value (Code.get code) ~default:Worker.empty in
+  Chunk.dump (Worker.chunk _worker) ;
+  let bytes = Code.emit code in
+  bytes

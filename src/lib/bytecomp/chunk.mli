@@ -48,6 +48,10 @@ val add : t -> Base.t -> t * int
 (**
     [add chunk symbol] adds a symbol to the chunk at the end of chunk, returns also the key index where it has been added *)
 
+val removei : t -> Base.t -> t
+(**
+    [removei chunk index] removes the symbol at index *)
+
 val addk : t -> Base.t -> int -> t * int
 
 val setk : t -> int -> Base.t -> t

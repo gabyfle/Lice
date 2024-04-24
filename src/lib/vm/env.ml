@@ -34,12 +34,14 @@ module type Env = sig
   val push_scope : t -> t
 
   val pop_scope : t -> t
+
+  val dump : t -> unit
 end
 
 module Integer = struct
   type t = int
 
-  let compare = compare
+  let compare = Int.compare
 end
 
 module Scope = Map.Make (Integer)
@@ -63,10 +65,18 @@ module Environment : Env = struct
     | [] ->
         failwith "Empty scope"
     | h :: t ->
-        Scope.add id value h :: t
+        Scope.update id (fun _ -> Some value) h :: t
 
   let push_scope (scope : t) = Scope.empty :: scope
 
   let pop_scope (scope : t) =
     match scope with [] -> failwith "Empty scope" | _ :: t -> t
+
+  let dump (scope : t) =
+    List.iter
+      (fun s ->
+        Scope.iter
+          (fun k v -> Printf.printf "%d -> %s\n" k (Value.to_string v))
+          s )
+      scope
 end

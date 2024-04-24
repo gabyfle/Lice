@@ -128,8 +128,10 @@ let pop t =
 
 let extend t id =
   let v = Cpu.get_acc t.cpu in
+  Value.pretty Format.str_formatter v ;
+  Printf.printf "EXTEND %d = %s\n%!" id (Format.flush_str_formatter ()) ;
   let memory = Environment.set_var t.memory id v in
-  {t with memory}
+  Environment.dump memory ; {t with memory}
 
 let search t id =
   let v = Environment.get_var t.memory id in
@@ -150,8 +152,11 @@ let popenv t =
   {t with memory}
 
 let call t _ =
+  Printf.printf "CALL\n%!" ;
   let cpu = Cpu.rpush t.cpu in
   let acc = Cpu.get_acc t.cpu in
+  Value.pretty Format.str_formatter acc ;
+  Printf.printf "CALL %s\n%!" (Format.flush_str_formatter ()) ;
   match acc with
   | V_Function f ->
       {t with cpu= Cpu.set_pc cpu (Int32.to_int (Lfunction.address f))}

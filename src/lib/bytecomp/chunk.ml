@@ -94,6 +94,8 @@ module type SYMBOLS = sig
 
   val add : t -> Symbol.t -> t * int
 
+  val removei : t -> Symbol.t -> t
+
   val addk : t -> Symbol.t -> int -> t * int
 
   val setk : t -> int -> Symbol.t -> t
@@ -151,11 +153,19 @@ module Symbols : SYMBOLS = struct
 
   let add (symbols : t) (symbol : Symbol.t) : t * int =
     let table, inverse = symbols in
-    let key = Table.cardinal table in
-    let table = Table.add key symbol table in
-    let inverse = Inverse.add symbol key inverse in
-    let inverse = Inverse.add symbol key inverse in
-    ((table, inverse), key)
+    match Inverse.find_opt symbol inverse with
+    | Some key ->
+        (symbols, key)
+    | None ->
+        let key = Table.cardinal table in
+        let table = Table.add key symbol table in
+        let inverse = Inverse.add symbol key inverse in
+        let inverse = Inverse.add symbol key inverse in
+        ((table, inverse), key)
+
+  let removei (symbols : t) (symbol : Symbol.t) =
+    let table, inverse = symbols in
+    (table, Inverse.remove symbol inverse)
 
   let setk (symbols : t) (key : int) (symbol : Symbol.t) : t =
     let table, inverse = symbols in
@@ -297,6 +307,8 @@ module type HEADER = sig
 
   val add : t -> Symbol.t -> t * int
 
+  val removei : t -> Symbol.t -> t
+
   val addk : t -> Symbol.t -> int -> t * int
 
   val setk : t -> int -> Base.t -> t
@@ -332,6 +344,10 @@ module Header : HEADER = struct
   let add (header : t) (symbol : Symbol.t) : t * int =
     let symbols, key = Symbols.add header.symbols symbol in
     ({header with symbols}, key)
+
+  let removei (header : t) (symbol : Symbol.t) : t =
+    let symbols = Symbols.removei header.symbols symbol in
+    {header with symbols}
 
   let addk (header : t) (symbol : Symbol.t) (key : int) : t * int =
     let symbols, key = Symbols.addk header.symbols symbol key in
@@ -437,6 +453,27 @@ let add (chunk : t) (symbol : Base.t) : t * int =
   | _ ->
       (chunk, -1)
 
+let removei (chunk : t) (symbol : Base.t) : t =
+  match symbol with
+  | V_Number number ->
+      let symbol = Symbol.Const (Symbol.Number number) in
+      let header = Header.removei chunk.header symbol in
+      {chunk with header}
+  | V_String str ->
+      let symbol = Symbol.Const (Symbol.String str) in
+      let header = Header.removei chunk.header symbol in
+      {chunk with header}
+  | V_Function func ->
+      let symbol = Symbol.Const (Symbol.Function func) in
+      let header = Header.removei chunk.header symbol in
+      {chunk with header}
+  | V_Variable name ->
+      let symbol = Symbol.Variable (Base.identificator_to_string name) in
+      let header = Header.removei chunk.header symbol in
+      {chunk with header}
+  | _ ->
+      chunk
+
 let addk (chunk : t) (symbol : Base.t) (key : int) : t * int =
   match symbol with
   | V_Number number ->
@@ -470,22 +507,17 @@ let set (chunk : t) (code : Opcode.t) : t = {chunk with code}
 
 let get (chunk : t) (key : int) : Base.t =
   let symbol = Header.get chunk.header key in
-  let v =
-    match symbol with
-    | Symbol.Const (Symbol.Number number) ->
-        Base.V_Number number
-    | Symbol.Const (Symbol.String str) ->
-        Base.V_String str
-    | Symbol.Const (Symbol.Function func) ->
-        Base.V_Function func
-    | Symbol.Variable name ->
-        Base.V_Variable (Base.string_to_identificator name)
-    | _ ->
-        Base.V_Void
-  in
-  Value.pretty Format.str_formatter v ;
-  Logger.error "GOT VALUE %s at KEY %d" (Format.flush_str_formatter ()) key ;
-  v
+  match symbol with
+  | Symbol.Const (Symbol.Number number) ->
+      Base.V_Number number
+  | Symbol.Const (Symbol.String str) ->
+      Base.V_String str
+  | Symbol.Const (Symbol.Function func) ->
+      Base.V_Function func
+  | Symbol.Variable name ->
+      Base.V_Variable (Base.string_to_identificator name)
+  | _ ->
+      Base.V_Void
 
 let get_key (chunk : t) (value : Base.t) : int option =
   match value with
@@ -562,7 +594,7 @@ let reader (bytes : Bytes.t) =
   let func (start : int) =
     let opcode, size = Opcode.of_bytes bytes start in
     Opcode.pp Format.str_formatter opcode ;
-    Logger.debug "%s" (Format.flush_str_formatter ()) ;
+    Logger.debug "%s (pos: %d)" (Format.flush_str_formatter ()) start ;
     (opcode, size)
   in
   (chunk, func)

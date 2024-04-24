@@ -5,9 +5,10 @@ function testing(a: string) {
     return 1;
 }
 
-function nice() {
-    return false;
+function nice(a, b) {
+    if (a == 0) return b;
+    return a + b;
 }
 
-let number b = b + testing();
 
+let string a = testing("test") + nice(10, 12);
