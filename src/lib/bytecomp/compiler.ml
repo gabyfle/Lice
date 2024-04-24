@@ -66,38 +66,55 @@ module Code = struct
     aux Bytes.empty t
 end
 
-let not_found (a : Base.t) (chunk : Chunk.t) : (Chunk.t * int) option =
-  match a with
-  | V_Variable _ ->
-      None
-  | _ ->
-      let chunk, key = Chunk.add chunk a in
-      if key = -1 then None else Some (chunk, key)
+let add_key (a : Base.t) (worker : Worker.t) : Worker.t * int =
+  Value.pretty Format.str_formatter a ;
+  Logger.info "Adding key %s" (Format.flush_str_formatter ()) ;
+  let chunk, key = Chunk.add (Worker.chunk worker) a in
+  if key = -1 then failwith "Key not found" else ({worker with chunk}, key)
 
-let find_key (a : Base.t) (chunk : Chunk.t) : (Chunk.t * int) option =
-  let key = Chunk.get_key chunk a in
-  match key with Some key -> Some (chunk, key) | None -> not_found a chunk
+let find_key (a : Base.t) (worker : Worker.t) : Worker.t * int option =
+  let key = Chunk.get_key (Worker.chunk worker) a in
+  (worker, key)
 
-let load_value (a : Base.t) (chunk : Chunk.t) : Chunk.t * int =
+let load_value (a : Base.t) (worker : Worker.t) : Worker.t =
   match a with
   | V_Variable _ -> (
-      let res = find_key a chunk in
+      let worker, res = find_key a worker in
       match res with
-      | Some (chunk, key) ->
-          (Chunk.add_code chunk [Opcode.SEARCH key], 5)
+      | Some key ->
+          let worker =
+            Worker.grow
+              { worker with
+                chunk= Chunk.add_code (Worker.chunk worker) [Opcode.SEARCH key]
+              }
+              5
+          in
+          worker
       | None ->
           failwith "Variable here not found" )
   | V_Boolean b ->
-      (Chunk.add_code chunk [Opcode.LDBOL b], 2)
+      Worker.grow
+        { worker with
+          chunk= Chunk.add_code (Worker.chunk worker) [Opcode.LDBOL b] }
+        2
   | V_Void ->
-      (Chunk.add_code chunk [Opcode.LDVOID], 1)
+      Worker.grow
+        {worker with chunk= Chunk.add_code (Worker.chunk worker) [Opcode.LDVOID]}
+        1
   | _ -> (
-      let res = find_key a chunk in
+      let worker, res = find_key a worker in
       match res with
-      | Some (chunk, key) ->
-          (Chunk.add_code chunk [Opcode.LOADK key], 5)
+      | Some key ->
+          Worker.grow
+            { worker with
+              chunk= Chunk.add_code (Worker.chunk worker) [Opcode.LOADK key] }
+            5
       | None ->
-          failwith "Variable there not found" )
+          let worker, key = add_key a worker in
+          Worker.grow
+            { worker with
+              chunk= Chunk.add_code (Worker.chunk worker) [Opcode.LOADK key] }
+            5 )
 
 let compile_bin (op : Base.binary_operator) (worker : Worker.t) : Worker.t =
   let opcodes = Opcode.empty in
@@ -159,8 +176,7 @@ and compile_stmt_list (stmts : statement list) (worker : Worker.t) : Worker.t =
 and compile_expr (expr : Base.expr) (worker : Worker.t) : Worker.t =
   match expr with
   | Terminal t ->
-      let chunk, grow = load_value t (Worker.chunk worker) in
-      Worker.grow {worker with chunk} grow
+      load_value t worker
   | BinOp (op, a, b) ->
       let worker = compile_expr b worker in
       let chunk = Worker.chunk worker in
@@ -218,19 +234,18 @@ and compile_block (block : statement list) (worker : Worker.t) : Worker.t =
 
 and compile_assign (var : Base.identificator) (expr : Base.expr)
     (worker : Worker.t) : Worker.t =
-  let chunk = Worker.chunk worker in
   let var = Base.V_Variable var in
-  let res = find_key var chunk in
+  let worker, res = find_key var worker in
   match res with
-  | Some (chunk, key) ->
-      let worker = {worker with chunk} in
+  | Some key ->
       let worker = compile_expr expr worker in
       let opcodes = Opcode.add Opcode.empty (Opcode.EXTEND key) in
       let chunk = Worker.chunk worker in
       Worker.grow {worker with chunk= Chunk.add_code chunk opcodes} 5
   | None ->
-      let chunk, key = Chunk.add chunk var in
-      let worker = compile_expr expr {worker with chunk} in
+      let chunk, key = Chunk.add (Worker.chunk worker) var in
+      let worker = {worker with chunk} in
+      let worker = compile_expr expr worker in
       let opcodes = Opcode.add Opcode.empty (Opcode.EXTEND key) in
       let chunk = Worker.chunk worker in
       Worker.grow {worker with chunk= Chunk.add_code chunk opcodes} 5
@@ -403,42 +418,55 @@ let compile (ast : program) : Bytes.t =
         code
     | stmt :: t ->
         let main = Option.value (Code.get code) ~default:Worker.empty in
+        let () =
+          Printf.printf
+            "============================================================\n" ;
+          Printf.printf
+            "                    DUMPING DUMPING                         \n" ;
+          Printf.printf
+            "============================================================\n" ;
+          Worker.chunk main |> Chunk.dump ;
+          Printf.printf
+            "============================================================\n" ;
+          Printf.printf
+            "                    DUMPING DUMPING                         \n" ;
+          Printf.printf
+            "============================================================\n"
+        in
         let worker = compile_statement stmt main in
-        if Chunk.emplaced (Worker.chunk worker) then (
+        if Chunk.emplaced (Worker.chunk worker) then
           (* if the compiled chunk needs to be emplaced, we copy its header into
              the main chunk but we make sure that the flag of the main chunk
              isn't changed to true *)
           let chunk = Worker.chunk worker in
           let chunk = Chunk.emplace chunk false in
-          Logger.error "Emplaced chunk" ;
-          Chunk.dump chunk ;
-          Logger.error "Main chunk" ;
           let main =
             {worker with chunk= Chunk.merge_hd chunk (Worker.chunk main)}
           in
-          Chunk.dump (Worker.chunk main) ;
           let code = Code.set main code in
           let code = Code.add worker code in
-          aux t code )
+          aux t code
         else
           (* else, we just add the code to the main chunk without carrying of
              anything *)
           let main =
             { main with
               chunk=
-                Chunk.add_code (Worker.chunk main)
-                  (Chunk.code (Worker.chunk worker)) }
+                Chunk.merge_hd
+                  (Chunk.add_code (Worker.chunk main)
+                     (Chunk.code (Worker.chunk worker)) )
+                  (Worker.chunk worker) }
           in
           let code = Code.set main code in
           aux t code
   in
   let code = aux ast code in
   let worker = Option.value (Code.get code) ~default:Worker.empty in
+  Logger.info "Final chunk" ;
+  Worker.chunk worker |> Chunk.dump ;
   let chunk = Worker.chunk worker in
   let chunk = Chunk.add_code chunk [Opcode.HALT] in
   let worker = Worker.grow {worker with chunk} 1 in
   let code = Code.set worker code in
   let code = resolve_addresses code in
-  let worker = Option.value (Code.get code) ~default:Worker.empty in
-  Worker.chunk worker |> Chunk.dump ;
   Code.emit code

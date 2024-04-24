@@ -58,12 +58,6 @@ module Symbol = struct
         0
     | _ ->
         -1
-
-  (*let show (symbol : t) = match symbol with | Const (Number number) ->
-    Printf.sprintf "Number(%s)" (Lnumber.to_string number) | Const (String str)
-    -> Printf.sprintf "String(%s)" (Lstring.to_string str) | Const (Function
-    func) -> Printf.sprintf "Function(%s)" (Lfunction.to_string func) | Variable
-    name -> Printf.sprintf "Variable(%s)" name | None -> "None"*)
 end
 
 module Table = Map.Make (Integer)
@@ -109,32 +103,29 @@ module Symbols : SYMBOLS = struct
     let dump_table (key : int) (value : Symbol.t) =
       match value with
       | Symbol.Const (Symbol.Number number) ->
-          Logger.debug "Symbol %d: Number(%s)" key (Lnumber.to_string number)
+          Logger.debug "%d --> Number(%s)" key (Lnumber.to_string number)
       | Symbol.Const (Symbol.String str) ->
-          Logger.debug "Symbol %d: String(%s)" key (Lstring.to_string str)
+          Logger.debug "%d --> String(%s)" key (Lstring.to_string str)
       | Symbol.Const (Symbol.Function func) ->
-          Logger.debug "Symbol %d: Function(%s)" key (Lfunction.to_string func)
+          Logger.debug "%d --> Function(%s)" key (Lfunction.to_string func)
       | Symbol.Variable name ->
-          Logger.debug "Symbol %d: Variable(%s)" key name
+          Logger.debug "%d --> Variable(%s)" key name
       | Symbol.None ->
-          Logger.debug "Symbol %d: None" key
+          Logger.debug "%d --> None" key
     in
     Table.iter dump_table table ;
     let dump_inverse (symbol : Symbol.t) (key : int) =
       match symbol with
       | Symbol.Const (Symbol.Number number) ->
-          Logger.debug "Inverse %s: Number(%s)" (string_of_int key)
-            (Lnumber.to_string number)
+          Logger.debug "Number(%s) --> %d" (Lnumber.to_string number) key
       | Symbol.Const (Symbol.String str) ->
-          Logger.debug "Inverse %s: String(%s)" (string_of_int key)
-            (Lstring.to_string str)
+          Logger.debug "String(%s) --> %d " (Lstring.to_string str) key
       | Symbol.Const (Symbol.Function func) ->
-          Logger.debug "Inverse %s: Function(%s)" (string_of_int key)
-            (Lfunction.to_string func)
+          Logger.debug "Function(%s) --> %d" (Lfunction.to_string func) key
       | Symbol.Variable name ->
-          Logger.debug "Inverse %s: Variable(%s)" (string_of_int key) name
+          Logger.debug "Variable(%s) --> %d" name key
       | Symbol.None ->
-          Logger.debug "Inverse %s: None" (string_of_int key)
+          Logger.debug "%d --> None" key
     in
     Inverse.iter dump_inverse inverse
 
@@ -142,6 +133,7 @@ module Symbols : SYMBOLS = struct
     let table, inverse = symbols in
     let key = Table.cardinal table in
     let table = Table.add key symbol table in
+    let inverse = Inverse.add symbol key inverse in
     let inverse = Inverse.add symbol key inverse in
     ((table, inverse), key)
 
@@ -191,8 +183,8 @@ module Symbols : SYMBOLS = struct
       Inverse.merge
         (fun _ a b ->
           match (a, b) with
-          | Some a, Some _ ->
-              Some a
+          | Some _, Some b ->
+              Some b
           | Some a, None ->
               Some a
           | None, Some b ->

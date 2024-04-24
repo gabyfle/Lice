@@ -32,7 +32,7 @@ module S = struct
   let pretty : Format.formatter -> t -> unit =
    fun fmt d -> Format.fprintf fmt "<function object> at: %d" (Int32.to_int d)
 
-  let compare (a : t) (b : t) = Stdlib.compare a b
+  let compare (a : t) (b : t) = Int32.compare a b
 
   let from : value -> t = fun x -> x
 end

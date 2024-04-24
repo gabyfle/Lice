@@ -131,8 +131,8 @@ let search t id =
   let v = Environment.get_var t.memory id in
   match v with
   | None ->
-      failwith "Variable not found"
-      (* TODO: Handle this kind of error using Located_errors.mli *)
+      let cpu = Cpu.set_acc t.cpu V_Void in
+      {t with cpu}
   | Some v ->
       let cpu = Cpu.set_acc t.cpu v in
       {t with cpu}

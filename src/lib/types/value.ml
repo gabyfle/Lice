@@ -113,8 +113,11 @@ let compare v v' =
       Llist.compare l l'
   | V_Boolean b, V_Boolean b' ->
       Lbool.compare b b'
-  | _ ->
-      failwith "Cannot compare values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to compare a %s with a %s" a b in
+      failwith err
 
 let eq v v' =
   match (v, v') with
@@ -165,8 +168,11 @@ let add v v' =
       V_Function (Lfunction.add f f')
   | V_Void, V_Void ->
       V_Void
-  | _ ->
-      failwith "Cannot add values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to add a %s with a %s" a b in
+      failwith err
 
 let sub v v' =
   match (v, v') with

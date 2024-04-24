@@ -30,7 +30,7 @@ module S = struct
   let pretty : Format.formatter -> t -> unit =
    fun fmt x -> Format.fprintf fmt "%b" x
 
-  let compare : t -> t -> int = Stdlib.compare
+  let compare : t -> t -> int = Bool.compare
 
   let from : value -> t = Fun.id
 end
