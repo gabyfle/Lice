@@ -102,6 +102,16 @@ let rec compile_operator (op : Base.binop_type) (chunk : Chunk.t) :
   | `Cons ->
       compile_bin Base.Plus chunk
 
+and compile_stmt_list (stmts : statement list) (chunk : Chunk.t) (csize : int) :
+    Chunk.t * int =
+  match stmts with
+  | [] ->
+      (chunk, csize)
+  | stmt :: t ->
+      let chunk, size = compile_statement stmt chunk csize in
+      let chunk, tsize = compile_stmt_list t chunk size in
+      (chunk, tsize)
+
 and compile_expr (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
     Chunk.t * int =
   match expr with
@@ -147,23 +157,14 @@ and compile_return (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
   let chunk, size = compile_expr expr chunk curr_size in
   let opcodes = Opcode.empty in
   let opcodes = Opcode.add opcodes Opcode.RETURN in
+  let opcodes = Opcode.add opcodes Opcode.POPENV in
   let opcodes = Opcode.add opcodes Opcode.PUSH in
-  (Chunk.add_code chunk opcodes, size + 2)
+  (Chunk.add_code chunk opcodes, size + 3)
 
 and compile_block (block : statement list) (chunk : Chunk.t) (curr_size : int) :
     Chunk.t * int =
-  let rec aux (block : statement list) (chunk : Chunk.t) (csize : int) :
-      Chunk.t * int =
-    match block with
-    | [] ->
-        (chunk, csize)
-    | stmt :: t ->
-        let chunk, size = compile_statement stmt chunk csize in
-        let chunk, tsize = aux t chunk size in
-        (chunk, tsize)
-  in
   let chunk = Chunk.add_code chunk [Opcode.PUSHENV] in
-  let chunk, size = aux block chunk (curr_size + 1) in
+  let chunk, size = compile_stmt_list block chunk (curr_size + 1) in
   let chunk = Chunk.add_code chunk [Opcode.POPENV] in
   (chunk, size + 1)
 
@@ -236,7 +237,8 @@ and compile_match (pattern : Base.expr)
   aux cases chunk (psize + 1)
 
 and compile_function (id : Base.identificator) (vars : Base.identificator list)
-    (stmt : statement) (chunk : Chunk.t) (curr_size : int) : Chunk.t * int =
+    (stmts : statement list) (chunk : Chunk.t) (curr_size : int) : Chunk.t * int
+    =
   let chunk = chunk in
   let chunk = Chunk.set chunk Opcode.empty in
   let chunk, key = Chunk.add chunk (V_Function (Int32.of_int curr_size)) in
@@ -249,10 +251,11 @@ and compile_function (id : Base.identificator) (vars : Base.identificator list)
         let chunk = Chunk.add_code chunk [POP; Opcode.EXTEND key] in
         get_locals chunk (curr_size + 6) t
   in
-  let chunk, curr_size = get_locals chunk curr_size vars in
-  let chunk, size = compile_statement stmt chunk curr_size in
+  let chunk = Chunk.add_code chunk [Opcode.PUSHENV] in
+  let chunk, func_size = get_locals chunk 1 vars in
+  let chunk, _ = compile_stmt_list stmts chunk func_size in
   let chunk = Chunk.emplace chunk true in
-  (chunk, size)
+  (chunk, curr_size)
 
 and compile_statement (stmt : statement) (chunk : Chunk.t) (curr_size : int) :
     Chunk.t * int =

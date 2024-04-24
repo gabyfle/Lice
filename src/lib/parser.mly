@@ -219,10 +219,10 @@ let func_def_param ==
     { `Ident (a, T_Auto) }
 
 let func_def ==
-  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; b = block;
-    { FuncDef($startpos, `Ident(p, t), args, b) }
-  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; b = block;
-    { FuncDef($startpos, `Ident(p, T_Auto), args, b) }
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; LBRACE; stmts = list(statement); RBRACE;
+    { FuncDef($startpos, `Ident(p, t), args, stmts) }
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; LBRACE; stmts = list(statement); RBRACE;
+    { FuncDef($startpos, `Ident(p, T_Auto), args, stmts) }
 
 let func_call_param ==
   | p = expr; { p }
