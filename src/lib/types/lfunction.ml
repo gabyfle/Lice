@@ -39,4 +39,6 @@ end
 
 include Type.Make (S)
 
+let to_string : t -> string = fun x -> Int32.to_string x
+
 let address : t -> int32 = Fun.id

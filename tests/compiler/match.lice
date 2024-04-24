@@ -1,15 +1,9 @@
 let number a = "test";
+let b = 12;
 
-if (a == false) {
-    let c = 12;
-    a = 12;
-} else if (a == "test") {
-    let string b = "oertherjgbkleblskejb";
-    b == c;
-}
-
-function testing(c: number, b: string) {
+function testing(a: string) {
     return 1;
 }
 
-let a = testing(a, a);
+let number b = testing();
+

@@ -5,17 +5,22 @@ Lice language main repository. Contains all the library code of the Lice languag
 
 ## What is Lice ?
 
+**Note:** *Lice is, before everything, a room for experimentation around interpreted programming languages.*
 Lice is a little general purpose interpreted language. It's meant to be easy-to-learn when you know OCaml, C-like languages, and to be as easy to use as Lua.
+
+## State of the project
+
+Lice just recently switched from a *tree-walk* interpreter to a bytecode interpreter with its custom virtual machine. Features that worked before the switch are not garanteed to work yet, as this project is still under development. You can find below a list of features of the language. Features denoted with a *(TBD)* means that they are not working yet, or that it's not working as expected for the moment. <small>*(TDB = To Be Done)*</small>
 
 ## Features of the language
 - Type annotations
 - Recursive functions
 - OCaml-like pattern matching
-- Native lists
-- Deconstructing inside pattern matching
-- Embedabble withing any OCaml application
+- Native lists *(TBD)*
+- Deconstructing inside pattern matching *(TBD)*
+- Embedabble withing any OCaml application *(TBD)*
 - First-class values functions
-- OCaml bindings to write your own applications
+- OCaml bindings to write your own applications *(TBD)*
 
 ## Documentation
 
@@ -40,6 +45,8 @@ The Lice language library is now installed into your system.
 
 ### Learning the Lice language
 
+See <a href="https://lice.gabyfle.dev">online documentation</a>
+
 ## Licence
 
-The Lice interpreter is distributed under the Apache 2.0 licence. See the "LICENCE" file in the main repository to learn more about what you can do/what you can't do with it.
+The Lice library is distributed under the Apache 2.0 licence. See the "LICENCE" file in the main repository to learn more about what you can do/what you can't do with it.

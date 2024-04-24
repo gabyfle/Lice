@@ -28,6 +28,10 @@ val empty : t
 (**
     The empty chunk value. This is the base to create a new chunk *)
 
+val dump : t -> unit
+(**
+    [dump chunk] prints the chunk to the standard output *)
+
 val copy_hd : t -> t -> t
 (**
     [copy_hd chunk chunk'] copies header of [chunk] into [chunk'] *)
@@ -45,6 +49,12 @@ val add : t -> Base.t -> t * int
     [add chunk symbol] adds a symbol to the chunk at the end of chunk, returns also the key index where it has been added *)
 
 val addk : t -> Base.t -> int -> t * int
+
+val setk : t -> int -> Base.t -> t
+
+val merge_hd : t -> t -> t
+(**
+    [merge_hd chunk chunk'] merges the header of [chunk] into [chunk'] *)
 
 val add_code : t -> Opcode.t -> t
 (**

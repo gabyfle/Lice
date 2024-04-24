@@ -76,9 +76,15 @@ module type SYMBOLS = sig
 
   val length : t -> int
 
+  val dump : t -> unit
+
   val add : t -> Symbol.t -> t * int
 
   val addk : t -> Symbol.t -> int -> t * int
+
+  val setk : t -> int -> Symbol.t -> t
+
+  val union : t -> t -> t
 
   val get : t -> int -> Symbol.t
 
@@ -98,12 +104,54 @@ module Symbols : SYMBOLS = struct
 
   let length ((symbols, _) : t) = Table.cardinal symbols
 
+  let dump (symbols : t) : unit =
+    let table, inverse = symbols in
+    let dump_table (key : int) (value : Symbol.t) =
+      match value with
+      | Symbol.Const (Symbol.Number number) ->
+          Logger.debug "Symbol %d: Number(%s)" key (Lnumber.to_string number)
+      | Symbol.Const (Symbol.String str) ->
+          Logger.debug "Symbol %d: String(%s)" key (Lstring.to_string str)
+      | Symbol.Const (Symbol.Function func) ->
+          Logger.debug "Symbol %d: Function(%s)" key (Lfunction.to_string func)
+      | Symbol.Variable name ->
+          Logger.debug "Symbol %d: Variable(%s)" key name
+      | Symbol.None ->
+          Logger.debug "Symbol %d: None" key
+    in
+    Table.iter dump_table table ;
+    let dump_inverse (symbol : Symbol.t) (key : int) =
+      match symbol with
+      | Symbol.Const (Symbol.Number number) ->
+          Logger.debug "Inverse %s: Number(%s)" (string_of_int key)
+            (Lnumber.to_string number)
+      | Symbol.Const (Symbol.String str) ->
+          Logger.debug "Inverse %s: String(%s)" (string_of_int key)
+            (Lstring.to_string str)
+      | Symbol.Const (Symbol.Function func) ->
+          Logger.debug "Inverse %s: Function(%s)" (string_of_int key)
+            (Lfunction.to_string func)
+      | Symbol.Variable name ->
+          Logger.debug "Inverse %s: Variable(%s)" (string_of_int key) name
+      | Symbol.None ->
+          Logger.debug "Inverse %s: None" (string_of_int key)
+    in
+    Inverse.iter dump_inverse inverse
+
   let add (symbols : t) (symbol : Symbol.t) : t * int =
     let table, inverse = symbols in
     let key = Table.cardinal table in
     let table = Table.add key symbol table in
     let inverse = Inverse.add symbol key inverse in
     ((table, inverse), key)
+
+  let setk (symbols : t) (key : int) (symbol : Symbol.t) : t =
+    let table, inverse = symbols in
+    let update (value : Symbol.t option) =
+      match value with Some _ -> Some symbol | None -> Some symbol
+    in
+    let table = Table.update key update table in
+    (table, inverse)
 
   let addk (symbols : t) (symbol : Symbol.t) (key : int) : t * int =
     let table, inverse = symbols in
@@ -121,6 +169,39 @@ module Symbols : SYMBOLS = struct
   let iter (func : int -> Symbol.t -> unit) ((symbols, _) : t) : unit =
     let iter (key : int) (value : Symbol.t) = func key value in
     Table.iter iter symbols
+
+  let union (a : t) (b : t) : t =
+    let table_a, inverse_a = a in
+    let table_b, inverse_b = b in
+    let table =
+      Table.merge
+        (fun _ a b ->
+          match (a, b) with
+          | Some _, Some b ->
+              Some b
+          | Some a, None ->
+              Some a
+          | None, Some b ->
+              Some b
+          | None, None ->
+              None )
+        table_a table_b
+    in
+    let inverse =
+      Inverse.merge
+        (fun _ a b ->
+          match (a, b) with
+          | Some a, Some _ ->
+              Some a
+          | Some a, None ->
+              Some a
+          | None, Some b ->
+              Some b
+          | None, None ->
+              None )
+        inverse_a inverse_b
+    in
+    (table, inverse)
 
   let emit_number (number : float) =
     let bytes = Bytes.create 5 in
@@ -206,6 +287,12 @@ module type HEADER = sig
 
   val addk : t -> Symbol.t -> int -> t * int
 
+  val setk : t -> int -> Base.t -> t
+
+  val union : t -> t -> t
+
+  val dump : t -> unit
+
   val length : t -> int
 
   val iter : (int -> Symbol.t -> unit) -> t -> unit
@@ -226,6 +313,8 @@ module Header : HEADER = struct
 
   let length (header : t) = Symbols.length header.symbols
 
+  let dump (header : t) : unit = Symbols.dump header.symbols
+
   let set_start (header : t) (start : int32) = {header with start}
 
   let add (header : t) (symbol : Symbol.t) : t * int =
@@ -235,6 +324,27 @@ module Header : HEADER = struct
   let addk (header : t) (symbol : Symbol.t) (key : int) : t * int =
     let symbols, key = Symbols.addk header.symbols symbol key in
     ({header with symbols}, key)
+
+  let setk (header : t) (key : int) (value : Base.t) : t =
+    let symbol =
+      match value with
+      | V_Number number ->
+          Symbol.Const (Symbol.Number number)
+      | V_String str ->
+          Symbol.Const (Symbol.String str)
+      | V_Function func ->
+          Symbol.Const (Symbol.Function func)
+      | V_Variable name ->
+          Symbol.Variable (Base.identificator_to_string name)
+      | _ ->
+          Symbol.None
+    in
+    let symbols = Symbols.setk header.symbols key symbol in
+    {header with symbols}
+
+  let union (a : t) (b : t) : t =
+    let symbols = Symbols.union a.symbols b.symbols in
+    {symbols; start= a.start}
 
   let emit_start (header : t) =
     let start = header.start in
@@ -283,6 +393,11 @@ type t = {header: Header.t; code: Opcode.t; bytecode: Bytes.t; emplace: bool}
 let empty =
   {header= Header.empty; code= []; bytecode= Bytes.empty; emplace= false}
 
+let dump (chunk : t) =
+  Logger.debug "Dumping chunk:" ;
+  Logger.debug "Size : %d" (Header.length chunk.header) ;
+  Header.dump chunk.header
+
 let copy_hd (chunk : t) (chunk' : t) = {chunk' with header= chunk.header}
 
 let emplace (chunk : t) (emplace : bool) : t = {chunk with emplace}
@@ -330,6 +445,14 @@ let addk (chunk : t) (symbol : Base.t) (key : int) : t * int =
       ({chunk with header}, key)
   | _ ->
       (chunk, -1)
+
+let setk (chunk : t) (key : int) (symbol : Base.t) : t =
+  let header = Header.setk chunk.header key symbol in
+  {chunk with header}
+
+let merge_hd (chunk : t) (chunk' : t) : t =
+  let header = Header.union chunk.header chunk'.header in
+  {header; code= chunk'.code; bytecode= chunk'.bytecode; emplace= chunk'.emplace}
 
 let set (chunk : t) (code : Opcode.t) : t = {chunk with code}
 

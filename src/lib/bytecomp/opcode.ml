@@ -63,7 +63,7 @@ let empty = []
 
 let add code (opcode : opcode) = opcode :: code
 
-let add_list code (opcodes : opcode list) = List.rev_append opcodes code
+let add_list code (opcodes : opcode list) = List.append opcodes code
 
 let _string_to_bytes s =
   let bytes = Bytes.create (String.length s) in
