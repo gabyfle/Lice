@@ -20,34 +20,24 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Utils.Logger
-open Bytecomp
+type t = Chunk.t list
 
-let () =
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
-  let executable_dir =
-    match Sys.argv with
-    | [|_; exec_path|] ->
-        (* Get the directory containing the executable *)
-        let exec_dir = Filename.dirname exec_path in
-        (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/compiler/match.lice"
-    | _ ->
-        failwith "Invalid command line\n    arguments"
+let empty = []
+
+let is_empty = function [] -> true | _ -> false
+
+let add (chunk : Chunk.t) (t : t) = List.rev (chunk :: t)
+
+let get (t : t) = match t with [] -> None | h :: _ -> Some h
+
+let set (chunk : Chunk.t) (code : t) : t =
+  match code with [] -> [chunk] | _ :: t -> chunk :: t
+
+let emit (t : t) =
+  let rec aux acc = function
+    | [] ->
+        acc
+    | chunk :: t ->
+        aux (Bytes.cat acc (Chunk.emit chunk)) t
   in
-  let in_channel = open_in executable_dir in
-  let rec read_code lines =
-    try
-      let line = input_line in_channel in
-      read_code (line :: lines)
-    with End_of_file -> List.rev lines
-  in
-  let code_lines = read_code [] in
-  close_in in_channel ;
-  let code = String.concat "\n" code_lines in
-  let ast = Kernel.parse_code code in
-  let bytes = Compiler.compile ast in
-  let vm = Lvm.create () in
-  let vm = Lvm.load vm bytes in
-  let _ = Lvm.do_code vm in
-  ()
+  aux Bytes.empty t

@@ -22,4 +22,4 @@
 
 open Ast.Tree
 
-val compile : program -> Chunk.t
+val compile : program -> Bytes.t

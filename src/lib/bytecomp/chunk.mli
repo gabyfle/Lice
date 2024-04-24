@@ -28,9 +28,23 @@ val empty : t
 (**
     The empty chunk value. This is the base to create a new chunk *)
 
+val copy_hd : t -> t -> t
+(**
+    [copy_hd chunk chunk'] copies header of [chunk] into [chunk'] *)
+
+val emplace : t -> bool -> t
+(**
+    [emplace chunk is_emplace] creates a new chunk with the emplace flag *)
+
+val emplaced : t -> bool
+(**
+    [emplaced chunk] returns the emplace flag of the chunk *)
+
 val add : t -> Base.t -> t * int
 (**
     [add chunk symbol] adds a symbol to the chunk at the end of chunk, returns also the key index where it has been added *)
+
+val addk : t -> Base.t -> int -> t * int
 
 val add_code : t -> Opcode.t -> t
 (**

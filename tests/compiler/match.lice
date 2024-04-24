@@ -7,3 +7,9 @@ if (a == false) {
     let string b = "oertherjgbkleblskejb";
     b == c;
 }
+
+function testing(c: number, b: string) {
+    return 1;
+}
+
+let a = testing(a, a);

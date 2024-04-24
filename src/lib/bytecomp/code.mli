@@ -20,34 +20,16 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Utils.Logger
-open Bytecomp
+type t
 
-let () =
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
-  let executable_dir =
-    match Sys.argv with
-    | [|_; exec_path|] ->
-        (* Get the directory containing the executable *)
-        let exec_dir = Filename.dirname exec_path in
-        (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/compiler/match.lice"
-    | _ ->
-        failwith "Invalid command line\n    arguments"
-  in
-  let in_channel = open_in executable_dir in
-  let rec read_code lines =
-    try
-      let line = input_line in_channel in
-      read_code (line :: lines)
-    with End_of_file -> List.rev lines
-  in
-  let code_lines = read_code [] in
-  close_in in_channel ;
-  let code = String.concat "\n" code_lines in
-  let ast = Kernel.parse_code code in
-  let bytes = Compiler.compile ast in
-  let vm = Lvm.create () in
-  let vm = Lvm.load vm bytes in
-  let _ = Lvm.do_code vm in
-  ()
+val empty : t
+
+val is_empty : t -> bool
+
+val add : Chunk.t -> t -> t
+
+val get : t -> Chunk.t option
+
+val set : Chunk.t -> t -> t
+
+val emit : t -> Bytes.t

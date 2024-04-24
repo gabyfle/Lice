@@ -114,8 +114,33 @@ and compile_expr (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
       let chunk, asize = compile_expr a chunk (bsize + 1) in
       let chunk, opsize = compile_operator op chunk in
       (chunk, asize + opsize)
-  | _ ->
-      (chunk, curr_size)
+  | FuncCall (name, args) ->
+      let funck =
+        match Chunk.get_key chunk (V_Variable name) with
+        | Some key ->
+            key
+        | None ->
+            failwith "Function not found"
+      in
+      let func = Chunk.get chunk funck in
+      let address =
+        match func with
+        | V_Function a ->
+            Lfunction.address a
+        | _ ->
+            failwith "Not a function"
+      in
+      let rec compile_args (chunk : Chunk.t) (size : int) = function
+        | [] ->
+            (chunk, size)
+        | arg :: t ->
+            let chunk, size = compile_expr arg chunk size in
+            let chunk = Chunk.add_code chunk [Opcode.PUSH] in
+            compile_args chunk (size + 1) t
+      in
+      let chunk, size = compile_args chunk curr_size args in
+      let chunk = Chunk.add_code chunk [Opcode.CALL (Int32.to_int address)] in
+      (chunk, size + 5)
 
 and compile_return (expr : Base.expr) (chunk : Chunk.t) (curr_size : int) :
     Chunk.t * int =
@@ -210,6 +235,25 @@ and compile_match (pattern : Base.expr)
   in
   aux cases chunk (psize + 1)
 
+and compile_function (id : Base.identificator) (vars : Base.identificator list)
+    (stmt : statement) (chunk : Chunk.t) (curr_size : int) : Chunk.t * int =
+  let chunk = chunk in
+  let chunk = Chunk.set chunk Opcode.empty in
+  let chunk, key = Chunk.add chunk (V_Function (Int32.of_int curr_size)) in
+  let chunk, _ = Chunk.addk chunk (V_Variable id) key in
+  let rec get_locals (chunk : Chunk.t) (curr_size : int) = function
+    | [] ->
+        (chunk, curr_size)
+    | var :: t ->
+        let chunk, key = Chunk.add chunk (V_Variable var) in
+        let chunk = Chunk.add_code chunk [POP; Opcode.EXTEND key] in
+        get_locals chunk (curr_size + 6) t
+  in
+  let chunk, curr_size = get_locals chunk curr_size vars in
+  let chunk, size = compile_statement stmt chunk curr_size in
+  let chunk = Chunk.emplace chunk true in
+  (chunk, size)
+
 and compile_statement (stmt : statement) (chunk : Chunk.t) (curr_size : int) :
     Chunk.t * int =
   match stmt with
@@ -223,18 +267,32 @@ and compile_statement (stmt : statement) (chunk : Chunk.t) (curr_size : int) :
       compile_if cond then_ else_ chunk curr_size
   | Match (_, pattern, cases) ->
       compile_match pattern cases chunk curr_size
+  | FuncDef (_, id, vars, stmt) ->
+      compile_function id vars stmt chunk curr_size
   | _ ->
       (chunk, curr_size)
 
-let compile (ast : program) : Chunk.t =
-  let chunk = Chunk.empty in
-  let rec aux (ast : program) (chunk : Chunk.t) (curr_size : int) : Chunk.t =
+let compile (ast : program) : Bytes.t =
+  let code = Code.empty in
+  let rec aux (ast : program) (code : Code.t) (curr_size : int) : Code.t =
     match ast with
     | [] ->
-        chunk
+        code
     | stmt :: t ->
+        let chunk = Option.value (Code.get code) ~default:Chunk.empty in
         let chunk, size = compile_statement stmt chunk curr_size in
-        aux t chunk size
+        if Chunk.emplaced chunk then
+          let code = Code.add chunk code in
+          let chunk' = Option.value (Code.get code) ~default:Chunk.empty in
+          let chunk = Chunk.copy_hd chunk chunk' in
+          let code = Code.set chunk code in
+          aux t code size
+        else
+          let code = Code.set chunk code in
+          aux t code size
   in
-  let chunk = aux ast chunk 0 in
-  Chunk.add_code chunk [Opcode.HALT]
+  let code = aux ast code 0 in
+  let chunk = Option.value (Code.get code) ~default:Chunk.empty in
+  let chunk = Chunk.add_code chunk [Opcode.HALT] in
+  let code = Code.set chunk code in
+  Code.emit code

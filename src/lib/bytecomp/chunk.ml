@@ -78,6 +78,8 @@ module type SYMBOLS = sig
 
   val add : t -> Symbol.t -> t * int
 
+  val addk : t -> Symbol.t -> int -> t * int
+
   val get : t -> int -> Symbol.t
 
   val get_key : t -> Symbol.t -> int option
@@ -102,6 +104,13 @@ module Symbols : SYMBOLS = struct
     let table = Table.add key symbol table in
     let inverse = Inverse.add symbol key inverse in
     ((table, inverse), key)
+
+  let addk (symbols : t) (symbol : Symbol.t) (key : int) : t * int =
+    let table, inverse = symbols in
+    let key' = Table.cardinal table in
+    let table = Table.add key' symbol table in
+    let inverse = Inverse.add symbol key inverse in
+    ((table, inverse), key')
 
   let get ((symbols, _) : t) (key : int) : Symbol.t =
     Table.find_opt key symbols |> Option.value ~default:Symbol.None
@@ -195,6 +204,8 @@ module type HEADER = sig
 
   val add : t -> Symbol.t -> t * int
 
+  val addk : t -> Symbol.t -> int -> t * int
+
   val length : t -> int
 
   val iter : (int -> Symbol.t -> unit) -> t -> unit
@@ -219,6 +230,10 @@ module Header : HEADER = struct
 
   let add (header : t) (symbol : Symbol.t) : t * int =
     let symbols, key = Symbols.add header.symbols symbol in
+    ({header with symbols}, key)
+
+  let addk (header : t) (symbol : Symbol.t) (key : int) : t * int =
+    let symbols, key = Symbols.addk header.symbols symbol key in
     ({header with symbols}, key)
 
   let emit_start (header : t) =
@@ -263,9 +278,16 @@ module Header : HEADER = struct
     aux empty start
 end
 
-type t = {header: Header.t; code: Opcode.t; bytecode: Bytes.t}
+type t = {header: Header.t; code: Opcode.t; bytecode: Bytes.t; emplace: bool}
 
-let empty = {header= Header.empty; code= []; bytecode= Bytes.empty}
+let empty =
+  {header= Header.empty; code= []; bytecode= Bytes.empty; emplace= false}
+
+let copy_hd (chunk : t) (chunk' : t) = {chunk' with header= chunk.header}
+
+let emplace (chunk : t) (emplace : bool) : t = {chunk with emplace}
+
+let emplaced (chunk : t) = chunk.emplace
 
 let add (chunk : t) (symbol : Base.t) : t * int =
   match symbol with
@@ -284,6 +306,27 @@ let add (chunk : t) (symbol : Base.t) : t * int =
   | V_Variable name ->
       let symbol = Symbol.Variable (Base.identificator_to_string name) in
       let header, key = Header.add chunk.header symbol in
+      ({chunk with header}, key)
+  | _ ->
+      (chunk, -1)
+
+let addk (chunk : t) (symbol : Base.t) (key : int) : t * int =
+  match symbol with
+  | V_Number number ->
+      let symbol = Symbol.Const (Symbol.Number number) in
+      let header, key = Header.addk chunk.header symbol key in
+      ({chunk with header}, key)
+  | V_String str ->
+      let symbol = Symbol.Const (Symbol.String str) in
+      let header, key = Header.addk chunk.header symbol key in
+      ({chunk with header}, key)
+  | V_Function func ->
+      let symbol = Symbol.Const (Symbol.Function func) in
+      let header, key = Header.addk chunk.header symbol key in
+      ({chunk with header}, key)
+  | V_Variable name ->
+      let symbol = Symbol.Variable (Base.identificator_to_string name) in
+      let header, key = Header.addk chunk.header symbol key in
       ({chunk with header}, key)
   | _ ->
       (chunk, -1)
