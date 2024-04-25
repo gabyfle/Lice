@@ -75,6 +75,10 @@ val emit : t -> Bytes.t
 (**
     [emit opcodes] returns a [Bytes.t] string representing the bytecode of the [opcodes] list into binary format *)
 
+val size : opcode -> int
+(**
+    [size opcodes] returns the size of the [opcodes] list in bytes *)
+
 val of_bytes : Bytes.t -> int -> opcode * int
 (**
     Reads the next instruction starting from index [start].

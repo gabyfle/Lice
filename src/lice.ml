@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Utils.Logger
+open Utils.Formatting
 open Bytecomp
 
 let () =
@@ -46,6 +47,13 @@ let () =
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
   let ast = Kernel.parse_code code in
+  let rec ast_to_str (str : string) = function
+    | [] ->
+        str
+    | hd :: tl ->
+        ast_to_str (str ^ stmt_format hd) tl
+  in
+  Printf.printf "AST: %s\n" (ast_to_str "" ast) ;
   let bytes = Compiler.compile ast in
   let vm = Lvm.create () in
   let vm = Lvm.load vm bytes in

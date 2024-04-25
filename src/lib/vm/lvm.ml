@@ -55,7 +55,7 @@ let read t =
 
 let nop (t : t) = t
 
-let halt (t : t) = t
+let halt (t : t) = Environment.dump t.memory ; t
 
 let ldvoid (t : t) = {t with cpu= Cpu.set_acc t.cpu V_Void}
 
@@ -135,6 +135,7 @@ let extend t id =
 
 let search t id =
   let v = Environment.get_var t.memory id in
+  Environment.dump t.memory ;
   match v with
   | None ->
       let cpu = Cpu.set_acc t.cpu V_Void in

@@ -277,6 +277,64 @@ let of_bytes (bytes : bytes) (start : int) : opcode * int =
   | _ ->
       (NOP, 1)
 
+let size = function
+  | NOP ->
+      1
+  | HALT ->
+      1
+  | LDVOID ->
+      1
+  | LOADK _ ->
+      5
+  | LOADV _ ->
+      5
+  | LDBOL _ ->
+      2
+  | ADD ->
+      1
+  | SUB ->
+      1
+  | MUL ->
+      1
+  | DIV ->
+      1
+  | MOD ->
+      1
+  | EQ ->
+      1
+  | NEQ ->
+      1
+  | LT ->
+      1
+  | GT ->
+      1
+  | LE ->
+      1
+  | GE ->
+      1
+  | JMP _ ->
+      5
+  | JMPNZ _ ->
+      5
+  | JMPZ _ ->
+      5
+  | PUSH ->
+      1
+  | POP ->
+      1
+  | EXTEND _ ->
+      5
+  | SEARCH _ ->
+      5
+  | PUSHENV ->
+      1
+  | POPENV ->
+      1
+  | CALL _ ->
+      5
+  | RETURN ->
+      1
+
 let pp (ppf : Format.formatter) (opcode : opcode) =
   let pp_opcode ppf = function
     | NOP ->

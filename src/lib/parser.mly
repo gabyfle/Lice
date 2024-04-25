@@ -112,7 +112,6 @@ let lprog :=
   | f = func_def; EOL*; sl = lprog; { f :: sl }
   | s = statement; EOF; { [ s ] }
   | s = statement; EOL*;  sl = lprog; { s :: sl }
-  | b = block; EOL*; sl = lprog; { b :: sl }
 
 let binop ==
   | PLUS; { `Operator(Plus) }
@@ -220,10 +219,22 @@ let func_def_param ==
     { `Ident (a, T_Auto) }
 
 let func_def ==
-  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; LBRACE; stmts = list(statement); RBRACE;
-    { FuncDef($startpos, `Ident(p, t), args, stmts) }
-  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; LBRACE; stmts = list(statement); RBRACE;
-    { FuncDef($startpos, `Ident(p, T_Auto), args, stmts) }
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; b = block;
+    { 
+      let b = match b with
+        | Block(_, stmts) -> stmts
+        | _ -> [b]
+      in
+      FuncDef($startpos, `Ident(p, t), args, b)  
+    }
+  | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; b = block;
+    {
+      let b = match b with
+        | Block(_, stmts) -> stmts
+        | _ -> [b]
+      in
+      FuncDef($startpos, `Ident(p, T_Auto), args, b)
+    }
 
 let func_call_param ==
   | p = expr; { p }
@@ -240,16 +251,10 @@ let return_call ==
   | RETURN; r = expr;
     { Return($startpos, r) }
 
-let if_body ==
-  | LBRACE; stmts = list(statement); RBRACE;
-  { Block($startpos, stmts) }
-  | s = statement;
-  { Block($startpos, [s]) }
-
 let if_stmt :=
-  | IF; LPAREN; e = expr; RPAREN; b1 = if_body; ELSE; b2 = if_body;
+  | IF; LPAREN; e = expr; RPAREN; b1 = statement; ELSE; b2 = statement;
   { If ($startpos, e, b1, b2) }
-  | IF; LPAREN; e = expr; RPAREN; b1 = if_body;
+  | IF; LPAREN; e = expr; RPAREN; b1 = statement;
   { If ($startpos, e, b1, Expression($startpos, Terminal((V_Void)), T_Void)) }
 
 let module_elems := 
@@ -266,6 +271,7 @@ let module_def :=
 
 let statement ==
   | p = expr; SEMICOLON; EOL*; { Expression ($startpos, p, T_Auto) }
+  | b = block; { b }
   | r = return_call; SEMICOLON; { r }
   | a = assign; SEMICOLON; { a }
   | m = match_expr; { m }

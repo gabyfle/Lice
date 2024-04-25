@@ -1,0 +1,189 @@
+AST: Assign statement id a with expression "test"
+
+Function definition id: testing and definition: Block statement with statements: If statement on condition Binary operator: [<variable> a] == ["test"]
+. If true: Block statement with statements: Return statement: 2.000000
+
+
+
+ if false: Block statement with statements: Return statement: 12.000000
+
+
+
+Return statement: 13.000000
+
+
+
+
+
+Function definition id: testing2 and definition: Block statement with statements: Return statement: 13.000000
+
+
+
+
+
+Function definition id: testing3 and definition: Block statement with statements: Return statement: 14.000000
+
+
+
+
+
+Assign statement id f with expression Binary operator: [Function call ID: testing3; Expression list: 
+] + [Binary operator: [Function call ID: testing2; Expression list: ;"test1";"test2"
+] / [Function call ID: testing; Expression list: ;"test"
+]
+]
+
+
+
+[Info] Adding key "test" 
+[Info] Adding key 2.000000 
+[Info] Adding key 12.000000 
+[Info] Adding key 13.000000 
+[Info] Adding key 14.000000 
+[Info] Adding key "test1" 
+[Info] Adding key "test2" 
+Computed VS Real: 57 vs 56
+Computed VS Real: 21 vs 21
+Computed VS Real: 9 vs 9
+dSize: 0 ; Dsize: 68
+dSize: 68 ; Dsize: 57
+dSize: 125 ; Dsize: 21
+dSize: 146 ; Dsize: 9
+[Debug] Dumping chunk: 
+[Debug] Size : 14 
+[Debug] 0 --> Variable(a) 
+[Debug] 1 --> String(test) 
+[Debug] 2 --> Function(146) 
+[Debug] 3 --> Variable(testing) 
+[Debug] 4 --> Number(13.) 
+[Debug] 5 --> Function(125) 
+[Debug] 6 --> Variable(testing2) 
+[Debug] 7 --> Variable(b) 
+[Debug] 8 --> Function(68) 
+[Debug] 9 --> Variable(testing3) 
+[Debug] 10 --> Number(14.) 
+[Debug] 11 --> Variable(f) 
+[Debug] 12 --> String(test1) 
+[Debug] 13 --> String(test2) 
+[Debug] Variable(a) --> 0 
+[Debug] Variable(b) --> 7 
+[Debug] Variable(f) --> 11 
+[Debug] Variable(testing) --> 2 
+[Debug] Variable(testing2) --> 5 
+[Debug] Variable(testing3) --> 8 
+[Debug] Number(13.) --> 4 
+[Debug] Number(14.) --> 10 
+[Debug] String(test) --> 1  
+[Debug] String(test1) --> 12  
+[Debug] String(test2) --> 13  
+[Debug] Function(1) --> 2 
+[Debug] Function(2) --> 5 
+[Debug] Function(3) --> 8 
+[Warning] Emitting this bytecode (WITHOUT HEADER): 
+[Warning] PUSHENV 
+[Warning] LOADK 10 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] Emitting this bytecode (WITHOUT HEADER): 
+[Warning] PUSHENV 
+[Warning] POP 
+[Warning] EXTEND 7 
+[Warning] POP 
+[Warning] EXTEND 0 
+[Warning] LOADK 4 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] Emitting this bytecode (WITHOUT HEADER): 
+[Warning] PUSHENV 
+[Warning] POP 
+[Warning] EXTEND 0 
+[Warning] LOADK 1 
+[Warning] PUSH 
+[Warning] SEARCH 0 
+[Warning] EQ 
+[Warning] JMPZ 107 
+[Warning] PUSHENV 
+[Warning] LOADK 4 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] JMP 117 
+[Warning] PUSHENV 
+[Warning] LOADK 4 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] LOADK 4 
+[Warning] PUSH 
+[Warning] POPENV 
+[Warning] RETURN 
+[Warning] Emitting this bytecode (WITH HEADER): 
+[Warning] LOADK 1 
+[Warning] EXTEND 0 
+[Warning] LOADK 1 
+[Warning] PUSH 
+[Warning] LOADK 2 
+[Warning] CALL 1 
+[Warning] PUSH 
+[Warning] LOADK 12 
+[Warning] PUSH 
+[Warning] LOADK 13 
+[Warning] PUSH 
+[Warning] LOADK 5 
+[Warning] CALL 2 
+[Warning] DIV 
+[Warning] PUSH 
+[Warning] LOADK 8 
+[Warning] CALL 0 
+[Warning] ADD 
+[Warning] EXTEND 11 
+[Warning] HALT 
+[Debug] LOADK 1 (pos: 0) 
+[Debug] EXTEND 0 (pos: 5) 
+EXTEND 0 = "test"
+0 -> test
+[Debug] LOADK 1 (pos: 10) 
+[Debug] PUSH (pos: 15) 
+[Debug] LOADK 2 (pos: 16) 
+[Debug] CALL 1 (pos: 21) 
+CALL
+CALL <function object> at: 146
+[Debug] RETURN (pos: 146) 
+[Debug] PUSH (pos: 26) 
+[Debug] LOADK 12 (pos: 27) 
+[Debug] PUSH (pos: 32) 
+[Debug] LOADK 13 (pos: 33) 
+[Debug] PUSH (pos: 38) 
+[Debug] LOADK 5 (pos: 39) 
+[Debug] CALL 2 (pos: 44) 
+CALL
+CALL <function object> at: 125
+[Debug] NOP (pos: 125) 
+[Debug] NOP (pos: 126) 
+[Debug] LOADK 337189147 (pos: 127) 
+[Debug] JMP 117 (pos: 132) 
+[Debug] JMPZ 107 (pos: 117) 
+[Debug] PUSHENV (pos: 122) 
+[Debug] LOADK 4 (pos: 123) 
+[Debug] PUSH (pos: 128) 
+[Debug] POPENV (pos: 129) 
+[Debug] POPENV (pos: 130) 
+[Debug] RETURN (pos: 131) 
+[Debug] DIV (pos: 49) 
+[Debug] PUSH (pos: 50) 
+[Debug] LOADK 8 (pos: 51) 
+[Debug] CALL 0 (pos: 56) 
+CALL
+CALL <function object> at: 68
+[Debug] PUSHENV (pos: 68) 
+[Debug] LOADK 10 (pos: 69) 
+[Debug] PUSH (pos: 74) 
+[Debug] POPENV (pos: 75) 
+[Debug] RETURN (pos: 76) 
+[Debug] ADD (pos: 61) 
+[Debug] EXTEND 11 (pos: 62) 
+EXTEND 11 = 28.000000

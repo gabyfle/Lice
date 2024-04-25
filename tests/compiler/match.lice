@@ -1,14 +1,21 @@
 let number a = "test";
-let b = 12;
 
 function testing(a: string) {
-    return 1;
+    if (a == "test") {
+        return 2;
+    } else {
+        return 12;
+    }
+    return 13;
 }
 
-function nice(a, b) {
-    if (a == 0) return b;
-    return a + b;
+function testing2(a: string, b: string) {
+    return 13;
 }
 
+function testing3() {
+    return 14;
+}
 
-let string a = testing("test") + nice(10, 12);
+let f = testing3() + testing2("test1", "test2") / testing("test");
+
