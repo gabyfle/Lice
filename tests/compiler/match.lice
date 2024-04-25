@@ -1,21 +1,13 @@
-let number a = "test";
+let number a = "teset";
 
-function testing(a: string) {
+function second(b: number) {
     if (a == "test") {
-        return 2;
-    } else {
+        return 120;
+    } else if (b == 0) {
         return 12;
     }
-    return 13;
 }
 
-function testing2(a: string, b: string) {
-    return 13;
-}
 
-function testing3() {
-    return 14;
-}
-
-let f = testing3() + testing2("test1", "test2") / testing("test");
+let f = 120 * second(10);
 

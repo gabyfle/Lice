@@ -372,7 +372,7 @@ module Header : HEADER = struct
 
   let union (a : t) (b : t) : t =
     let symbols = Symbols.union a.symbols b.symbols in
-    {symbols; start= a.start}
+    {symbols; start= b.start}
 
   let emit_start (header : t) =
     let start = header.start in
