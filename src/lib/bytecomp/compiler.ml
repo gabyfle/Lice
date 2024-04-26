@@ -22,7 +22,6 @@
 
 open Ast.Tree
 open Types
-open Utils.Logger
 
 module Worker = struct
   module JumpTable = Map.Make (String)
@@ -42,31 +41,26 @@ module Worker = struct
 end
 
 module Code = struct
-  type t = Worker.t list
+  type t = Worker.t option * Worker.t list
 
-  let empty = []
+  let empty = (None, [])
 
-  let add (chunk : Worker.t) (t : t) = List.append t [chunk]
+  let add (chunk : Worker.t) ((h, t) : t) : t = (h, List.append t [chunk])
 
-  let add_front (chunk : Worker.t) (t : t) = List.append [chunk] t
+  let _add_front (chunk : Worker.t) ((h, t) : t) : t = (h, List.append [chunk] t)
 
-  let get (t : t) = match t with [] -> None | h :: _ -> Some h
+  let get ((h, _) : t) = h
 
-  let set (chunk : Worker.t) (code : t) : t =
-    match code with [] -> [chunk] | _ :: t -> chunk :: t
+  let set (chunk : Worker.t) ((_, t) : t) : t = (Some chunk, t)
 
-  let split (t : t) : Worker.t option * t =
-    match t with [] -> (None, []) | h :: t -> (Some h, t)
-
-  let emit (t : t) =
-    let main, rest = split t in
+  let emit ((main, rest) : t) : Bytes.t =
     let rec aux acc = function
       | [] ->
           acc
       | chunk :: t ->
           aux (Bytes.cat acc (Chunk.emit_code (Worker.chunk chunk))) t
     in
-    let bytes = aux Bytes.empty (List.rev rest) in
+    let bytes = aux Bytes.empty rest in
     let main = Option.value main ~default:Worker.empty in
     let main = Chunk.emit (Worker.chunk main) in
     Bytes.cat main bytes
@@ -81,8 +75,6 @@ let in_block = ref 0 (* Used to know if we're in a block *)
 let returned = ref false (* Used to know if we just in a returned statement *)
 
 let add_key (a : Base.t) (worker : Worker.t) : Worker.t * int =
-  Value.pretty Format.str_formatter a ;
-  Logger.info "Adding key %s" (Format.flush_str_formatter ()) ;
   let chunk, key = Chunk.add (Worker.chunk worker) a in
   if key = -1 then failwith "Key not found" else ({worker with chunk}, key)
 
@@ -233,7 +225,8 @@ and compile_expr (expr : Base.expr) (worker : Worker.t) : Worker.t =
         }
         5
 
-and compile_return (expr : Base.expr) (worker : Worker.t) : Worker.t =
+and compile_return (expr : Base.expr) (nargs : int) (worker : Worker.t) :
+    Worker.t =
   let worker = compile_expr expr worker in
   let opcodes = ref Opcode.empty in
   let grow = ref 0 in
@@ -245,10 +238,10 @@ and compile_return (expr : Base.expr) (worker : Worker.t) : Worker.t =
   done ;
   in_block := 0 ;
   let opcodes = Opcode.add !opcodes Opcode.POPENV in
-  let opcodes = Opcode.add opcodes Opcode.RETURN in
+  let opcodes = Opcode.add opcodes (Opcode.RETURN nargs) in
   Worker.grow
     {worker with chunk= Chunk.add_code (Worker.chunk worker) opcodes}
-    (3 + !grow)
+    (7 + !grow)
 
 and compile_block (block : statement list) (worker : Worker.t) : Worker.t =
   let worker =
@@ -289,62 +282,64 @@ and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
     (worker : Worker.t) : Worker.t =
   let worker = compile_expr cond worker in
   let empty = Opcode.empty in
-  (* we need to compile the then statement to update correctly the size of the
-     chunk then, compile the else statement in a separate chunk with the same
-     header to have the correct symbols *)
-  let then_ =
-    compile_statement then_
-      {worker with chunk= Chunk.set (Worker.chunk worker) empty; size= 0}
+  let aux (size : int) : Worker.t =
+    (* we need to compile the then statement to update correctly the size of the
+       chunk then, compile the else statement in a separate chunk with the same
+       header to have the correct symbols *)
+    let then_ =
+      compile_statement then_
+        {worker with chunk= Chunk.set (Worker.chunk worker) empty; size}
+    in
+    let size = Worker.size worker + Worker.size then_ in
+    let worker =
+      (* we're adding the JUMP operation with the good size to jump *)
+      Worker.grow
+        { worker with
+          chunk= Chunk.add_code (Worker.chunk worker) [Opcode.JMPNZ (size + 10)]
+        }
+        (* the + 10 inside the JUMPNZ is to take care of the JMP operation we'll
+           add later *)
+        5
+    in
+    (* the then_ worker now have the code of the then_ + the good header *)
+    let worker =
+      Worker.grow
+        { worker with
+          chunk=
+            Chunk.merge_hd
+              (* we're in the same time merging symbols from the then to the
+                 main worker *)
+              (Worker.chunk then_)
+              (Chunk.add_code (Worker.chunk worker)
+                 (Chunk.code (Worker.chunk then_)) ) }
+        (Worker.size then_)
+    in
+    let else_ =
+      compile_statement else_
+        {worker with chunk= Chunk.set (Worker.chunk worker) empty; size}
+    in
+    let size = Worker.size else_ in
+    let worker =
+      Worker.grow
+        { worker with
+          chunk= Chunk.add_code (Worker.chunk worker) [Opcode.JMP (size + 5)] }
+        5
+    in
+    let worker =
+      Worker.grow
+        { worker with
+          chunk=
+            Chunk.merge_hd
+              (* we're in the same time merging symbols from the then to the
+                 main worker *)
+              (Worker.chunk else_)
+              (Chunk.add_code (Worker.chunk worker)
+                 (Chunk.code (Worker.chunk else_)) ) }
+        (Worker.size else_)
+    in
+    worker
   in
-  let size = Worker.size worker + Worker.size then_ in
-  let worker =
-    (* we're adding the JUMP operation with the good size to jump *)
-    Worker.grow
-      { worker with
-        chunk= Chunk.add_code (Worker.chunk worker) [Opcode.JMPNZ (size + 10)]
-      }
-      (* the + 10 inside the JUMPNZ is to take care of the JMP operation we'll
-         add later *)
-      5
-  in
-  (* the then_ worker now have the code of the then_ + the good header *)
-  let worker =
-    Worker.grow
-      { worker with
-        chunk=
-          Chunk.merge_hd
-            (* we're in the same time merging symbols from the then to the main
-               worker *)
-            (Worker.chunk then_)
-            (Chunk.add_code (Worker.chunk worker)
-               (Chunk.code (Worker.chunk then_)) ) }
-      (Worker.size then_)
-  in
-  let else_ =
-    compile_statement else_
-      {worker with chunk= Chunk.set (Worker.chunk worker) empty; size}
-  in
-  let size = Worker.size else_ in
-  let worker =
-    Worker.grow
-      { worker with
-        chunk= Chunk.add_code (Worker.chunk worker) [Opcode.JMP (size + 5)] }
-      5
-  in
-  let worker =
-    Worker.grow
-      { worker with
-        chunk=
-          Chunk.merge_hd
-            (* we're in the same time merging symbols from the then to the main
-               worker *)
-            (Worker.chunk else_)
-            (Chunk.add_code (Worker.chunk worker)
-               (Chunk.code (Worker.chunk else_)) ) }
-      (Worker.size else_)
-  in
-  Chunk.dump (Worker.chunk worker) ;
-  worker
+  aux 0
 
 and compile_match (pattern : Base.expr)
     (cases : (Base.expr * statement list) list) (worker : Worker.t) : Worker.t =
@@ -392,7 +387,7 @@ and compile_match (pattern : Base.expr)
   aux cases worker
 
 and compile_function (id : Base.identificator) (vars : Base.identificator list)
-    (stmts : statement list) (worker : Worker.t) : Worker.t =
+    (stmts : statement list) (nargs : int) (worker : Worker.t) : Worker.t =
   let worker =
     {worker with chunk= Chunk.set (Worker.chunk worker) Opcode.empty; size= 0}
   in
@@ -403,14 +398,15 @@ and compile_function (id : Base.identificator) (vars : Base.identificator list)
   let worker =
     Worker.addjmp {worker with chunk} (Base.identificator_to_string id) key
   in
-  let rec get_locals (worker : Worker.t) = function
+  let rec get_locals (largs : int) (worker : Worker.t) = function
     | [] ->
         worker
     | var :: t ->
         let chunk, key = Chunk.add (Worker.chunk worker) (V_Variable var) in
-        get_locals
+        let value = if largs = 0 then Opcode.LDVOID else POP in
+        get_locals (largs - 1)
           (Worker.grow
-             {worker with chunk= Chunk.add_code chunk [Opcode.EXTEND key; POP]}
+             {worker with chunk= Chunk.add_code chunk [Opcode.EXTEND key; value]}
              6 )
           t
   in
@@ -419,10 +415,10 @@ and compile_function (id : Base.identificator) (vars : Base.identificator list)
       {worker with chunk= Chunk.add_code (Worker.chunk worker) [Opcode.PUSHENV]}
       1
   in
-  let worker = get_locals worker (List.rev vars) in
+  let worker = get_locals nargs worker (List.rev vars) in
   let worker = compile_stmt_list stmts worker in
   let opcodes =
-    Opcode.add_list Opcode.empty [Opcode.RETURN; Opcode.POPENV; PUSH; LDVOID]
+    Opcode.add_list Opcode.empty [Opcode.RETURN 0; Opcode.POPENV; PUSH; LDVOID]
   in
   let chunk = Worker.chunk worker in
   let worker =
@@ -433,7 +429,7 @@ and compile_function (id : Base.identificator) (vars : Base.identificator list)
 and compile_statement (stmt : statement) (worker : Worker.t) : Worker.t =
   match stmt with
   | Return (_, expr) ->
-      compile_return expr worker
+      compile_return expr 1 worker
   | Block (_, block) ->
       compile_block block worker
   | Assign (_, var, expr) ->
@@ -443,7 +439,7 @@ and compile_statement (stmt : statement) (worker : Worker.t) : Worker.t =
   | Match (_, pattern, cases) ->
       compile_match pattern cases worker
   | FuncDef (_, id, vars, stmt) ->
-      compile_function id vars stmt worker
+      compile_function id vars stmt (List.length vars) worker
   | Expression (_, expr, _) ->
       compile_expr expr worker
   | _ ->
@@ -474,7 +470,7 @@ let compute_size (code : Opcode.t) : int =
   aux 0 code
 
 let resolve_addresses (code : Code.t) : Code.t =
-  let main, rest = Code.split code in
+  let main, rest = code in
   let main = Option.value main ~default:Worker.empty in
   let sizes =
     let rec aux acc = function
@@ -490,48 +486,49 @@ let resolve_addresses (code : Code.t) : Code.t =
   let iter (key : int) (value : Base.t) : unit =
     match value with V_Function _ -> todo := key :: !todo | _ -> ()
   in
-  let rec aux (main : Worker.t) (size : int) (rest : Code.t) = function
+  let rec aux (code : Code.t) (size : int) =
+    let main = Code.get code in
+    let main = Option.value main ~default:Worker.empty in
+    function
     | [], [] ->
-        (main, rest)
+        code
     | [], (dsize, worker) :: t' ->
-        Printf.printf "Computed: %d ; Real : %d\n" (dsize + size)
-          (compute_size (Worker.chunk main |> Chunk.code)) ;
-        let worker =
+        let code =
           match worker with
           | Some worker ->
-              let code = Chunk.code (Worker.chunk worker) in
-              let code = adjust_jumps code size in
-              let chunk = Chunk.set (Worker.chunk worker) code in
+              let ccode = Chunk.code (Worker.chunk worker) in
+              let ccode = adjust_jumps ccode size in
+              let chunk = Chunk.set (Worker.chunk worker) ccode in
               let worker = {worker with chunk} in
-              Code.add worker rest
+              Code.add worker code
           | None ->
-              rest
+              code
         in
-        aux main (dsize + size) worker ([], t')
+        aux code (dsize + size) ([], t')
     | key :: t, (dsize, worker) :: t' ->
         let nsize = size + dsize in
         let nfunc = Base.V_Function (Int32.of_int nsize) in
         let main =
           {main with chunk= Chunk.setk (Worker.chunk main) key nfunc}
         in
-        let worker =
+        let code =
           match worker with
           | Some worker ->
-              let code = Chunk.code (Worker.chunk worker) in
-              let code = adjust_jumps code size in
-              let chunk = Chunk.set (Worker.chunk worker) code in
+              let ccode = Chunk.code (Worker.chunk worker) in
+              let ccode = adjust_jumps ccode size in
+              let chunk = Chunk.set (Worker.chunk worker) ccode in
               let worker = {worker with chunk} in
-              Code.add worker rest
+              Code.add worker code
           | None ->
-              rest
+              code
         in
-        aux main nsize worker (t, t')
+        aux (Code.set main code) nsize (t, t')
     | _ ->
-        (main, rest)
+        code
   in
   Chunk.iter (Worker.chunk main) iter ;
-  let main, rest = aux main 0 [] (!todo, sizes) in
-  rest |> Code.add_front main
+  let code = aux (Code.set main Code.empty) 0 (!todo, sizes) in
+  code
 
 let compile (ast : program) : Bytes.t =
   let code = Code.empty in
@@ -575,9 +572,8 @@ let compile (ast : program) : Bytes.t =
   let chunk = Chunk.add_code chunk [Opcode.HALT] in
   let worker = Worker.grow {worker with chunk} 1 in
   let code = Code.set worker code in
-  ignore (Code.emit code) ;
   let code = resolve_addresses code in
-  let _worker = Option.value (Code.get code) ~default:Worker.empty in
-  Chunk.dump (Worker.chunk _worker) ;
+  let worker = Option.value (Code.get code) ~default:Worker.empty in
+  Chunk.dump (Worker.chunk worker) ;
   let bytes = Code.emit code in
   bytes

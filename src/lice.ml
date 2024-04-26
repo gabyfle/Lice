@@ -47,13 +47,13 @@ let () =
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
   let ast = Kernel.parse_code code in
-  let rec ast_to_str (str : string) = function
+  let rec fmt_ast acc = function
     | [] ->
-        str
-    | hd :: tl ->
-        ast_to_str (str ^ stmt_format hd) tl
+        acc
+    | h :: t ->
+        fmt_ast (stmt_format h ^ acc) t
   in
-  Printf.printf "AST: %s\n" (ast_to_str "" ast) ;
+  Printf.printf "%s\n" (fmt_ast "" ast) ;
   let bytes = Compiler.compile ast in
   let vm = Lvm.create () in
   let vm = Lvm.load vm bytes in

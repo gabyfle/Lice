@@ -55,7 +55,7 @@ type opcode =
   | POPENV (* Pop the current scope frame from the environnement *)
   (* Function operators *)
   | CALL of int (* Call the function from the accumulator *)
-  | RETURN (* Return from the function *)
+  | RETURN of int (* Return from the function *)
 
 type t = opcode list
 
@@ -187,10 +187,10 @@ let emit_byte = function
       let id = Bytes.create 1 in
       Bytes.set id 0 (Char.chr 26) ;
       Bytes.cat id (int_to_bytes n)
-  | RETURN ->
+  | RETURN n ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 27) ;
-      bytes
+      Bytes.cat bytes (int_to_bytes n)
 
 let emit_bytes opcodes =
   let rec aux (bytes : Bytes.t) = function
@@ -273,7 +273,8 @@ let of_bytes (bytes : bytes) (start : int) : opcode * int =
       let n = Bytes.get_int32_be bytes (start + 1) in
       (CALL (Int32.to_int n), 5)
   | 27 ->
-      (RETURN, 1)
+      let n = Bytes.get_int32_be bytes (start + 1) in
+      (RETURN (Int32.to_int n), 5)
   | _ ->
       (NOP, 1)
 
@@ -332,8 +333,8 @@ let size = function
       1
   | CALL _ ->
       5
-  | RETURN ->
-      1
+  | RETURN _ ->
+      5
 
 let pp (ppf : Format.formatter) (opcode : opcode) =
   let pp_opcode ppf = function
@@ -391,7 +392,7 @@ let pp (ppf : Format.formatter) (opcode : opcode) =
         Format.fprintf ppf "POPENV"
     | CALL n ->
         Format.fprintf ppf "CALL %d" n
-    | RETURN ->
-        Format.fprintf ppf "RETURN"
+    | RETURN n ->
+        Format.fprintf ppf "RETURN %d" n
   in
   pp_opcode ppf opcode

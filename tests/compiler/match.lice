@@ -1,13 +1,13 @@
-let number a = "teset";
-
-function second(b: number) {
-    if (a == "test") {
-        return 120;
-    } else if (b == 0) {
-        return 12;
-    }
+function one(a: string) {
+    return "one";
 }
 
+function two(b: string) {
+    return "* " + b + "+++";
+}
 
-let f = 120 * second(10);
+function three(c: string) {
+    return "/++" + c;
+}
 
+let string test = two("two") + one("hey") + three("three");

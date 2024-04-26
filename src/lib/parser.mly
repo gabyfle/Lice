@@ -101,9 +101,10 @@
 %type <expr> expr
 %start <program> lprog
 
-%right ASSIGN
+
+%right LPAREN ASSIGN
+%left RPAREN ASTERISK SLASH MOD
 %left PLUS MINUS
-%left ASTERISK SLASH MOD
 
 %%
 
