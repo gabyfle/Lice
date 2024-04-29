@@ -22,6 +22,7 @@
 
 open Utils.Logger
 open Bytecomp
+(*open Utils.Formatting*)
 
 let () =
   Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;

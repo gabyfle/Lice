@@ -77,8 +77,30 @@ let push_stack cpu n =
   in
   {cpu with stack}
 
-let pop_stack cpu =
-  let stack = match cpu.stack with [] -> raise Stack.Empty | _ :: t -> t in
+let pop_stack cpu n =
+  let values, cpu =
+    let rec get_vals (n : int) (acc : 'a list) (cpu : 'a t) =
+      match n with
+      | 0 ->
+          (acc, cpu)
+      | k -> (
+          let st = List.hd cpu.stack in
+          match st with
+          | [] ->
+              get_vals (k - 1) acc cpu
+          | h :: t ->
+              get_vals (k - 1) (h :: acc)
+                {cpu with stack= t :: List.tl cpu.stack} )
+    in
+    get_vals n [] cpu
+  in
+  let stack =
+    match cpu.stack with
+    | [] ->
+        raise Stack.Empty
+    | _ :: t -> (
+      match t with [] -> [values] | h :: t -> (values @ h) :: t )
+  in
   {cpu with stack}
 
 let rpush cpu =

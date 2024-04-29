@@ -1,0 +1,13 @@
+if ("2" == "3") {
+    let a = 23;
+} else {
+    let b = 234;
+}
+
+if (4 == 5) {
+
+}
+
+if ("zaojernaekjfbeazifbaiezfbieazubfiaezbfeaziubf" == "zer") {
+    let c = 6546654654654;
+}

@@ -1,19 +1,12 @@
 
 function power(x: number, n: number): number {
     if (n == 0) return 1;
+    
     if (n == 1) return x;
-
-    if ((n % 2) ~= 0) return power(x * x, (n - 1) / 2);
-    else return power(x * x, n / 2);
+    
+    if ((n % 2) == 0) return power(x * x, n / 2);
+    
+    return power(x * x, (n - 1) / 2);
 }
 
-function main(): void {
-    let number x = 2;
-    let number n = 4;
-
-    let number p = power(x, n);
-
-    return;
-}
-
-main();
+let re = power(2, 2);

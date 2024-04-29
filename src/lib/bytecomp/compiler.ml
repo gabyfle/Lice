@@ -304,66 +304,72 @@ and compile_assign (var : Base.identificator) (expr : Base.expr)
 
 and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
     (worker : Worker.t) : Worker.t =
+  Printf.printf "Compiling if, init size: %de\n" (Worker.size worker) ;
   let worker = compile_expr cond worker in
+  Printf.printf "Compiling if, after cond size: %de\n" (Worker.size worker) ;
   let empty = Opcode.empty in
-  let aux (size : int) : Worker.t =
-    (* we need to compile the then statement to update correctly the size of the
-       chunk then, compile the else statement in a separate chunk with the same
-       header to have the correct symbols *)
-    let then_ =
-      compile_statement then_
-        {worker with chunk= Chunk.set (Worker.chunk worker) empty; size}
-    in
-    let size = Worker.size worker + Worker.size then_ in
-    let worker =
-      (* we're adding the JUMP operation with the good size to jump *)
-      Worker.grow
-        { worker with
-          chunk= Chunk.add_code (Worker.chunk worker) [Opcode.JMPNZ (size + 10)]
-        }
-        (* the + 10 inside the JUMPNZ is to take care of the JMP operation we'll
-           add later *)
-        5
-    in
-    (* the then_ worker now have the code of the then_ + the good header *)
-    let worker =
-      Worker.grow
-        { worker with
-          chunk=
-            Chunk.merge_hd
-              (* we're in the same time merging symbols from the then to the
-                 main worker *)
-              (Worker.chunk then_)
-              (Chunk.add_code (Worker.chunk worker)
-                 (Chunk.code (Worker.chunk then_)) ) }
-        (Worker.size then_)
-    in
-    let else_ =
-      compile_statement else_
-        {worker with chunk= Chunk.set (Worker.chunk worker) empty; size}
-    in
-    let size = Worker.size else_ in
-    let worker =
-      Worker.grow
-        { worker with
-          chunk= Chunk.add_code (Worker.chunk worker) [Opcode.JMP (size + 5)] }
-        5
-    in
-    let worker =
-      Worker.grow
-        { worker with
-          chunk=
-            Chunk.merge_hd
-              (* we're in the same time merging symbols from the then to the
-                 main worker *)
-              (Worker.chunk else_)
-              (Chunk.add_code (Worker.chunk worker)
-                 (Chunk.code (Worker.chunk else_)) ) }
-        (Worker.size else_)
-    in
-    worker
+  (* we need to compile the then statement to update correctly the size of the
+     chunk then, compile the else statement in a separate chunk with the same
+     header to have the correct symbols *)
+  let then_ =
+    compile_statement then_
+      {worker with chunk= Chunk.set (Worker.chunk worker) empty; size= 0}
   in
-  aux 0
+  let tsize = Worker.size then_ in
+  let worker =
+    (* we're adding the JUMP operation with the good size to jump *)
+    Worker.grow
+      { worker with
+        chunk=
+          Chunk.add_code (Worker.chunk worker)
+            [Opcode.JMPNZ (tsize + Worker.size worker + 10)] }
+      5
+    (* the + 10 inside the JMPNZ is to take care of the JMP operation we'll add
+       later *)
+  in
+  (* the then_ worker now have the code of the then_ + the good header *)
+  let worker =
+    { worker with
+      chunk=
+        Chunk.merge_hd
+          (* we're in the same time merging symbols from the then to the main
+             worker *)
+          (Worker.chunk then_)
+          (Chunk.add_code (Worker.chunk worker)
+             (Chunk.code (Worker.chunk then_)) ) }
+  in
+  Printf.printf "tsize: %d\n" tsize ;
+  let worker = Worker.grow worker tsize in
+  let else_ =
+    compile_statement else_
+      {worker with chunk= Chunk.set (Worker.chunk worker) empty; size= 0}
+  in
+  let esize = Worker.size else_ in
+  Printf.printf "esize: %d\n" esize ;
+  Printf.printf "Worker size: %d\n" (Worker.size worker) ;
+  let worker =
+    { worker with
+      chunk=
+        Chunk.add_code (Worker.chunk worker)
+          [Opcode.JMP (Worker.size worker + 5 + esize)]
+        (* here, we're not adding + 10 since we already did inside tsize for the
+           JMPNZ *) }
+  in
+  let worker =
+    Worker.grow
+      { worker with
+        chunk=
+          Chunk.merge_hd
+            (* we're in the same time merging symbols from the then to the main
+               worker *)
+            (Worker.chunk else_)
+            (Chunk.add_code (Worker.chunk worker)
+               (Chunk.code (Worker.chunk else_)) ) }
+      (Worker.size else_ + 5)
+  in
+  Printf.printf "Final size: %de\n" (Worker.size worker) ;
+  ignore (Code.emit (Code.set worker Code.empty)) ;
+  worker
 
 and compile_match (pattern : Base.expr)
     (cases : (Base.expr * statement list) list) (worker : Worker.t) : Worker.t =
@@ -562,6 +568,7 @@ let compile (ast : program) : Bytes.t =
         code
     | stmt :: t ->
         let main = Option.value (Code.get code) ~default:Worker.empty in
+        Printf.printf "Main worker size: %d\n" (Worker.size main) ;
         let worker = compile_statement stmt main in
         if Chunk.emplaced (Worker.chunk worker) then
           (* if the compiled chunk needs to be emplaced, we copy its header into

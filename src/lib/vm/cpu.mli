@@ -39,7 +39,7 @@ val pop : 'a t -> 'a t
 
 val push_stack : 'a t -> int -> 'a t
 
-val pop_stack : 'a t -> 'a t
+val pop_stack : 'a t -> int -> 'a t
 
 val rpush : 'a t -> 'a t
 

@@ -65,8 +65,8 @@ let push_callframe (vm : t) (n : int) : t =
   let cpu = Cpu.push_stack vm.cpu n in
   {vm with cpu}
 
-let pop_callframe (vm : t) : t =
-  let cpu = Cpu.pop_stack vm.cpu in
+let pop_callframe (vm : t) (n : int) : t =
+  let cpu = Cpu.pop_stack vm.cpu n in
   {vm with cpu}
 
 let read t =
@@ -200,12 +200,12 @@ let call t n =
   in
   dump_stack vm ; vm
 
-let return t =
+let return t (nargs : int) =
   let cpu = Cpu.rpop t.cpu in
   let t = pop {t with cpu} in
   let tmp = Cpu.get_acc t.cpu in
   try
-    let vm = pop_callframe t in
+    let vm = pop_callframe t nargs in
     let vm = {vm with cpu= Cpu.push (Cpu.set_acc vm.cpu tmp)} in
     Printf.printf "Dumping stack after return\n" ;
     dump_stack vm ;
@@ -258,8 +258,8 @@ let do_code t =
         aux (popenv vm)
     | CALL n ->
         aux (call vm n)
-    | RETURN _ ->
-        aux (return vm)
+    | RETURN n ->
+        aux (return vm n)
     | _ ->
         halt vm
   in

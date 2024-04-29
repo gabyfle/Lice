@@ -125,6 +125,6 @@ let program_format =
     | [] ->
         acc
     | h :: t ->
-        aux (acc ^ stmt_format h) t
+        aux (acc ^ "\n" ^ stmt_format h) t
   in
   aux ""
