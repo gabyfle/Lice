@@ -47,7 +47,33 @@ The Lice language library is now installed into your system.
 
 ### Learning the Lice language
 
-See <a href="https://lice.gabyfle.dev">online documentation</a>
+To have more accurate examples, as well as a fully detailed grammar diagram, see <a href="https://lice.gabyfle.dev">online documentation</a>. You can still find below some basic examples of the syntax of the Lice programming language.
+
+For the moment, Lice isn't shipped with any built-in library.
+
+#### Examples
+
+##### Calculating the Euler constant (or exp(0))
+
+```javascript
+function factorial(n) {
+    if (n == 0) return 1;
+
+    return n * factorial(n - 1);
+}
+
+function exp_aux(n, acc) {
+    if (n == 0) return acc;
+
+    return exp_aux(n - 1, acc + (1  / factorial(n)));
+}
+
+function exp(n) {
+    return exp_aux(n, 1);
+}
+
+let number e = exp(2);
+```
 
 ## Licence
 
