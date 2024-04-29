@@ -304,9 +304,7 @@ and compile_assign (var : Base.identificator) (expr : Base.expr)
 
 and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
     (worker : Worker.t) : Worker.t =
-  Printf.printf "Compiling if, init size: %de\n" (Worker.size worker) ;
   let worker = compile_expr cond worker in
-  Printf.printf "Compiling if, after cond size: %de\n" (Worker.size worker) ;
   let empty = Opcode.empty in
   (* we need to compile the then statement to update correctly the size of the
      chunk then, compile the else statement in a separate chunk with the same
@@ -338,15 +336,12 @@ and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
           (Chunk.add_code (Worker.chunk worker)
              (Chunk.code (Worker.chunk then_)) ) }
   in
-  Printf.printf "tsize: %d\n" tsize ;
   let worker = Worker.grow worker tsize in
   let else_ =
     compile_statement else_
       {worker with chunk= Chunk.set (Worker.chunk worker) empty; size= 0}
   in
   let esize = Worker.size else_ in
-  Printf.printf "esize: %d\n" esize ;
-  Printf.printf "Worker size: %d\n" (Worker.size worker) ;
   let worker =
     { worker with
       chunk=
@@ -367,8 +362,6 @@ and compile_if (cond : Base.expr) (then_ : statement) (else_ : statement)
                (Chunk.code (Worker.chunk else_)) ) }
       (Worker.size else_ + 5)
   in
-  Printf.printf "Final size: %de\n" (Worker.size worker) ;
-  ignore (Code.emit (Code.set worker Code.empty)) ;
   worker
 
 and compile_match (pattern : Base.expr)
@@ -568,7 +561,6 @@ let compile (ast : program) : Bytes.t =
         code
     | stmt :: t ->
         let main = Option.value (Code.get code) ~default:Worker.empty in
-        Printf.printf "Main worker size: %d\n" (Worker.size main) ;
         let worker = compile_statement stmt main in
         if Chunk.emplaced (Worker.chunk worker) then
           (* if the compiled chunk needs to be emplaced, we copy its header into

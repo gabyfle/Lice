@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Types
+open Utils.Logger
 
 module type Env = sig
   type t
@@ -75,10 +76,11 @@ module Environment : Env = struct
   let dump (scope : t) =
     List.iter
       (fun s ->
-        Printf.printf "[[\n" ;
+        let str = ref "Dump of the Environement: \n[[\n" in
         Scope.iter
-          (fun k v -> Printf.printf "%d -> %s\n" k (Value.to_string v))
+          (fun k v ->
+            str := !str ^ Printf.sprintf "%d -> %s\n" k (Value.to_string v) )
           s ;
-        Printf.printf "]]\n" )
+        Logger.info "%s" (!str ^ "]]\n") )
       scope
 end

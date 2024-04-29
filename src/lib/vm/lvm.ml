@@ -23,6 +23,7 @@
 open Env
 open Types
 open Bytecomp
+open Utils.Logger
 
 type t =
   { cpu: Base.t Cpu.t
@@ -41,17 +42,17 @@ let load t (bytes : Bytes.t) =
 
 let code t = Chunk.bytecode t.chunk
 
-let dump_stack t =
+let _dump_stack t =
   let stack = Cpu.stack t.cpu in
   let iter_stack (st : Base.t list) =
     Printf.printf "[{\n" ;
     let count = ref 0 in
     let iter_values (v : Base.t) =
       Value.pretty Format.str_formatter v ;
-      Printf.printf "%d -> %s\n" !count (Format.flush_str_formatter ()) ;
+      Logger.debug "%d -> %s\n" !count (Format.flush_str_formatter ()) ;
       count := !count + 1
     in
-    List.iter iter_values st ; Printf.printf "\n}]\n"
+    List.iter iter_values st ; Logger.debug "\n}]\n"
   in
   List.iter iter_stack stack
 
@@ -91,27 +92,20 @@ let ldbool (t : t) (v : bool) =
 
 let push t =
   let cpu = Cpu.push (cpu t) in
-  let vm = {t with cpu} in
-  vm
+  {t with cpu}
 
 let pop t =
   try
     let cpu = Cpu.pop (cpu t) in
-    let vm = {t with cpu} in
-    vm
+    {t with cpu}
   with Stack.Empty ->
     let cpu = Cpu.set_acc t.cpu V_Void in
-    let vm = {t with cpu} in
-    vm
+    {t with cpu}
 
 let add (t : t) =
   let a = Cpu.get_acc t.cpu in
   let t = pop t in
   let b = Cpu.get_acc t.cpu in
-  Value.pretty Format.str_formatter a ;
-  Printf.printf "Adding values: a %s" (Format.flush_str_formatter ()) ;
-  Value.pretty Format.str_formatter b ;
-  Printf.printf " and %s \n" (Format.flush_str_formatter ()) ;
   let res = Value.add a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
@@ -147,7 +141,8 @@ let eq (t : t) =
   let a = Cpu.get_acc t.cpu in
   let t = pop t in
   let b = Cpu.get_acc t.cpu in
-  if Value.eq a b then {t with cpu= Cpu.set_flag t.cpu 0} else t
+  if Value.eq a b then {t with cpu= Cpu.set_flag t.cpu 0}
+  else {t with cpu= Cpu.set_flag t.cpu 1}
 
 let jmp t d =
   let cpu = Cpu.set_pc t.cpu d in
@@ -168,7 +163,6 @@ let extend t id =
 
 let search t id =
   let v = Environment.get_var t.memory id in
-  Environment.dump t.memory ;
   match v with
   | None ->
       let cpu = Cpu.set_acc t.cpu V_Void in
@@ -198,7 +192,7 @@ let call t n =
     | _ ->
         t
   in
-  dump_stack vm ; vm
+  vm
 
 let return t (nargs : int) =
   let cpu = Cpu.rpop t.cpu in
@@ -206,10 +200,7 @@ let return t (nargs : int) =
   let tmp = Cpu.get_acc t.cpu in
   try
     let vm = pop_callframe t nargs in
-    let vm = {vm with cpu= Cpu.push (Cpu.set_acc vm.cpu tmp)} in
-    Printf.printf "Dumping stack after return\n" ;
-    dump_stack vm ;
-    vm
+    {vm with cpu= Cpu.push (Cpu.set_acc vm.cpu tmp)}
   with Stack.Empty -> {t with cpu= Cpu.push cpu}
 
 let do_code t =

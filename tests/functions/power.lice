@@ -9,4 +9,4 @@ function power(x: number, n: number): number {
     return power(x * x, (n - 1) / 2);
 }
 
-let re = power(2, 2);
+let re = power(2, 32);

@@ -593,8 +593,8 @@ let reader (bytes : Bytes.t) =
   let chunk = {empty with header} in
   let func (start : int) =
     let opcode, size = Opcode.of_bytes bytes start in
-    Opcode.pp Format.str_formatter opcode ;
-    Logger.debug "%s (pos: %d)" (Format.flush_str_formatter ()) start ;
+    (* Opcode.pp Format.str_formatter opcode ; Logger.debug "%s (pos: %d)"
+       (Format.flush_str_formatter ()) start ; *)
     (opcode, size)
   in
   (chunk, func)

@@ -22,10 +22,9 @@
 
 open Utils.Logger
 open Bytecomp
-(*open Utils.Formatting*)
 
 let () =
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
+  Logger.set_level ["Info"; "Error"] ;
   let executable_dir =
     match Sys.argv with
     | [|_; exec_path|] ->
