@@ -21,7 +21,6 @@
 (*****************************************************************************)
 
 open Utils.Logger
-open Utils.Formatting
 open Bytecomp
 
 let () =
@@ -32,7 +31,7 @@ let () =
         (* Get the directory containing the executable *)
         let exec_dir = Filename.dirname exec_path in
         (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/compiler/match.lice"
+        Filename.concat exec_dir "tests/perf/exp.lice"
     | _ ->
         failwith "Invalid command line\n    arguments"
   in
@@ -47,13 +46,6 @@ let () =
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
   let ast = Kernel.parse_code code in
-  let rec fmt_ast acc = function
-    | [] ->
-        acc
-    | h :: t ->
-        fmt_ast (stmt_format h ^ acc) t
-  in
-  Printf.printf "%s\n" (fmt_ast "" ast) ;
   let bytes = Compiler.compile ast in
   let vm = Lvm.create () in
   let vm = Lvm.load vm bytes in

@@ -31,11 +31,15 @@ val init_cpu : 'a -> 'a t
 
 val acc : 'a t -> 'a
 
-val stack : 'a t -> 'a list
+val stack : 'a t -> 'a list list
 
 val push : 'a t -> 'a t
 
 val pop : 'a t -> 'a t
+
+val push_stack : 'a t -> int -> 'a t
+
+val pop_stack : 'a t -> 'a t
 
 val rpush : 'a t -> 'a t
 

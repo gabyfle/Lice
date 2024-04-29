@@ -10,4 +10,4 @@ function three(c: string) {
     return "/++" + c;
 }
 
-let string test = two("two") + one("hey") + three("three");
+let string test = two("two") + three("three") + "hey" + one("hey");

@@ -185,10 +185,27 @@ and compile_expr (expr : Base.expr) (worker : Worker.t) : Worker.t =
       load_value t worker
   | BinOp (op, a, b) ->
       let worker = compile_expr b worker in
-      let chunk = Worker.chunk worker in
-      let chunk = Chunk.add_code chunk [Opcode.PUSH] in
-      let worker = Worker.grow {worker with chunk} 1 in
+      let worker =
+        match Chunk.last (Worker.chunk worker) with
+        | Opcode.CALL _ ->
+            (* if the last instruction was a call to a function, args are
+               already into the stack*)
+            worker
+        | _ ->
+            let chunk = Chunk.add_code (Worker.chunk worker) [Opcode.PUSH] in
+            Worker.grow {worker with chunk} 1
+      in
       let worker = compile_expr a worker in
+      let worker =
+        match Chunk.last (Worker.chunk worker) with
+        | Opcode.CALL _ ->
+            (* if the last instruction was a call to a function, args are into
+               the stack and we need to pop one into the acc *)
+            let chunk = Chunk.add_code (Worker.chunk worker) [Opcode.POP] in
+            Worker.grow {worker with chunk} 1
+        | _ ->
+            worker
+      in
       compile_operator op worker
   | FuncCall (name, args) ->
       let funck =
@@ -527,7 +544,7 @@ let resolve_addresses (code : Code.t) : Code.t =
         code
   in
   Chunk.iter (Worker.chunk main) iter ;
-  let code = aux (Code.set main Code.empty) 0 (!todo, sizes) in
+  let code = aux (Code.set main Code.empty) 0 (List.rev !todo, sizes) in
   code
 
 let compile (ast : program) : Bytes.t =

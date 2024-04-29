@@ -601,6 +601,10 @@ let reader (bytes : Bytes.t) =
 
 let code (chunk : t) = chunk.code
 
+let last (chunk : t) : Opcode.opcode =
+  let c = code chunk in
+  try List.hd c with Failure _ -> NOP
+
 let add_code (chunk : t) (opcode : Opcode.t) : t =
   {chunk with code= Opcode.add_list chunk.code opcode}
 

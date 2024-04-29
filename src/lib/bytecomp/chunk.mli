@@ -106,6 +106,10 @@ val code : t -> Opcode.t
 (**
     [code chunk] returns the opcodes of the chunk *)
 
+val last : t -> Opcode.opcode
+(**
+    [last chunk] returns the last element added to the chunk *)
+
 val bytecode : t -> Bytes.t
 (**
     [bytecode chunk] returns the bytecode of the chunk *)

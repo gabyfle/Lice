@@ -25,23 +25,61 @@
     [stack]: The actual stack of our stack machine
     [rstack]: The return stack of our stack machine
     [pc]: the pointer towards program instructions *)
-type 'a t = {acc: 'a; stack: 'a list; rstack: int Stack.t; flag: int; pc: int}
+type 'a t =
+  {acc: 'a; stack: 'a list list; rstack: int Stack.t; flag: int; pc: int}
 
-let init_cpu acc = {acc; stack= []; rstack= Stack.create (); flag= -1; pc= 0}
+let init_cpu acc = {acc; stack= [[]]; rstack= Stack.create (); flag= -1; pc= 0}
 
 let acc cpu = cpu.acc
 
 let stack cpu = cpu.stack
 
 let push cpu =
-  let stack = match cpu.stack with [] -> [cpu.acc] | l -> cpu.acc :: l in
+  let stack =
+    match cpu.stack with
+    | [] ->
+        [[acc cpu]]
+    | h :: t -> (
+      match h with [] -> [acc cpu] :: t | _ :: _ as l -> (acc cpu :: l) :: t )
+  in
   {cpu with stack}
 
 let pop cpu =
+  let sstack = cpu.stack in
   let acc, stack =
-    match cpu.stack with [] -> raise Stack.Empty | h :: t -> (h, t)
+    match sstack with
+    | [] ->
+        raise Stack.Empty
+    | stack :: t -> (
+      match stack with [] -> raise Stack.Empty | h :: t' -> (h, t' :: t) )
   in
   {cpu with acc; stack}
+
+let push_stack cpu n =
+  let values, cpu =
+    let rec get_vals (n : int) (acc : 'a list) (cpu : 'a t) =
+      match n with
+      | 0 ->
+          (acc, cpu)
+      | k -> (
+          let st = List.hd cpu.stack in
+          match st with
+          | [] ->
+              get_vals (k - 1) acc cpu
+          | h :: t ->
+              get_vals (k - 1) (h :: acc)
+                {cpu with stack= t :: List.tl cpu.stack} )
+    in
+    get_vals n [] cpu
+  in
+  let stack =
+    match cpu.stack with [] -> [[]] | h :: t -> List.rev values :: h :: t
+  in
+  {cpu with stack}
+
+let pop_stack cpu =
+  let stack = match cpu.stack with [] -> raise Stack.Empty | _ :: t -> t in
+  {cpu with stack}
 
 let rpush cpu =
   Stack.push cpu.pc cpu.rstack ;
