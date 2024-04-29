@@ -1,0 +1,13 @@
+function one(a: string) {
+    return "one";
+}
+
+function two(b: string) {
+    return "* " + b + "+++";
+}
+
+function three(c: string) {
+    return "/++" + c;
+}
+
+let string test = two("two") + three("three") + "hey" + one("hey");

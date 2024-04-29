@@ -30,7 +30,7 @@ type statement =
   | Expression of location * expr * typ
   | Block of location * statement list
   | Assign of location * identificator * expr
-  | FuncDef of location * identificator * identificator list * statement
+  | FuncDef of location * identificator * identificator list * statement list
   | Match of location * expr * (expr * statement list) list
   | If of location * expr * statement * statement
   | ModuleDef of location * ident * statement list

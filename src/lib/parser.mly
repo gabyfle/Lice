@@ -101,9 +101,10 @@
 %type <expr> expr
 %start <program> lprog
 
-%right ASSIGN
+
+%right LPAREN ASSIGN
+%left RPAREN ASTERISK SLASH MOD
 %left PLUS MINUS
-%left ASTERISK SLASH MOD
 
 %%
 
@@ -220,9 +221,21 @@ let func_def_param ==
 
 let func_def ==
   | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; COLON; t = typ; b = block;
-    { FuncDef($startpos, `Ident(p, t), args, b) }
+    { 
+      let b = match b with
+        | Block(_, stmts) -> stmts
+        | _ -> [b]
+      in
+      FuncDef($startpos, `Ident(p, t), args, b)  
+    }
   | FUNCTION; p = IDENT; LPAREN; args=separated_list(COMMA, func_def_param); RPAREN; b = block;
-    { FuncDef($startpos, `Ident(p, T_Auto), args, b) }
+    {
+      let b = match b with
+        | Block(_, stmts) -> stmts
+        | _ -> [b]
+      in
+      FuncDef($startpos, `Ident(p, T_Auto), args, b)
+    }
 
 let func_call_param ==
   | p = expr; { p }

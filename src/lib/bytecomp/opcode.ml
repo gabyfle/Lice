@@ -23,6 +23,7 @@
 type opcode =
   | NOP
   | HALT
+  | LDVOID (* loads Void value into the accumulator *)
   | LOADK of int (* loads the nth constant into the acc *)
   | LOADV of int (* loads a variable of id id *)
   | LDBOL of bool
@@ -54,7 +55,7 @@ type opcode =
   | POPENV (* Pop the current scope frame from the environnement *)
   (* Function operators *)
   | CALL of int (* Call the function from the accumulator *)
-  | RETURN (* Return from the function *)
+  | RETURN of int (* Return from the function *)
 
 type t = opcode list
 
@@ -62,7 +63,7 @@ let empty = []
 
 let add code (opcode : opcode) = opcode :: code
 
-let add_list code (opcodes : opcode list) = List.rev_append opcodes code
+let add_list code (opcodes : opcode list) = List.append opcodes code
 
 let _string_to_bytes s =
   let bytes = Bytes.create (String.length s) in
@@ -85,106 +86,111 @@ let emit_byte = function
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 1) ;
       bytes
+  | LDVOID ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 2) ;
+      bytes
   | LOADK k ->
       let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 2) ;
+      Bytes.set id 0 (Char.chr 3) ;
       Bytes.cat id (int_to_bytes k)
   | LOADV v ->
       let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 3) ;
+      Bytes.set id 0 (Char.chr 4) ;
       Bytes.cat id (int_to_bytes v)
   | LDBOL b ->
-      let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 4) ;
-      Bytes.cat id (int_to_bytes (if b then 1 else 0))
-  | ADD ->
-      let bytes = Bytes.create 1 in
+      let bytes = Bytes.create 2 in
       Bytes.set bytes 0 (Char.chr 5) ;
+      Bytes.set bytes 1 (Char.chr (if b then 1 else 0)) ;
       bytes
-  | SUB ->
+  | ADD ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 6) ;
       bytes
-  | MUL ->
+  | SUB ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 7) ;
       bytes
-  | DIV ->
+  | MUL ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 8) ;
       bytes
-  | MOD ->
+  | DIV ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 9) ;
       bytes
-  | EQ ->
+  | MOD ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 10) ;
       bytes
-  | NEQ ->
+  | EQ ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 11) ;
       bytes
-  | LT ->
+  | NEQ ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 12) ;
       bytes
-  | GT ->
+  | LT ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 13) ;
       bytes
-  | LE ->
+  | GT ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 14) ;
       bytes
-  | GE ->
+  | LE ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 15) ;
       bytes
+  | GE ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 16) ;
+      bytes
   | JMP d ->
-      let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 16) ;
-      Bytes.cat id (int_to_bytes d)
-  | JMPNZ d ->
       let id = Bytes.create 1 in
       Bytes.set id 0 (Char.chr 17) ;
       Bytes.cat id (int_to_bytes d)
-  | JMPZ d ->
+  | JMPNZ d ->
       let id = Bytes.create 1 in
       Bytes.set id 0 (Char.chr 18) ;
       Bytes.cat id (int_to_bytes d)
+  | JMPZ d ->
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 19) ;
+      Bytes.cat id (int_to_bytes d)
   | PUSH ->
-      let bytes = Bytes.create 1 in
-      Bytes.set bytes 0 (Char.chr 19) ;
-      bytes
-  | POP ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 20) ;
       bytes
+  | POP ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 21) ;
+      bytes
   | EXTEND v ->
-      let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 21) ;
-      Bytes.cat id (int_to_bytes v)
-  | SEARCH v ->
       let id = Bytes.create 1 in
       Bytes.set id 0 (Char.chr 22) ;
       Bytes.cat id (int_to_bytes v)
+  | SEARCH v ->
+      let id = Bytes.create 1 in
+      Bytes.set id 0 (Char.chr 23) ;
+      Bytes.cat id (int_to_bytes v)
   | PUSHENV ->
-      let bytes = Bytes.create 1 in
-      Bytes.set bytes 0 (Char.chr 23) ;
-      bytes
-  | POPENV ->
       let bytes = Bytes.create 1 in
       Bytes.set bytes 0 (Char.chr 24) ;
       bytes
+  | POPENV ->
+      let bytes = Bytes.create 1 in
+      Bytes.set bytes 0 (Char.chr 25) ;
+      bytes
   | CALL n ->
       let id = Bytes.create 1 in
-      Bytes.set id 0 (Char.chr 25) ;
+      Bytes.set id 0 (Char.chr 26) ;
       Bytes.cat id (int_to_bytes n)
-  | RETURN ->
+  | RETURN n ->
       let bytes = Bytes.create 1 in
-      Bytes.set bytes 0 (Char.chr 26) ;
-      bytes
+      Bytes.set bytes 0 (Char.chr 27) ;
+      Bytes.cat bytes (int_to_bytes n)
 
 let emit_bytes opcodes =
   let rec aux (bytes : Bytes.t) = function
@@ -207,67 +213,128 @@ let of_bytes (bytes : bytes) (start : int) : opcode * int =
   | 1 ->
       (HALT, 1)
   | 2 ->
+      (LDVOID, 1)
+  | 3 ->
       let k = Bytes.get_int32_be bytes (start + 1) in
       (LOADK (Int32.to_int k), 5)
-  | 3 ->
+  | 4 ->
       let v = Bytes.get_int32_be bytes (start + 1) in
       (LOADK (Int32.to_int v), 5)
-  | 4 ->
+  | 5 ->
       let v = Bytes.get bytes (start + 1) in
       let b = if v = '1' then true else false in
       (LDBOL b, 2)
-  | 5 ->
-      (ADD, 1)
   | 6 ->
-      (SUB, 1)
+      (ADD, 1)
   | 7 ->
-      (MUL, 1)
+      (SUB, 1)
   | 8 ->
-      (DIV, 1)
+      (MUL, 1)
   | 9 ->
-      (MOD, 1)
+      (DIV, 1)
   | 10 ->
-      (EQ, 1)
+      (MOD, 1)
   | 11 ->
-      (NEQ, 1)
+      (EQ, 1)
   | 12 ->
-      (LT, 1)
+      (NEQ, 1)
   | 13 ->
-      (GT, 1)
+      (LT, 1)
   | 14 ->
-      (LE, 1)
+      (GT, 1)
   | 15 ->
-      (GE, 1)
+      (LE, 1)
   | 16 ->
-      let d = Bytes.get_int32_be bytes (start + 1) in
-      (JMP (Int32.to_int d), 5)
+      (GE, 1)
   | 17 ->
       let d = Bytes.get_int32_be bytes (start + 1) in
-      (JMPNZ (Int32.to_int d), 5)
+      (JMP (Int32.to_int d), 5)
   | 18 ->
       let d = Bytes.get_int32_be bytes (start + 1) in
-      (JMPZ (Int32.to_int d), 5)
+      (JMPNZ (Int32.to_int d), 5)
   | 19 ->
-      (PUSH, 1)
+      let d = Bytes.get_int32_be bytes (start + 1) in
+      (JMPZ (Int32.to_int d), 5)
   | 20 ->
-      (POP, 1)
+      (PUSH, 1)
   | 21 ->
-      let v = Bytes.get_int32_be bytes (start + 1) in
-      (EXTEND (Int32.to_int v), 5)
+      (POP, 1)
   | 22 ->
       let v = Bytes.get_int32_be bytes (start + 1) in
-      (SEARCH (Int32.to_int v), 5)
+      (EXTEND (Int32.to_int v), 5)
   | 23 ->
-      (PUSHENV, 1)
+      let v = Bytes.get_int32_be bytes (start + 1) in
+      (SEARCH (Int32.to_int v), 5)
   | 24 ->
-      (POPENV, 1)
+      (PUSHENV, 1)
   | 25 ->
+      (POPENV, 1)
+  | 26 ->
       let n = Bytes.get_int32_be bytes (start + 1) in
       (CALL (Int32.to_int n), 5)
-  | 26 ->
-      (RETURN, 1)
+  | 27 ->
+      let n = Bytes.get_int32_be bytes (start + 1) in
+      (RETURN (Int32.to_int n), 5)
   | _ ->
       (NOP, 1)
+
+let size = function
+  | NOP ->
+      1
+  | HALT ->
+      1
+  | LDVOID ->
+      1
+  | LOADK _ ->
+      5
+  | LOADV _ ->
+      5
+  | LDBOL _ ->
+      2
+  | ADD ->
+      1
+  | SUB ->
+      1
+  | MUL ->
+      1
+  | DIV ->
+      1
+  | MOD ->
+      1
+  | EQ ->
+      1
+  | NEQ ->
+      1
+  | LT ->
+      1
+  | GT ->
+      1
+  | LE ->
+      1
+  | GE ->
+      1
+  | JMP _ ->
+      5
+  | JMPNZ _ ->
+      5
+  | JMPZ _ ->
+      5
+  | PUSH ->
+      1
+  | POP ->
+      1
+  | EXTEND _ ->
+      5
+  | SEARCH _ ->
+      5
+  | PUSHENV ->
+      1
+  | POPENV ->
+      1
+  | CALL _ ->
+      5
+  | RETURN _ ->
+      5
 
 let pp (ppf : Format.formatter) (opcode : opcode) =
   let pp_opcode ppf = function
@@ -275,6 +342,8 @@ let pp (ppf : Format.formatter) (opcode : opcode) =
         Format.fprintf ppf "NOP"
     | HALT ->
         Format.fprintf ppf "HALT"
+    | LDVOID ->
+        Format.fprintf ppf "LDVOID"
     | LOADK k ->
         Format.fprintf ppf "LOADK %d" k
     | LOADV v ->
@@ -323,7 +392,7 @@ let pp (ppf : Format.formatter) (opcode : opcode) =
         Format.fprintf ppf "POPENV"
     | CALL n ->
         Format.fprintf ppf "CALL %d" n
-    | RETURN ->
-        Format.fprintf ppf "RETURN"
+    | RETURN n ->
+        Format.fprintf ppf "RETURN %d" n
   in
   pp_opcode ppf opcode

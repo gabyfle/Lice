@@ -30,13 +30,15 @@ module S = struct
   let name = "function"
 
   let pretty : Format.formatter -> t -> unit =
-   fun fmt d -> Format.fprintf fmt "<function object> at: %d" (Int32.to_int d)
+   fun fmt d -> Format.fprintf fmt "<function object> at: %d\n" (Int32.to_int d)
 
-  let compare (a : t) (b : t) = Stdlib.compare a b
+  let compare (a : t) (b : t) = Int32.compare a b
 
   let from : value -> t = fun x -> x
 end
 
 include Type.Make (S)
+
+let to_string : t -> string = fun x -> Int32.to_string x
 
 let address : t -> int32 = Fun.id

@@ -25,13 +25,21 @@
     stack: The actual stack of our stack machine
     rstack: The return stack of our stack machine
     pc: the pointer towards program instructions *)
-type 'a t = {acc: 'a; stack: 'a Stack.t; rstack: int Stack.t; flag: int; pc: int}
+type 'a t
 
 val init_cpu : 'a -> 'a t
+
+val acc : 'a t -> 'a
+
+val stack : 'a t -> 'a list list
 
 val push : 'a t -> 'a t
 
 val pop : 'a t -> 'a t
+
+val push_stack : 'a t -> int -> 'a t
+
+val pop_stack : 'a t -> int -> 'a t
 
 val rpush : 'a t -> 'a t
 

@@ -34,6 +34,8 @@ module type Env = sig
   val push_scope : t -> t
 
   val pop_scope : t -> t
+
+  val dump : t -> unit
 end
 
 module Environment : Env

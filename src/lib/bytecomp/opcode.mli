@@ -25,6 +25,7 @@
 type opcode =
   | NOP (* does nothing *)
   | HALT (* stops the virtual machine execution *)
+  | LDVOID (* loads void into the accumulator *)
   | LOADK of int (* loads the nth constant into the accumulator *)
   | LOADV of int (* loads a variable of id id into the accumulator *)
   | LDBOL of bool (* loads a bool value into the accumulator *)
@@ -54,7 +55,7 @@ type opcode =
   | POPENV (* Pop the current scope frame from the environnement *)
   (* Function operators *)
   | CALL of int (* Call the function from the accumulator with n parameters *)
-  | RETURN (* Return from the function *)
+  | RETURN of int (* Return from the function *)
 
 type t = opcode list
 
@@ -73,6 +74,10 @@ val add_list : t -> opcode list -> t
 val emit : t -> Bytes.t
 (**
     [emit opcodes] returns a [Bytes.t] string representing the bytecode of the [opcodes] list into binary format *)
+
+val size : opcode -> int
+(**
+    [size opcodes] returns the size of the [opcodes] list in bytes *)
 
 val of_bytes : Bytes.t -> int -> opcode * int
 (**

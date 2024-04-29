@@ -23,6 +23,7 @@
 open Env
 open Types
 open Bytecomp
+open Utils.Logger
 
 type t =
   { cpu: Base.t Cpu.t
@@ -35,17 +36,39 @@ let create () =
   let memory = Environment.empty in
   {cpu; memory; chunk= Chunk.empty; reader= (fun _ -> (HALT, 0))}
 
-let load t chunk =
-  let chunk, reader = Chunk.reader chunk in
+let load t (bytes : Bytes.t) =
+  let chunk, reader = Chunk.reader bytes in
   {t with chunk; reader}
 
 let code t = Chunk.bytecode t.chunk
+
+let _dump_stack t =
+  let stack = Cpu.stack t.cpu in
+  let iter_stack (st : Base.t list) =
+    Printf.printf "[{\n" ;
+    let count = ref 0 in
+    let iter_values (v : Base.t) =
+      Value.pretty Format.str_formatter v ;
+      Logger.debug "%d -> %s\n" !count (Format.flush_str_formatter ()) ;
+      count := !count + 1
+    in
+    List.iter iter_values st ; Logger.debug "\n}]\n"
+  in
+  List.iter iter_stack stack
 
 let cpu t = t.cpu
 
 let memory t = t.memory
 
 let pc t = Cpu.get_pc t.cpu
+
+let push_callframe (vm : t) (n : int) : t =
+  let cpu = Cpu.push_stack vm.cpu n in
+  {vm with cpu}
+
+let pop_callframe (vm : t) (n : int) : t =
+  let cpu = Cpu.pop_stack vm.cpu n in
+  {vm with cpu}
 
 let read t =
   let pc = pc t in
@@ -55,7 +78,9 @@ let read t =
 
 let nop (t : t) = t
 
-let halt (t : t) = t
+let halt (t : t) = Environment.dump t.memory ; t
+
+let ldvoid (t : t) = {t with cpu= Cpu.set_acc t.cpu V_Void}
 
 let loadk (t : t) (k : int) =
   let chunk = t.chunk in
@@ -65,40 +90,59 @@ let loadk (t : t) (k : int) =
 let ldbool (t : t) (v : bool) =
   {t with cpu= Cpu.set_acc t.cpu (V_Boolean (Lbool.from v))}
 
+let push t =
+  let cpu = Cpu.push (cpu t) in
+  {t with cpu}
+
+let pop t =
+  try
+    let cpu = Cpu.pop (cpu t) in
+    {t with cpu}
+  with Stack.Empty ->
+    let cpu = Cpu.set_acc t.cpu V_Void in
+    {t with cpu}
+
 let add (t : t) =
   let a = Cpu.get_acc t.cpu in
-  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let t = pop t in
+  let b = Cpu.get_acc t.cpu in
   let res = Value.add a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
 let sub (t : t) =
   let a = Cpu.get_acc t.cpu in
-  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let t = pop t in
+  let b = Cpu.get_acc t.cpu in
   let res = Value.sub a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
 let mul (t : t) =
   let a = Cpu.get_acc t.cpu in
-  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let t = pop t in
+  let b = Cpu.get_acc t.cpu in
   let res = Value.mul a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
 let div (t : t) =
   let a = Cpu.get_acc t.cpu in
-  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let t = pop t in
+  let b = Cpu.get_acc t.cpu in
   let res = Value.div a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
 let md (t : t) =
   let a = Cpu.get_acc t.cpu in
-  let b = Cpu.get_acc (Cpu.pop t.cpu) in
+  let t = pop t in
+  let b = Cpu.get_acc t.cpu in
   let res = Value.md a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
 let eq (t : t) =
   let a = Cpu.get_acc t.cpu in
-  let b = Cpu.get_acc (Cpu.pop t.cpu) in
-  if Value.eq a b then {t with cpu= Cpu.set_flag t.cpu 0} else t
+  let t = pop t in
+  let b = Cpu.get_acc t.cpu in
+  if Value.eq a b then {t with cpu= Cpu.set_flag t.cpu 0}
+  else {t with cpu= Cpu.set_flag t.cpu 1}
 
 let jmp t d =
   let cpu = Cpu.set_pc t.cpu d in
@@ -112,14 +156,6 @@ let jmpz t d =
   let cpu = if Cpu.get_flag t.cpu = 0 then Cpu.set_pc t.cpu d else t.cpu in
   {t with cpu}
 
-let push t =
-  let cpu = Cpu.push (cpu t) in
-  {t with cpu}
-
-let pop t =
-  let cpu = Cpu.pop (cpu t) in
-  {t with cpu}
-
 let extend t id =
   let v = Cpu.get_acc t.cpu in
   let memory = Environment.set_var t.memory id v in
@@ -129,8 +165,8 @@ let search t id =
   let v = Environment.get_var t.memory id in
   match v with
   | None ->
-      failwith "Variable not found"
-      (* TODO: Handle this kind of error using Located_errors.mli *)
+      let cpu = Cpu.set_acc t.cpu V_Void in
+      {t with cpu}
   | Some v ->
       let cpu = Cpu.set_acc t.cpu v in
       {t with cpu}
@@ -143,20 +179,29 @@ let popenv t =
   let memory = Environment.pop_scope t.memory in
   {t with memory}
 
-let call t _ =
+let call t n =
   let cpu = Cpu.rpush t.cpu in
-  let acc = Cpu.get_acc t.cpu in
-  match acc with
-  | V_Function f ->
-      {t with cpu= Cpu.set_pc cpu (Int32.to_int (Lfunction.address f))}
-  | V_Variable _ ->
-      t
-  | _ ->
-      t
+  let acc = Cpu.get_acc cpu in
+  let t = push_callframe {t with cpu} n in
+  let vm =
+    match acc with
+    | V_Function f ->
+        {t with cpu= Cpu.set_pc t.cpu (Int32.to_int (Lfunction.address f))}
+    | V_Variable _ ->
+        t
+    | _ ->
+        t
+  in
+  vm
 
-let return t =
+let return t (nargs : int) =
   let cpu = Cpu.rpop t.cpu in
-  {t with cpu}
+  let t = pop {t with cpu} in
+  let tmp = Cpu.get_acc t.cpu in
+  try
+    let vm = pop_callframe t nargs in
+    {vm with cpu= Cpu.push (Cpu.set_acc vm.cpu tmp)}
+  with Stack.Empty -> {t with cpu= Cpu.push cpu}
 
 let do_code t =
   let rec aux (vm : t) =
@@ -166,6 +211,8 @@ let do_code t =
         aux (nop vm)
     | HALT ->
         halt vm
+    | LDVOID ->
+        aux (ldvoid vm)
     | LOADK k ->
         aux (loadk vm k)
     | LDBOL b ->
@@ -202,8 +249,8 @@ let do_code t =
         aux (popenv vm)
     | CALL n ->
         aux (call vm n)
-    | RETURN ->
-        aux (return vm)
+    | RETURN n ->
+        aux (return vm n)
     | _ ->
         halt vm
   in

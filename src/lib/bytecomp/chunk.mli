@@ -28,9 +28,37 @@ val empty : t
 (**
     The empty chunk value. This is the base to create a new chunk *)
 
-val add : t -> Base.t -> t
+val dump : t -> unit
 (**
-    [add chunk symbol] adds a symbol to the chunk at the end of chunk *)
+    [dump chunk] prints the chunk to the standard output *)
+
+val copy_hd : t -> t -> t
+(**
+    [copy_hd chunk chunk'] copies header of [chunk] into [chunk'] *)
+
+val emplace : t -> bool -> t
+(**
+    [emplace chunk is_emplace] creates a new chunk with the emplace flag *)
+
+val emplaced : t -> bool
+(**
+    [emplaced chunk] returns the emplace flag of the chunk *)
+
+val add : t -> Base.t -> t * int
+(**
+    [add chunk symbol] adds a symbol to the chunk at the end of chunk, returns also the key index where it has been added *)
+
+val removei : t -> Base.t -> t
+(**
+    [removei chunk index] removes the symbol at index *)
+
+val addk : t -> Base.t -> int -> t * int
+
+val setk : t -> int -> Base.t -> t
+
+val merge_hd : t -> t -> t
+(**
+    [merge_hd chunk chunk'] merges the header of [chunk] into [chunk'] *)
 
 val add_code : t -> Opcode.t -> t
 (**
@@ -66,6 +94,10 @@ val emit : t -> bytes
 (**
     [emit chunk] emits the given chunk into a string of bytes *)
 
+val emit_code : t -> bytes
+(**
+    [emit_code chunk] emits the code of the chunk into a string of bytes *)
+
 val reader : Bytes.t -> t * (int -> Opcode.opcode * int)
 (**
     [reader bytes] construct a reader function over a byte string *)
@@ -73,6 +105,10 @@ val reader : Bytes.t -> t * (int -> Opcode.opcode * int)
 val code : t -> Opcode.t
 (**
     [code chunk] returns the opcodes of the chunk *)
+
+val last : t -> Opcode.opcode
+(**
+    [last chunk] returns the last element added to the chunk *)
 
 val bytecode : t -> Bytes.t
 (**

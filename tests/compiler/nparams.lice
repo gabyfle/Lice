@@ -1,0 +1,15 @@
+function add(n, amount) {
+    return n + amount;
+}
+
+function sub(n, amount) {
+    return n - amount;
+}
+
+function count(n, acc) {
+    if (n == 0) return acc;
+    return count(sub(n, 1), add(acc, 1)); 
+}
+
+let number n = count(12, 0);
+

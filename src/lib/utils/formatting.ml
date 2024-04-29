@@ -89,8 +89,8 @@ let stmt_format stmt =
         Printf.sprintf "Assign statement id %s with expression %s\n\n"
           (Base.identificator_to_string id)
           (expr_format e)
-    | FuncDef (_, id, _, def) ->
-        let t = aux def in
+    | FuncDef (loc, id, _, def) ->
+        let t = aux (Block (loc, def)) in
         Printf.sprintf "Function definition id: %s and definition: %s\n\n"
           (Base.identificator_to_string id)
           t
@@ -125,6 +125,6 @@ let program_format =
     | [] ->
         acc
     | h :: t ->
-        aux (acc ^ stmt_format h) t
+        aux (acc ^ "\n" ^ stmt_format h) t
   in
   aux ""

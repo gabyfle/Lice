@@ -3,6 +3,11 @@ let number b = 15;
 
 if (a == b) {
     let d = a - b;
-} else {
-    let f = 12;
 }
+
+let a = b;
+
+if (a == b) {
+    let c = 12;
+}
+

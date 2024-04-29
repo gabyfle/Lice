@@ -24,14 +24,14 @@ open Utils.Logger
 open Bytecomp
 
 let () =
-  Logger.set_level ["Debug"; "Warning"; "Info"; "Error"] ;
+  Logger.set_level ["Info"; "Error"] ;
   let executable_dir =
     match Sys.argv with
     | [|_; exec_path|] ->
         (* Get the directory containing the executable *)
         let exec_dir = Filename.dirname exec_path in
         (* Construct the full path to the test file *)
-        Filename.concat exec_dir "tests/compiler/random.lice"
+        Filename.concat exec_dir "tests/perf/exp.lice"
     | _ ->
         failwith "Invalid command line\n    arguments"
   in
@@ -46,10 +46,8 @@ let () =
   close_in in_channel ;
   let code = String.concat "\n" code_lines in
   let ast = Kernel.parse_code code in
-  let chunk = Bytecomp.Compiler.compile ast in
-  let code = Bytecomp.Chunk.code chunk in
-  List.iter
-    (fun instr ->
-      Opcode.pp Format.std_formatter instr ;
-      Format.force_newline () )
-    (List.rev code)
+  let bytes = Compiler.compile ast in
+  let vm = Lvm.create () in
+  let vm = Lvm.load vm bytes in
+  let _ = Lvm.do_code vm in
+  ()

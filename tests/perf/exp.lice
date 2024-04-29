@@ -6,11 +6,12 @@ function factorial(n) {
 
 function exp_aux(n, acc) {
     if (n == 0) return acc;
+
     return exp_aux(n - 1, acc + (1  / factorial(n)));
 }
 
 function exp(n) {
-    return exp_aux(n, 1);    
+    return exp_aux(n, 1);
 }
 
-let number f = exp(6200);
+let number e = exp(6400);

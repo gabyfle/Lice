@@ -94,8 +94,14 @@ let pretty fmt = function
       Format.fprintf fmt "%a" Lbool.pretty b
   | V_Function f ->
       Format.fprintf fmt "%a" Lfunction.pretty f
-  | _ ->
-      ()
+  | V_Variable v -> (
+    match v with
+    | `Ident (id, _) ->
+        Format.fprintf fmt "<variable> %s" id
+    | `Module (id, (id', _)) ->
+        Format.fprintf fmt "<variable> %s..%s" id id' )
+  | V_Void ->
+      Format.fprintf fmt "Void"
 
 let compare v v' =
   match (v, v') with
@@ -107,8 +113,11 @@ let compare v v' =
       Llist.compare l l'
   | V_Boolean b, V_Boolean b' ->
       Lbool.compare b b'
-  | _ ->
-      failwith "Cannot compare values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to compare a %s with a %s" a b in
+      failwith err
 
 let eq v v' =
   match (v, v') with
@@ -159,8 +168,11 @@ let add v v' =
       V_Function (Lfunction.add f f')
   | V_Void, V_Void ->
       V_Void
-  | _ ->
-      failwith "Cannot add values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to add a %s with a %s" a b in
+      failwith err
 
 let sub v v' =
   match (v, v') with
@@ -176,8 +188,11 @@ let sub v v' =
       V_Function (Lfunction.sub f f')
   | V_Void, V_Void ->
       V_Void
-  | _ ->
-      failwith "Cannot sub values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to sub a %s with a %s" a b in
+      failwith err
 
 let mul v v' =
   match (v, v') with
@@ -193,8 +208,11 @@ let mul v v' =
       V_Function (Lfunction.mul f f')
   | V_Void, V_Void ->
       V_Void
-  | _ ->
-      failwith "Cannot mul values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to multiply a %s with a %s" a b in
+      failwith err
 
 let div v v' =
   match (v, v') with
@@ -210,8 +228,11 @@ let div v v' =
       V_Function (Lfunction.div f f')
   | V_Void, V_Void ->
       V_Void
-  | _ ->
-      failwith "Cannot div values of different types"
+  | a, b ->
+      let a = name a in
+      let b = name b in
+      let err = Printf.sprintf "Attempted to divide a %s with a %s" a b in
+      failwith err
 
 let neg = function
   | V_Number n ->
