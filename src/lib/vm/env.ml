@@ -75,8 +75,10 @@ module Environment : Env = struct
   let dump (scope : t) =
     List.iter
       (fun s ->
+        Printf.printf "[[\n" ;
         Scope.iter
           (fun k v -> Printf.printf "%d -> %s\n" k (Value.to_string v))
-          s )
+          s ;
+        Printf.printf "]]\n" )
       scope
 end

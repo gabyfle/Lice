@@ -12,6 +12,8 @@ Lice is a little general purpose interpreted language. It's meant to be easy-to-
 
 Lice just recently switched from a *tree-walk* interpreter to a bytecode interpreter with its custom virtual machine. Features that worked before the switch are not garanteed to work yet, as this project is still under development. You can find below a list of features of the language. Features denoted with a *(TBD)* means that they are not working yet, or that it's not working as expected for the moment. <small>*(TDB = To Be Done)*</small>
 
+This switch allowed Lice to gain in performance for code evalutation. The performances gained are both in memory and in time.
+
 ## Features of the language
 - Type annotations
 - Recursive functions

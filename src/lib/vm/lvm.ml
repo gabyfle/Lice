@@ -108,6 +108,10 @@ let add (t : t) =
   let a = Cpu.get_acc t.cpu in
   let t = pop t in
   let b = Cpu.get_acc t.cpu in
+  Value.pretty Format.str_formatter a ;
+  Printf.printf "Adding values: a %s" (Format.flush_str_formatter ()) ;
+  Value.pretty Format.str_formatter b ;
+  Printf.printf " and %s \n" (Format.flush_str_formatter ()) ;
   let res = Value.add a b in
   {t with cpu= Cpu.set_acc t.cpu res}
 
@@ -164,6 +168,7 @@ let extend t id =
 
 let search t id =
   let v = Environment.get_var t.memory id in
+  Environment.dump t.memory ;
   match v with
   | None ->
       let cpu = Cpu.set_acc t.cpu V_Void in

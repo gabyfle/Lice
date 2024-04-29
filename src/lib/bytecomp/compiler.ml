@@ -221,10 +221,17 @@ and compile_expr (expr : Base.expr) (worker : Worker.t) : Worker.t =
         | arg :: t ->
             let worker = compile_expr arg worker in
             let worker =
-              Worker.grow
-                { worker with
-                  chunk= Chunk.add_code (Worker.chunk worker) [Opcode.PUSH] }
-                1
+              (* in the same idea as when compiling binary operators, we need to
+                 check if the last expression was a call to func *)
+              match Chunk.last (Worker.chunk worker) with
+              | Opcode.CALL _ ->
+                  worker
+              | _ ->
+                  Worker.grow
+                    { worker with
+                      chunk= Chunk.add_code (Worker.chunk worker) [Opcode.PUSH]
+                    }
+                    1
             in
             compile_args worker t
       in
