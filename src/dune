@@ -1,8 +1,7 @@
-(executable
+(library
  (name lice)
  (public_name lice)
- (libraries kernel bytecomp vm)
- (modes native js))
+ (libraries bytecomp vm kernel))
 
 (env
  (dev

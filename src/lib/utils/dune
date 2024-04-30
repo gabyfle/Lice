@@ -1,3 +1,4 @@
 (library
  (name utils)
+ (package lice)
  (libraries ast ANSITerminal))

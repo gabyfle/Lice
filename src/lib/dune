@@ -1,5 +1,6 @@
 (library
  (name kernel)
+ (package lice)
  (libraries ast utils types vm bytecomp))
 
 (ocamllex lexer)

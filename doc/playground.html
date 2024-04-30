@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lice - Playground</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+        rel="stylesheet">
+
+    <link href="assets/playground.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="assets/lice.svg" alt="Lice logo" width="150" height="150"> Lice playground</h1>
+        </header>
+        <div class="row align-items-start">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Write code</h5>
+                        <h6 class="card-subtitle mb-2 text-body-secondary">An obtain automatic results</h6>
+                        <p class="card-text">You can load code examples by clicking on the buttons below. The code is automatically compiled and executed. The bytecode viewer window let you dig inside the compiled version of the code you just wrote inside the Code window.</p>
+                        <a href="#" class="card-link btn btn-primary" id="factorial">Factorial</a>
+                        <a href="#" class="card-link btn btn-primary" id="fibonacci">Fibonacci</a>
+                        <a href="#" class="card-link btn btn-primary" id="power">Power</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <label for="code">Code:</label>
+                <textarea id="code" class="form-control" rows="9"></textarea>
+            </div>
+            <div class="col">
+                <label for="bytecode">Bytecode:</label>
+                <textarea id="bytecode" class="form-control" rows="9" readonly></textarea>
+            </div>
+            </div>
+
+            <div class="row justify-content-center exec-time">
+                <div class="col-3">
+                    <label for="execution-time">Execution time:</label>
+                    <input type="text" id="execution-time" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+<script src="playground.bc.js"></script>
+<script>
+
+    let code = document.getElementById("code");
+    let bytecode = document.getElementById("bytecode");
+    let executionTime = document.getElementById("execution-time");
+
+    let codes = {
+        "factorial": `function factorial(n) {\n    if (n == 0) return 1;\n    return n * factorial(n - 1);\n}`
+        ,
+        "fibonacci": `function fib(n) {\n    if (n <= 1) return n;\n    return fib(n - 1) + fib(n - 2);\n}`,
+
+        "power": `function power(x, n) {\n    if (n == 0) return 1;\n    if (n == 1) return x;\n    if ((n % 2) == 0) return power(x * x, n / 2);\n    return power(x * x, (n - 1) / 2);\n}`
+    };
+
+    function inputChanged() {
+            let [state, time] = doString();
+            updateBytecode();
+            executionTime.value = time;
+    }
+
+    function chargeCode(name, codes) {
+        document.getElementById("code").value = codes[name];
+        inputChanged();
+    }
+
+    document.getElementById("factorial").addEventListener("click", function() {
+        chargeCode("factorial", codes);
+    });
+
+    document.getElementById("fibonacci").addEventListener("click", function() {
+        chargeCode("fibonacci", codes);
+    });
+
+    document.getElementById("power").addEventListener("click", function() {
+        chargeCode("power", codes);
+    });
+
+    function doString() {
+        let start = performance.now();
+        let code = document.getElementById("code").value;
+
+        try {
+            Lice.doString(code);
+            let state = Lice.doString(code);
+            let end = performance.now();
+
+            return [state, (end - start).toString() + "ms"];
+        } catch (e) {
+            return [e, "Error."];
+        }
+    }
+
+    function updateBytecode() {
+        let code = document.getElementById("code").value;
+        try {
+            let bc = Lice.bytecodeViewer(code);
+            document.getElementById("bytecode").value = bc;
+        } catch (e) {
+            document.getElementById("bytecode").value = "";
+            return;
+        }
+    }
+
+    code.addEventListener("input", inputChanged);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+</html>

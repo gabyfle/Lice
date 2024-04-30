@@ -1,3 +1,4 @@
 (library
  (name ast)
+ (package lice)
  (libraries types))
