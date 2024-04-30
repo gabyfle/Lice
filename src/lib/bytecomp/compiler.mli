@@ -23,3 +23,5 @@
 open Ast.Tree
 
 val compile : program -> Bytes.t
+
+val dump_code : Bytes.t -> string

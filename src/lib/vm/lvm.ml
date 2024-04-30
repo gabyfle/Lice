@@ -42,7 +42,7 @@ let load t (bytes : Bytes.t) =
 
 let code t = Chunk.bytecode t.chunk
 
-let _dump_stack t =
+let dump_stack t =
   let stack = Cpu.stack t.cpu in
   let iter_stack (st : Base.t list) =
     Printf.printf "[{\n" ;

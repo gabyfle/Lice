@@ -30,3 +30,13 @@ let parse_code code =
   with Parser.Error ->
     Logger.error "%s" "An error occurred while trying to parse the file" ;
     exit 1
+
+let parse_file file =
+  let ic = open_in file in
+  let lexbuf = Lexing.from_channel ic in
+  try
+    Parser.lprog Lexer.token lexbuf
+    (* Use the entry point of your parser, e.g., lprog *)
+  with Parser.Error ->
+    Logger.error "%s" "An error occurred while trying to parse the file" ;
+    exit 1

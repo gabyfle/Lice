@@ -1,3 +1,4 @@
 (library
  (name bytecomp)
+ (package lice)
  (libraries ast types utils))

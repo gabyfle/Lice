@@ -600,3 +600,15 @@ let compile (ast : program) : Bytes.t =
   Chunk.dump (Worker.chunk worker) ;
   let bytes = Code.emit code in
   bytes
+
+let dump_code (bc : Bytes.t) =
+  let chunk, reader = Chunk.reader bc in
+  let max = Bytes.length (Chunk.bytecode chunk) - 1 in
+  let rec aux (acc : string) (pc : int) =
+    let opcode, size = reader pc in
+    Opcode.pp Format.str_formatter opcode ;
+    let opcode = Format.flush_str_formatter () in
+    let acc = Printf.sprintf "%s%s\n" acc opcode in
+    if pc + size < max then aux acc (pc + size) else acc
+  in
+  aux "" 0

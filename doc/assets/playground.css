@@ -1,0 +1,25 @@
+body {
+    background-color: #1C0D30;
+
+    color: #fff;
+}
+
+header img {
+    display: inline;
+}
+
+header {
+    text-align: center;
+
+    margin: 50px;
+}
+
+textarea {
+    font-family: "JetBrains Mono",
+        monospace;
+    resize: none;
+}
+
+.exec-time {
+    margin: 10px;
+}

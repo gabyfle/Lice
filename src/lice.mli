@@ -20,10 +20,6 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Bytecomp
-
-let version = "0.0.1-dev"
-
 module type LState = sig
   type t
 
@@ -44,29 +40,8 @@ module type LState = sig
       [dofile lstate file] reads the [file] string as a file path and then execute the content inside the [lstate] context as Lice code *)
 end
 
-module LState = struct
-  type t = {version: string; vm: Lvm.t}
+module LState : LState
 
-  let empty = {version; vm= Lvm.create ()}
-
-  let version t = t.version
-
-  let do_string (state : t) (code : string) =
-    let ast = Kernel.parse_code code in
-    let code = Compiler.compile ast in
-    let vm = Lvm.load state.vm code in
-    let vm = Lvm.do_code vm in
-    {state with vm}
-
-  let do_file (state : t) (file : string) =
-    let ast = Kernel.parse_file file in
-    let code = Compiler.compile ast in
-    let vm = Lvm.load state.vm code in
-    let vm = Lvm.do_code vm in
-    {state with vm}
-end
-
-let bytecode_viewer (code : string) =
-  let ast = Kernel.parse_code code in
-  let code = Compiler.compile ast in
-  Compiler.dump_code code
+val bytecode_viewer : string -> string
+(**
+    [bytecode_viewer code] returns the bytecode of the [code] string in a pretty format *)

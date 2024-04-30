@@ -1,4 +1,5 @@
 (library
  (name vm)
+ (package lice)
  (libraries types bytecomp)
  (wrapped false))

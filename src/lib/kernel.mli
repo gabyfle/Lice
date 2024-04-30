@@ -21,3 +21,5 @@
 (*****************************************************************************)
 
 val parse_code : string -> Ast.Tree.program
+
+val parse_file : string -> Ast.Tree.program

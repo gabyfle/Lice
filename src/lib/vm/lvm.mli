@@ -36,3 +36,5 @@ val memory : t -> Environment.t
 val code : t -> bytes
 
 val do_code : t -> t
+
+val dump_stack : t -> unit

@@ -590,7 +590,7 @@ let emit_code (chunk : t) : Bytes.t =
 let reader (bytes : Bytes.t) =
   let header, size = Header.of_bytes bytes 0 in
   let bytes = Bytes.sub bytes size (Bytes.length bytes - size) in
-  let chunk = {empty with header} in
+  let chunk = {empty with header; bytecode= bytes} in
   let func (start : int) =
     let opcode, size = Opcode.of_bytes bytes start in
     (* Opcode.pp Format.str_formatter opcode ; Logger.debug "%s (pos: %d)"

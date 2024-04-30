@@ -20,53 +20,16 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Bytecomp
+open Js_of_ocaml
 
-let version = "0.0.1-dev"
+let exec_string (str: string) =
+  let state = Lice.LState.empty in
+  let state = Lice.LState.do_string state str in
+  state
 
-module type LState = sig
-  type t
-
-  val empty : t
-  (**
-      [empty] creates an empty state of the Lice language *)
-
-  val version : t -> string
-  (**
-      [version lstate] returns the actual version used for the Lice interpreter and library *)
-
-  val do_string : t -> string -> t
-  (**
-      [do_string lstate code] reads the string [code] as code, compiles it and execute it inside the [lstate] context *)
-
-  val do_file : t -> string -> t
-  (**
-      [dofile lstate file] reads the [file] string as a file path and then execute the content inside the [lstate] context as Lice code *)
-end
-
-module LState = struct
-  type t = {version: string; vm: Lvm.t}
-
-  let empty = {version; vm= Lvm.create ()}
-
-  let version t = t.version
-
-  let do_string (state : t) (code : string) =
-    let ast = Kernel.parse_code code in
-    let code = Compiler.compile ast in
-    let vm = Lvm.load state.vm code in
-    let vm = Lvm.do_code vm in
-    {state with vm}
-
-  let do_file (state : t) (file : string) =
-    let ast = Kernel.parse_file file in
-    let code = Compiler.compile ast in
-    let vm = Lvm.load state.vm code in
-    let vm = Lvm.do_code vm in
-    {state with vm}
-end
-
-let bytecode_viewer (code : string) =
-  let ast = Kernel.parse_code code in
-  let code = Compiler.compile ast in
-  Compiler.dump_code code
+let _ =
+  Js.export "Lice"
+    (object%js
+       method doString (code: string) = exec_string code
+       method bytecodeViewer = Lice.bytecode_viewer 
+     end)
