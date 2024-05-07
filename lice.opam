@@ -12,7 +12,7 @@ bug-reports: "https://github.com/gabyfle/lice/issues"
 depends: [
   "dune" {>= "3.12"}
   "ocaml" {>= "4.08.0"}
-  "ANSITerminal" {= version}
+  "ANSITerminal" {>= "0.8.5"}
   "odoc" {with-doc}
 ]
 build: [
