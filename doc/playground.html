@@ -12,53 +12,76 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" />
 
     <link href="assets/playground.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><img src="assets/lice.svg" alt="Lice logo" width="150" height="150"> Lice playground</h1>
-        </header>
-        <div class="row align-items-start">
-            <div class="col">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Write code</h5>
-                        <h6 class="card-subtitle mb-2 text-body-secondary">An obtain automatic results</h6>
-                        <p class="card-text">You can load code examples by clicking on the buttons below. The code is automatically compiled and executed. The bytecode viewer window let you dig inside the compiled version of the code you just wrote inside the Code window.</p>
-                        <a href="#" class="card-link btn btn-primary" id="factorial">Factorial</a>
-                        <a href="#" class="card-link btn btn-primary" id="fibonacci">Fibonacci</a>
-                        <a href="#" class="card-link btn btn-primary" id="power">Power</a>
-                    </div>
+    <a class="github-fork-ribbon right-bottom fixed" href="https://github.com/gabyfle/Lice"
+        data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+    <nav data-bs-theme="dark" class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand">Lice Playground</a>
+            <form class="d-flex">
+                <a class="btn btn-success run-btn">Run</a>
+            </form>
+        </div>
+    </nav>
+    <div class="container-fluid full-page">
+        <div class="row full-page">
+            <div class="col-12 col-md-6">
+                <div class="zone">
+                    <h5>Lice Code</h5>
                 </div>
+                <pre id="editor"></pre>
             </div>
-            <div class="col">
-                <label for="code">Code:</label>
-                <textarea id="code" class="form-control" rows="9"></textarea>
-            </div>
-            <div class="col">
-                <label for="bytecode">Bytecode:</label>
-                <textarea id="bytecode" class="form-control" rows="9" readonly></textarea>
-            </div>
-            </div>
-
-            <div class="row justify-content-center exec-time">
-                <div class="col-3">
-                    <label for="execution-time">Execution time:</label>
-                    <input type="text" id="execution-time" readonly>
+            <div class="col-12 col-md-6 h-100">
+                <div class="container-fluid h-100">
+                    <div class="row h-100">
+                        <div class="col-12 mid-page">
+                            <div class="zone">
+                                <h5>Bytecode</h5>
+                            </div>
+                            <pre id="bytecode"></pre>
+                        </div>
+                        <div class="col-12 mid-page">
+                            <div class="zone">
+                                <h5>Output</h5>
+                            </div>
+                            <pre id="output"></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
 </body>
-<script src="playground.bc.js"></script>
+<script src="assets/ace/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
+    var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/javascript");
+        editor.setOptions({
+                fontFamily: "JetBrains Mono",
+                fontSize: "10pt"
+        });
 
-    let code = document.getElementById("code");
-    let bytecode = document.getElementById("bytecode");
-    let executionTime = document.getElementById("execution-time");
+    var bytecode = ace.edit("bytecode");
+        bytecode.setTheme("ace/theme/monokai");
+        bytecode.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "10pt"
+        });
+        bytecode.setReadOnly(true);
+
+    var output = ace.edit("output");
+        output.setTheme("ace/theme/monokai");
+        output.setOptions({
+            fontFamily: "JetBrains Mono",
+            fontSize: "10pt"
+        });
+        output.setReadOnly(true);
 
     let codes = {
         "factorial": `function factorial(n) {\n    if (n == 0) return 1;\n    return n * factorial(n - 1);\n}`
@@ -68,57 +91,47 @@
         "power": `function power(x, n) {\n    if (n == 0) return 1;\n    if (n == 1) return x;\n    if ((n % 2) == 0) return power(x * x, n / 2);\n    return power(x * x, (n - 1) / 2);\n}`
     };
 
-    function inputChanged() {
+    /* Loads random default code into the editor */
+    let keys = Object.keys(codes);
+    let randomKey = keys[Math.floor(Math.random() * keys.length)];
+    editor.setValue(codes[randomKey], 0);
+
+    function runClicked() {
             let [state, time] = doString();
             updateBytecode();
-            executionTime.value = time;
+            var tString = "Execution time: " + (Math.round(time)).toString() + "ms";
+            output.setValue(tString);
     }
-
-    function chargeCode(name, codes) {
-        document.getElementById("code").value = codes[name];
-        inputChanged();
-    }
-
-    document.getElementById("factorial").addEventListener("click", function() {
-        chargeCode("factorial", codes);
-    });
-
-    document.getElementById("fibonacci").addEventListener("click", function() {
-        chargeCode("fibonacci", codes);
-    });
-
-    document.getElementById("power").addEventListener("click", function() {
-        chargeCode("power", codes);
-    });
 
     function doString() {
         let start = performance.now();
-        let code = document.getElementById("code").value;
+        let code = editor.getValue();
 
         try {
             Lice.doString(code);
             let state = Lice.doString(code);
             let end = performance.now();
 
-            return [state, (end - start).toString() + "ms"];
+            return [state, (end - start)];
         } catch (e) {
             return [e, "Error."];
         }
     }
 
     function updateBytecode() {
-        let code = document.getElementById("code").value;
+        let code = editor.getValue();
         try {
             let bc = Lice.bytecodeViewer(code);
-            document.getElementById("bytecode").value = bc;
+            bytecode.setValue(bc);
         } catch (e) {
-            document.getElementById("bytecode").value = "";
+            bytecode.setValue("");
             return;
         }
     }
 
-    code.addEventListener("input", inputChanged);
+    document.querySelector(".run-btn").addEventListener("click", runClicked);
 </script>
+<script src="assets/playground.bc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"></script>

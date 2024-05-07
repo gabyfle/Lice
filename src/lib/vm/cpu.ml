@@ -25,10 +25,9 @@
     [stack]: The actual stack of our stack machine
     [rstack]: The return stack of our stack machine
     [pc]: the pointer towards program instructions *)
-type 'a t =
-  {acc: 'a; stack: 'a list list; rstack: int Stack.t; flag: int; pc: int}
+type 'a t = {acc: 'a; stack: 'a list list; rstack: int list; flag: int; pc: int}
 
-let init_cpu acc = {acc; stack= [[]]; rstack= Stack.create (); flag= -1; pc= 0}
+let init_cpu acc = {acc; stack= [[]]; rstack= []; flag= -1; pc= 0}
 
 let acc cpu = cpu.acc
 
@@ -103,13 +102,14 @@ let pop_stack cpu n =
   in
   {cpu with stack}
 
-let rpush cpu =
-  Stack.push cpu.pc cpu.rstack ;
-  cpu
+let rpush cpu = {cpu with rstack= cpu.pc :: cpu.rstack}
 
 let rpop cpu =
-  let pc = Stack.pop cpu.rstack in
-  {cpu with pc}
+  match cpu.rstack with
+  | [] ->
+      raise Stack.Empty
+  | h :: t ->
+      ({cpu with pc= h; rstack= t}, h)
 
 let get_flag cpu = cpu.flag
 

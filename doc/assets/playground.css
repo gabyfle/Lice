@@ -1,7 +1,12 @@
 body {
     background-color: #1C0D30;
-
     color: #fff;
+
+    /*overflow: hidden;*/
+    font-family: "JetBrains Mono",
+        monospace;
+
+    height: 100vh;
 }
 
 header img {
@@ -10,16 +15,65 @@ header img {
 
 header {
     text-align: center;
-
     margin: 50px;
 }
 
-textarea {
-    font-family: "JetBrains Mono",
-        monospace;
-    resize: none;
+#editor,
+#bytecode,
+#output {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
-.exec-time {
-    margin: 10px;
+#bytecode {
+    height: calc(100% - 54px);
+}
+
+.navbar[data-bs-theme=dark] {
+    background-color: #1C0D30 !important;
+
+    color: #fff;
+}
+
+.full-page {
+    height: calc(100% - 56px);
+}
+
+.mid-page {
+    height: 50%;
+}
+
+.run-btn {
+    border-radius: 0px;
+    border-top: none;
+    border-bottom: none;
+
+    border-right: none;
+}
+
+.zone {
+    padding-right: 0;
+    padding-left: 0;
+
+    background-color: #0d0617;
+
+    padding: 15px;
+}
+
+.zone h5 {
+    color: #fff;
+    margin-bottom: 0;
+}
+
+.row>* {
+    padding: 0;
+}
+
+/* make possible scroll on small devices */
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto;
+    }
 }
