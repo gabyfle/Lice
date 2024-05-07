@@ -7,7 +7,6 @@ maintainer: ["Gabriel Santamaria <gaby.santamaria@outlook.fr>"]
 authors: ["Gabriel Santamaria <gaby.santamaria@outlook.fr>"]
 license: "Apache-2.0"
 homepage: "https://lice.gabyfle.dev/"
-doc: "https://lice.gabyfle.dev/"
 bug-reports: "https://github.com/gabyfle/lice/issues"
 depends: [
   "dune" {>= "3.12"}

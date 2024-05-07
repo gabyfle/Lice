@@ -15,8 +15,6 @@
 (source
  (github gabyfle/lice))
 
-(documentation "https://lice.gabyfle.dev/")
-
 (generate_opam_files true)
 
 (package
