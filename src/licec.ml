@@ -20,32 +20,18 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module type LState = sig
-  type t
+open Lice
 
-  val empty : t
-  (**
-      [empty] creates an empty state of the Lice language *)
+let exec_file levels file =
+  let lvm = LState.set_logs LState.empty levels in
+  ignore (LState.do_file lvm file)
 
-  val set_logs : t -> int -> t
-  (**
-      [set_logs lstate l] sets the logs level of the Lice interpreter to [l] *)
-
-  val version : t -> string
-  (**
-      [version lstate] returns the actual version used for the Lice interpreter and library *)
-
-  val do_string : t -> string -> t
-  (**
-      [do_string lstate code] reads the string [code] as code, compiles it and execute it inside the [lstate] context *)
-
-  val do_file : t -> string -> t
-  (**
-      [dofile lstate file] reads the [file] string as a file path and then execute the content inside the [lstate] context as Lice code *)
-end
-
-module LState : LState
-
-val bytecode_viewer : string -> string
-(**
-    [bytecode_viewer code] returns the bytecode of the [code] string in a pretty format *)
+let () =
+  let llevels = ref 0 in
+  let lfile = ref "" in
+  Arg.parse
+    [ ("-l", Arg.Set_int llevels, "Set log levels")
+    ; ("-f", Arg.Set_string lfile, "Set log file") ]
+    (fun _ -> ())
+    "Usage: lice [-l levels] [-f file]" ;
+  exec_file !llevels !lfile

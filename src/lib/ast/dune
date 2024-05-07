@@ -2,3 +2,9 @@
  (name ast)
  (package lice)
  (libraries types))
+
+(ocamllex lexer)
+
+(menhir
+ (modules parser)
+ (flags --explain --dump))

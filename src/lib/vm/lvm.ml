@@ -31,7 +31,7 @@ type t =
   ; chunk: Chunk.t
   ; reader: int -> Opcode.opcode * int }
 
-let create () =
+let empty =
   let cpu = Cpu.init_cpu Base.V_Void in
   let memory = Environment.empty in
   {cpu; memory; chunk= Chunk.empty; reader= (fun _ -> (HALT, 0))}
@@ -195,7 +195,8 @@ let call t n =
   vm
 
 let return t (nargs : int) =
-  let cpu = Cpu.rpop t.cpu in
+  let cpu, address = Cpu.rpop t.cpu in
+  let cpu = Cpu.set_pc cpu address in
   let t = pop {t with cpu} in
   let tmp = Cpu.get_acc t.cpu in
   try

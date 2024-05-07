@@ -21,7 +21,7 @@
 (*****************************************************************************)
 
 %{
-  open Ast.Tree  (* Include the AST module *)
+  open Tree  (* Include the AST module *)
   open Types
   open Types.Base
 %}

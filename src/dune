@@ -1,7 +1,14 @@
 (library
  (name lice)
  (public_name lice)
+ (modules lice)
  (libraries bytecomp vm kernel))
+
+(executable
+ (name licec)
+ (public_name licec)
+ (modules licec)
+ (libraries lice))
 
 (env
  (dev

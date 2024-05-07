@@ -21,6 +21,7 @@
 (*****************************************************************************)
 
 open Utils.Logger
+open Ast
 
 let parse_code code =
   let lexbuf = Lexing.from_string code in
