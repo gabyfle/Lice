@@ -12,4 +12,10 @@ This is the first version with a working prototype of the Lice interpreter using
 
 - Reformated the way types works inside the language and made an overall code cleanup.
 
+- Functions are first class citizens.
+
+### Fixed
+
+- Fixed the lexing of float numbers.
+
 Note: This is a pre-release and it's not intended to be used yet.
