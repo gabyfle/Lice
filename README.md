@@ -1,13 +1,10 @@
 <p align="center"><img src="https://raw.githubusercontent.com/gabyfle/Lice/main/lice.svg" width="200px" style="margin: auto; border-radius: 200px;"></p>
 
-<center>
+<h2 align="center">The Lice Programming Language</h2>
 
-[![CI](https://github.com/gabyfle/Lice/actions/workflows/workflow.yml/badge.svg?branch=main)](https://github.com/gabyfle/Lice/actions/workflows/workflow.yml)
+<p align="center"><img src="https://github.com/gabyfle/Lice/actions/workflows/workflow.yml/badge.svg?branch=main"> <img src="https://img.shields.io/github/v/release/gabyfle/Lice"> <img src="https://badgen.net/github/stars/gabyfle/Lice"></p>
 
-</center>
 
-# Lice
-Lice language main repository. Contains all the library code of the Lice language and everything you need to add Lice to your OCaml application.
 
 ## What is Lice ?
 

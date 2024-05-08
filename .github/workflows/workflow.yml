@@ -1,8 +1,11 @@
 name: CI
 
 on:
-  - pull_request
-  - push
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 jobs:
   build:
@@ -49,3 +52,33 @@ jobs:
           ocaml-compiler: "4.14"
 
       - uses: ocaml/setup-ocaml/lint-fmt@v2
+
+      - name: Upload playground.bc.js
+        uses: actions/upload-artifact@v4
+        with:
+          name: playground
+          path: _build/default/doc/ocaml/playground.bc.js
+
+  deploy-site:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download playground.bc.js
+        uses: actions/download-artifact@v2
+        with:
+          name: playground
+          path: doc/assets/playground.bc.js
+      
+      - name: Deploy to VPS Server
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          ARGS: "-rlgoDzvc -i"
+          SOURCE: "/doc/"
+          REMOTE_HOST: ${{ secrets.HOST }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          TARGET: ${{ secrets.PATH }}
+          EXCLUDE: "/ocaml/, *.md"
