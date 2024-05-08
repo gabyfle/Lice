@@ -1,0 +1,51 @@
+name: Lice CI
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - debian-latest
+          - ubuntu-latest
+          - macos-latest
+        ocaml-compiler:
+          - "5.1"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Build Lice libraries and executables
+        run: opam exec -- dune build
+
+      - name: Run tests
+        run: opam exec -- dune runtest
+
+  lint-fmt:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Install OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: "4.14"
+
+      - uses: ocaml/setup-ocaml/lint-fmt@v2
