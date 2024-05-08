@@ -48,7 +48,8 @@ jobs:
       - name: Install OCaml
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: "4.14"
+          ocaml-compiler: "5.1"
+          dune-cache: true
 
       - uses: ocaml/setup-ocaml/lint-fmt@v2
 

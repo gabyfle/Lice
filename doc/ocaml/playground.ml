@@ -22,7 +22,7 @@
 
 open Js_of_ocaml
 
-let exec_string (str: string) =
+let exec_string (str : string) =
   let state = Lice.LState.empty in
   let state = Lice.LState.do_string state str in
   state
@@ -30,6 +30,7 @@ let exec_string (str: string) =
 let _ =
   Js.export "Lice"
     (object%js
-       method doString (code: string) = exec_string code
-       method bytecodeViewer = Lice.bytecode_viewer 
-     end)
+       method doString (code : string) = exec_string code
+
+       method bytecodeViewer = Lice.bytecode_viewer
+    end )
