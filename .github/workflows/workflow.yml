@@ -39,6 +39,7 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Upload playground.bc.js
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: playground
