@@ -13,7 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - debian-latest
           - ubuntu-latest
           - macos-latest
         ocaml-compiler:
