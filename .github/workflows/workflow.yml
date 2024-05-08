@@ -38,6 +38,12 @@ jobs:
       - name: Run tests
         run: opam exec -- dune runtest
 
+      - name: Upload playground.bc.js
+        uses: actions/upload-artifact@v4
+        with:
+          name: playground
+          path: _build/default/doc/ocaml/playground.bc.js
+
   lint-fmt:
     needs: build
     runs-on: ubuntu-latest
@@ -52,12 +58,6 @@ jobs:
           dune-cache: true
 
       - uses: ocaml/setup-ocaml/lint-fmt@v2
-
-      - name: Upload playground.bc.js
-        uses: actions/upload-artifact@v4
-        with:
-          name: playground
-          path: _build/default/doc/ocaml/playground.bc.js
 
   deploy-site:
     needs: [build, lint-fmt]
