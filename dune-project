@@ -27,6 +27,8 @@
   (ANSITerminal
    (>= 0.8.5))
   (menhir
-   (>= 20231231)))
+   (>= 20231231))
+  (js_of_ocaml
+   (>= 5.7.2)))
  (description
   "This package provides the Lice programming language libraries and interpreter. Lice is a simple programming language that is easy to learn and use. It is an imperative programming language that is meant to be interoperable with OCaml."))
