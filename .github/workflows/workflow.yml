@@ -59,7 +59,7 @@ jobs:
           path: _build/default/doc/ocaml/playground.bc.js
 
   deploy-site:
-    needs: build
+    needs: [build, lint-fmt]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
