@@ -1,5 +1,11 @@
 <p align="center"><img src="https://raw.githubusercontent.com/gabyfle/Lice/main/lice.svg" width="200px" style="margin: auto; border-radius: 200px;"></p>
 
+<center>
+
+[![CI](https://github.com/gabyfle/Lice/actions/workflows/workflow.yml/badge.svg?branch=main)](https://github.com/gabyfle/Lice/actions/workflows/workflow.yml)
+
+</center>
+
 # Lice
 Lice language main repository. Contains all the library code of the Lice language and everything you need to add Lice to your OCaml application.
 

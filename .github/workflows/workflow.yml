@@ -1,4 +1,4 @@
-name: Lice CI
+name: CI
 
 on:
   - pull_request
