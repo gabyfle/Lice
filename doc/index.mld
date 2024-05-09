@@ -1,0 +1,22 @@
+{0 The Lice Programming Language}
+
+{!module: lice} is a simple programming language designed to be embeddable inside any OCaml application.
+The package is shipped with a command line interpreter that can be used to run Lice scripts: {{!repl}licec}
+and a library that can be used to embed Lice in your OCaml application: {!module: lice}.
+
+Table of contents:
+
+{ul
+    {- The {{!repl}REPL} documentation}
+    {- The online and web-based {{: https://lice.gabyfle.dev/playground.html }Playground}}
+    {- The {{!Lice}API} documentation}
+}
+
+{1 Installing Lice}
+
+{2 Building from source}
+
+
+
+{2 Using [opam]}
+You can install Lice using {{: https://opam.ocaml.org/}opam}

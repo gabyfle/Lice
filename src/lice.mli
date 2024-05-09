@@ -20,31 +20,50 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module type LState = sig
+(** It provides the main functions to interact with the Lice interpreter.
+    To interact with the language, can use the {!LState} module to create
+    a new state, set the logs level, execute code and more.  *)
+
+val version : string
+(**
+    [version] is the current version of the Lice libraries and interpreter *)
+
+module LState : sig
+  (**
+        The type of the Lice state. Contains everything needed for the Lice VM to run,
+        as well as some other metadata. *)
   type t
 
   val empty : t
   (**
-      [empty] creates an empty state of the Lice language *)
+      [empty] creates an empty state. *)
 
   val set_logs : t -> int -> t
   (**
-      [set_logs lstate l] sets the logs level of the Lice interpreter to [l] *)
+      [set_logs lstate l] sets the logs level of the Lice interpreter to [l] where [l] is between [0] and [2].
+      
+       {t
+            |          Value          |                               Level                                |
+            | :---------------------: | :----------------------------------------------------------------: |
+            | [0] {e (default value)} | Prints out [Warnings] and [Errors] only                            |
+            | [1] {e (debug)}         | Prints out [Warnings], [Errors] and [Debug] log messages           |
+            | [2] {e (verbose)}       | Prints out [Warnings], [Errors], [Debug] and [Info] log messages   |
+        }
 
-  val version : t -> string
-  (**
-      [version lstate] returns the actual version used for the Lice interpreter and library *)
+    *)
 
   val do_string : t -> string -> t
   (**
-      [do_string lstate code] reads the string [code] as code, compiles it and execute it inside the [lstate] context *)
+      [do_string lstate code] reads the string [code] as code, compiles it and execute it inside the [lstate] context.
+    
+      
+      
+    *)
 
   val do_file : t -> string -> t
   (**
       [dofile lstate file] reads the [file] string as a file path and then execute the content inside the [lstate] context as Lice code *)
 end
-
-module LState : LState
 
 val bytecode_viewer : string -> string
 (**

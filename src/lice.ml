@@ -36,10 +36,6 @@ module type LState = sig
   (**
       [set_logs lstate l] sets the logs level of the Lice interpreter to [l] *)
 
-  val version : t -> string
-  (**
-      [version lstate] returns the actual version used for the Lice interpreter and library *)
-
   val do_string : t -> string -> t
   (**
       [do_string lstate code] reads the string [code] as code, compiles it and execute it inside the [lstate] context *)
@@ -55,13 +51,13 @@ let llevels =
   ; ["Info"; "Debug"; "Warning"; "Error"] ]
 
 module LState = struct
-  type t = {version: string; vm: Lvm.t; _llevel: int}
+  type t = {vm: Lvm.t; _llevel: int}
 
-  let empty = {version; vm= Lvm.empty; _llevel= 0}
-
-  let version t = t.version
+  let empty = {vm= Lvm.empty; _llevel= 0}
 
   let set_logs (state : t) (level : int) =
+    if level < 0 || level > 2 then
+      raise (Invalid_argument "Logs level must be between 0 and 2") ;
     Logger.set_level (List.nth llevels level) ;
     {state with _llevel= level}
 
