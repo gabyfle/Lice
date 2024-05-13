@@ -23,27 +23,7 @@
 open Bytecomp
 open Utils.Logger
 
-let version = "0.0.1-dev"
-
-module type LState = sig
-  type t
-
-  val empty : t
-  (**
-      [empty] creates an empty state of the Lice language *)
-
-  val set_logs : t -> int -> t
-  (**
-      [set_logs lstate l] sets the logs level of the Lice interpreter to [l] *)
-
-  val do_string : t -> string -> t
-  (**
-      [do_string lstate code] reads the string [code] as code, compiles it and execute it inside the [lstate] context *)
-
-  val do_file : t -> string -> t
-  (**
-      [dofile lstate file] reads the [file] string as a file path and then execute the content inside the [lstate] context as Lice code *)
-end
+let version = "0.0.1~dev"
 
 let llevels =
   [ ["Warning"; "Error"]

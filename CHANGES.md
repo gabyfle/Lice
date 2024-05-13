@@ -1,4 +1,4 @@
-0.0.1-dev (2024-05-07)
+0.0.1~dev (2024-05-07)
 -------------------
 
 This is the first version with a working prototype of the Lice interpreter using bytecode and a virtual machine instead of a tree-walk algorithm. Improvements have been made on memory usage and execution times.
