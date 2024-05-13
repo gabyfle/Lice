@@ -40,7 +40,7 @@ jobs:
 
       - name: Build Lice documentation
         if: matrix.os == 'ubuntu-latest'
-        run: opam exec -- dune build @doc
+        run: opam install odoc && opam exec -- dune build @doc
 
       - name: Upload playground.bc.js
         if: matrix.os == 'ubuntu-latest'
