@@ -55,8 +55,8 @@ jobs:
         with:
           name: doc
           path: |
-            _build/default/doc/_doc/_html/lice
-            _build/default/doc/_doc/_html/odoc.support
+            _build/default/_doc/_html/lice
+            _build/default/_doc/_html/odoc.support
 
   lint-fmt:
     needs: build
