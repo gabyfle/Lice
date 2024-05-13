@@ -55,6 +55,14 @@ header {
     border-right: none;
 }
 
+.square-btn {
+    border-radius: 0px;
+    border-top: none;
+    border-bottom: none;
+
+    border-right: none;
+}
+
 .zone {
     padding-right: 0;
     padding-left: 0;
