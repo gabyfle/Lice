@@ -93,7 +93,7 @@ jobs:
           path: doc/
 
       - name: Move documentation
-        run: mv doc/_build/default/_doc/_html/lice doc/doc && mv doc/_build/default/_doc/_html/odoc.support doc/odoc.support
+        run: mv doc/lice doc/doc
       
       - name: Deploy to VPS Server
         uses: easingthemes/ssh-deploy@main
