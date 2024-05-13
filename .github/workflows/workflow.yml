@@ -38,12 +38,25 @@ jobs:
       - name: Run tests
         run: opam exec -- dune runtest
 
+      - name: Build Lice documentation
+        if: matrix.os == 'ubuntu-latest'
+        run: opam exec -- dune build @doc
+
       - name: Upload playground.bc.js
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: playground
           path: _build/default/doc/ocaml/playground.bc.js
+
+      - name: Upload odoc documentation
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: doc
+          path: |
+            _build/default/doc/_doc/_html/lice
+            _build/default/doc/_doc/_html/odoc.support
 
   lint-fmt:
     needs: build
@@ -72,6 +85,12 @@ jobs:
         with:
           name: playground
           path: doc/assets
+
+      - name: Download odoc documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: doc
+          path: doc/doc
       
       - name: Deploy to VPS Server
         uses: easingthemes/ssh-deploy@main

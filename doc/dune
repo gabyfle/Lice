@@ -1,1 +1,3 @@
-(documentation)
+(documentation
+ (package lice)
+ (mld_files index repl))

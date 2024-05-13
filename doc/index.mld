@@ -14,9 +14,42 @@ Table of contents:
 
 {1 Installing Lice}
 
+There are two main ways of installing Lice:
+
+{ul
+    {- By building directly from the source files}
+    {- By using the opam package manager to install the Lice library on your system}
+}
+
+{2 Requirements}
+
+In order to build Lice, you'll need the following OCaml libraries and software:
+
+{ul
+    {- {{: https://github.com/ocaml/dune}dune} version {e 3.12} or greater}
+    {- {{: https://github.com/Chris00/ANSITerminal}ANSITerminal} version {e 0.8.5} or greater}
+    {- {{:  https://gitlab.inria.fr/fpottier/menhir}menhir} version {e 20231231} or greater}
+}
+
 {2 Building from source}
 
+The main Lice repository is hosted on the Github platform here: {{: https://github.com/gabyfle/Lice}}. To download the sources, you can either download the latest release of Lice or clone the repository using the following command:
 
+{v git clone https://github.com/gabyfle/Lice.git v}
+
+Once downloaded, you can build the project using the following commands:
+
+{v cd Lice && dune build --profile release v}
 
 {2 Using [opam]}
-You can install Lice using {{: https://opam.ocaml.org/}opam}
+
+Lice is also available as an opam package. To install it, you can use the following command:
+
+{v opam install lice v}
+
+This will install all the required dependencies and the Lice library on your system.
+
+{1 API Documentation}
+
+To see the developer API documentation for Lice, you can visit the following link: {{!Lice}here}.
+
